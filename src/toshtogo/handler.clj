@@ -18,7 +18,6 @@
                     (GET "/" [] "some jobs")
                     (POST "/" {:keys [body] :as req}
                           (let [job (new-job! jobs body)]
-                            (println job)
                             (resp/redirect-after-post (str "/api/jobs/" (:job_id  job)))))
 
                     (GET "/:job-id" [job-id]

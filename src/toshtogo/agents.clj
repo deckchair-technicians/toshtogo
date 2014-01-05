@@ -17,14 +17,11 @@
 (deftype SqlAgents [cnxn]
   Agents
   (agent! [this agent-details]
-    (try
-      (if-let [agent (first (tsql/query cnxn select-agent-sql agent-details))]
-        agent
-        (let [agent-record (agent-record agent-details)]
-          (tsql/insert! cnxn :agents agent-record)
-          agent-record))
-      (catch Exception e (do (println e) (throw e)))))
-  )
+    (if-let [agent (first (tsql/query cnxn select-agent-sql agent-details))]
+      agent
+      (let [agent-record (agent-record agent-details)]
+        (tsql/insert! cnxn :agents agent-record)
+        agent-record))))
 
 (defn sql-agents [cnxn]
   (SqlAgents. cnxn))

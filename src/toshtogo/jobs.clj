@@ -32,9 +32,7 @@
       job))
 
   (get-job [this job-id]
-    (let [job (tsql/query cnxn get-job-sql {:job-id job-id})]
-      (println "JOB" job)
-      job)))
+    (tsql/query cnxn get-job-sql {:job-id job-id})))
 
 (defn sql-jobs [cnxn agents contracts]
   (SqlJobs. cnxn agents contracts))
