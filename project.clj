@@ -14,17 +14,21 @@
                  [clj-http "0.7.7"]
                  [clj-time "0.6.0"]
                  [enlive "1.1.5"]
-                 [com.dbdeploy/dbdeploy-core "3.0M3"]]
+                 [com.google.guava/guava "15.0"]
+                 [com.dbdeploy/dbdeploy-core "3.0M3"]
+                 [watchtower "0.1.1"]]
 
   :plugins [[lein-ring "0.8.8"]
             [s3-wagon-private "1.1.2"]]
 
   :main toshtogo.core
 
-  :ring {
-         :handler toshtogo.handler/app}
+  :aot [toshtogo.web.IdempotentPutException]
+
+  :ring {:handler toshtogo.handler/app}
 
   :profiles {:dev {:dependencies [[javax.servlet/servlet-api "2.5"]
                                   [ring-mock "0.1.5"]
                                   [midje "1.5.1"]]
-                   :plugins [[lein-midje "3.1.0"]]}})
+                   :plugins [[lein-midje "3.1.0"]]}
+})

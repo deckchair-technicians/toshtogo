@@ -4,7 +4,8 @@
             [flatland.useful.map :refer [map-vals]]
             [clojure.set :refer [difference]]
             [clojure.string :as str]
-            [clojure.pprint :refer [pprint]]))
+            [clojure.pprint :refer [pprint]])
+    (:import [java.sql PreparedStatement]))
 
 (defn missing-keys-exception [m missing-keys]
   (IllegalArgumentException.
@@ -22,27 +23,37 @@
 (def param-pattern #":([0-9A-Za-z\-_]+)")
 
 (defmulti fix-type class)
-(defmethod fix-type org.joda.time.DateTime [v] (java.sql.Date. (.getMillis v)))
+(defmethod fix-type org.joda.time.DateTime [v] (java.sql.Timestamp. (.getMillis v)))
 (defmethod fix-type :default [v] (identity v))
 
 (defn fix-types [params]
   (map-vals params fix-type))
 
+(defn extract-params [sql]
+  (let [param-usages         (re-seq param-pattern sql)
+        param-usages (map (comp keyword second) param-usages)
+        normalised-sql       (str/replace sql param-pattern "?")]
+    [normalised-sql param-usages]))
+
+(defn param-values [param-usages params]
+  (map (fix-types params) param-usages))
+
 (defn named-params
   [sql params]
-  (let [param-usages         (re-seq param-pattern sql)
-        keywords-usage-order (map (comp keyword second) param-usages)
-        type-fixed-params    (fix-types params)]
-    (assert-keys params keywords-usage-order)
-    (vec (cons (str/replace sql param-pattern "?")
-               (map type-fixed-params keywords-usage-order)))))
+  (let [[normalised-sql param-usages] (extract-params sql)]
+    (assert-keys params param-usages)
+    (vec (cons
+          normalised-sql
+          (param-values param-usages params)))))
 
 (defn insert! [cnxn table & records]
-  (apply sql/insert! cnxn table (map fix-types records)))
+  (apply sql/insert!
+         cnxn
+         table
+         (map fix-types records)))
 
 (defn query [cnxn sql params]
   "Takes some sql including references to parameters in the form
    :parameter-name and a map of named parameters"
   (let [fixed-params (named-params sql params)]
-    (pprint fixed-params)
     (sql/query cnxn fixed-params)))

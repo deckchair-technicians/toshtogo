@@ -7,11 +7,18 @@
   (agent! [this agent-details]))
 
 (def select-agent-sql
-  "select * from agents where hostname = :hostname and system_name = :system_name")
+  "select
+     *
+   from
+     agents
+   where
+     hostname           = :hostname
+     and system_name    = :system_name
+     and system_version = :system_version")
 
 (defn agent-record [agent-details]
   (assoc
-      (select-keys agent-details [:hostname :system_name])
+      (select-keys agent-details [:hostname :system_name :system_version])
     :agent_id (uuid)))
 
 (deftype SqlAgents [cnxn]
