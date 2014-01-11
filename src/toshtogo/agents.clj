@@ -3,6 +3,11 @@
             [toshtogo.sql :as tsql]
             [toshtogo.util :refer [uuid]]))
 
+(defn get-agent-details [system version]
+  {:hostname (.getHostName (java.net.InetAddress/getLocalHost))
+   :system_name system
+   :system_version version})
+
 (defprotocol Agents
   (agent! [this agent-details]))
 

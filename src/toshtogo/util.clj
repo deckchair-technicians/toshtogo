@@ -24,6 +24,15 @@
 (defn ppstr [x]
   (with-out-str (pprint x)))
 
+(defn debug
+  ([msg x]
+     (do (println msg) (debug x)))
+  ([x]
+      (do
+        (pprint x)
+        (println)
+        x)))
+
 (defn add-to-hash!
   [^Hasher hasher ^InputStream input-stream]
   (with-open [input-stream input-stream]
@@ -56,3 +65,5 @@
      (java.util.UUID/randomUUID))
   ([s]
      (java.util.UUID/fromString s)))
+
+(defn uuid-str [] (str (uuid)))

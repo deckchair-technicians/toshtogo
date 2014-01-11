@@ -12,28 +12,52 @@
                                          wrap-print-request
                                          wrap-retry-on-exceptions]]
             [toshtogo.jobs :refer [put-job! get-job]]
-            [toshtogo.util :refer [uuid]])
-  (:import [toshtogo.web IdempotentPutException]))
+            [toshtogo.contracts :refer [request-work! get-contracts]]
+            [toshtogo.util :refer [uuid ppstr debug]])
+  (:import [toshtogo.web IdempotentPutException]
+           [java.io InputStream]))
 
 (defn job-redirect [job-id]
   (resp/redirect-after-post (str "/api/jobs/" job-id)))
 
+(defn commitment-redirect [commitment-id]
+  (resp/redirect-after-post (str "/api/commitments/" commitment-id)))
+
 (defroutes api-routes
   (context "/api" []
-    (context "/jobs" {:keys [jobs]}
-      (GET "/" [] "some jobs")
-      (PUT  "/" {:keys [body  check-idempotent!] :as req}
-        (let [body   (update body :id uuid)
-              job-id (body :id)]
+    (context "/jobs" {:keys [jobs body check-idempotent!]}
 
+      (PUT  "/:job_id" [job_id]
+        (let [job-id (uuid job_id)]
           (check-idempotent!
-           job-id
-           #(let [job (put-job! jobs body)]
-             (job-redirect job-id))
+           :create-job job-id
+           #(let [job (put-job! jobs (assoc body :job_id job-id))]
+              (job-redirect job-id))
            #(job-redirect job-id))))
 
       (GET "/:job-id" [job-id]
-        (get-job jobs (uuid job-id))))))
+        {:body (get-job jobs (uuid job-id))}))
+
+    (context "/commitments" {:keys [contracts body check-idempotent!]}
+      (PUT "/" []
+        (let [commitment-id (uuid (body :commitment_id))]
+          (check-idempotent!
+           :create-commitment commitment-id
+           #(if-let [commitment (request-work! contracts commitment-id (body :tags) (body :agent))]
+              (commitment-redirect commitment-id)
+              {:status 204})
+           #(commitment-redirect commitment-id))))
+      (GET "/:commitment-id" [commitment-id]
+        {:body (first (get-contracts
+                       contracts
+                       {:commitment_id (uuid commitment-id)
+                        :return-jobs true}))})))
+
+  (fn [req]
+    {:status 404
+     :body (select-keys req [:headers :request-method :uri :form-params
+                             :query-string :params])
+     :headers {:content-type "application/json"}}))
 
 
 (def app

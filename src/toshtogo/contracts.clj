@@ -1,18 +1,116 @@
 (ns toshtogo.contracts
-  (:require [toshtogo.sql :as tsql]
+  (:require [flatland.useful.map :refer [map-vals-with-keys update]]
             [clj-time.core :refer [now]]
-            [toshtogo.util :refer [uuid]]))
+            [clojure.string :as str]
+            [cheshire.core :as json]
+            [toshtogo.agents :refer [agent!]]
+            [toshtogo.sql :as tsql]
+            [toshtogo.util :refer [uuid debug]]))
 
 (defprotocol Contracts
-  (new-contract! [this job-id]))
+  (new-contract! [this job-id])
+  (get-contracts [this params])
+  (request-work! [this commitment-id tags agent]))
 
 (defn contract-record [job-id]
-  {:contract_id (uuid) :job_id job-id :created (now)})
+  {:contract_id (uuid) :job_id job-id :contract_created (now)})
 
-(deftype SqlContracts [cnxn]
-  Contracts
-  (new-contract! [this job-id]
-    (tsql/insert! cnxn :contracts (contract-record job-id))))
+(defn contracts-sql [params]
+  (cond->
+   "select
+     *
 
-(defn sql-contracts [cnxn]
-  (SqlContracts. cnxn))
+   from
+     contracts
+
+   left join
+     agent_commitments commitments
+     on contracts.contract_id = commitments.commitment_contract
+
+   left join
+     commitment_outcomes
+     on commitments.commitment_id = commitment_outcomes.outcome_id "
+   (params :return-jobs) (str "left join jobs on contracts.job_id = jobs.job_id")))
+
+(def tag-sql
+  "     contracts.job_id in (
+          select
+            distinct (jobs.job_id)
+          from
+            jobs
+          join job_tags
+            on jobs.job_id = job_tags.job_id
+          where tag in (:tags))")
+
+(defn where-clauses [params]
+  (reduce
+   (fn [[out-params clauses] [k v]]
+     (case k
+       :state
+       (if (= :waiting v)
+         [out-params
+          (cons "contract_state is null" clauses)]
+         [(assoc out-params :contract_state v)
+          (cons "contract_state = :contract_state" clauses)])
+       :tags
+       [(assoc out-params :tags (map name v))
+        (cons tag-sql clauses)]
+       :commitment_id
+       [(assoc out-params :commitment_id v)
+        (cons "commitment_id = :commitment_id" clauses)]
+       [(assoc out-params k v) clauses]))
+   [{} []]
+   params))
+
+
+(defn qualify [sql params]
+  (let [[out-params where-clauses] (where-clauses params)]
+    [(cond-> sql
+             (not-empty where-clauses)
+             (str "\n    where\n      "    (str/join "\n      and " where-clauses))
+
+             (:order-by-desc params)
+             (str "\n    order by " (name (:order-by-desc params)) " desc"))
+     out-params]))
+
+(defn normalise-record [contract]
+  (-> contract
+      (update :contract_state #(or (keyword %) :waiting))
+      (update :body #(json/parse-string % keyword))))
+
+(defn commitment-record [commitment-id contract agent]
+  {:commitment_id       commitment-id
+   :commitment_contract (contract :contract_id)
+   :commitment_agent    (agent :agent_id)
+   :contract_claimed    (now)})
+
+(defn SqlContracts [cnxn agents]
+  (reify
+    Contracts
+    (new-contract! [this job-id]
+      (tsql/insert! cnxn :contracts (contract-record job-id)))
+
+    (get-contracts [this params]
+      (map
+       normalise-record
+       (apply tsql/query
+              cnxn
+              (qualify  (contracts-sql params) params))))
+
+    (request-work! [this commitment-id tags agent-details]
+      (let [contract (first (get-contracts
+                             this
+                             {:state :waiting
+                              :tags tags
+                              :order-by-desc :contract_created}))]
+        (tsql/insert!
+               cnxn
+               :agent_commitments
+               (commitment-record commitment-id
+                                  contract
+                                  (agent! agents agent-details)))
+
+        (first (get-contracts this {:commitment_id commitment-id}))))))
+
+(defn sql-contracts [cnxn agents]
+  (SqlContracts cnxn agents))

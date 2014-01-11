@@ -5,20 +5,20 @@ create table agents (
   system_name      varchar(64)    not null,
   system_version   varchar(32)    not null,
 
-  unique (hostname, system_name)
+  unique (hostname, system_name, system_version)
 );
 
-create index agent_idx on agents (hostname, system_name);
+create index agent_idx on agents (hostname, system_name, system_version);
 
 -- JOBS
 create table jobs (
   job_id           uuid           primary key,
   requesting_agent uuid           not null references agents(agent_id),
-  created          timestamp      not null,
+  job_created      timestamp      not null,
   body             text           not null
 );
 
-create index job_created_idx on jobs (created);
+create index job_created_idx on jobs (job_created);
 
 create table job_tags (
   job_id           uuid           not null references jobs(job_id),
@@ -37,25 +37,39 @@ create table job_dependencies (
 );
 
 -- CONTRACTS
--- Arguably this table should be split out into
--- contracts, contract_claims, contract_claim_results
--- so that all tables are append-only.
--- But that seems like a join too far.
 create table contracts (
   contract_id      uuid           primary key,
   job_id           uuid           not null references jobs(job_id),
-  agent            uuid           references agents(agent_id),
-  created          timestamp      not null,
-  claimed          timestamp,
-  finished         timestamp,
-  outcome          varchar(16) -- success, error, replaced, timeout, try-later
+  contract_created timestamp      not null
 );
 
--- We're likely to want to search and sort on all these fields
-create index contract_created_idx  on contracts (created);
-create index contract_claimed_idx  on contracts (claimed);
-create index contract_finished_idx on contracts (finished);
-create index contract_status_idx   on contracts (outcome);
+create index contract_created_idx  on contracts (contract_created);
+
+create table agent_commitments (
+  commitment_id       uuid           primary key,
+  commitment_contract uuid           unique not null references contracts(contract_id),
+  commitment_agent    uuid           not null references agents(agent_id),
+  contract_claimed    timestamp      not null
+);
+
+create index commitment_claimed_idx  on agent_commitments (contract_claimed);
+
+create table commitment_outcomes (
+  outcome_id       uuid           primary key references agent_commitments(commitment_id),
+  error_details    text,
+  contract_finished timestamp     not null,
+  contract_state    varchar(16)   not null -- success, error, replaced, timeout, try-later
+);
+
+create index commitment_finished_idx on commitment_outcomes (contract_finished);
+create index commitment_status_idx   on commitment_outcomes (contract_state);
+
+create table job_results (
+  result_job_id      uuid           primary key references jobs(job_id),
+  result_contract_id uuid           unique not null references commitment_outcomes(outcome_id),
+  result_text        text           not null
+);
+
 
 -- PUT_IDEMPOTENCY
 -- Two halves of a 128 bit murmur hash of
@@ -68,7 +82,9 @@ create index contract_status_idx   on contracts (outcome);
 -- Otherwise we want to warn the client that they're
 -- doing something weird
 create table put_hashes (
-  id               uuid           primary key,
+  id               uuid           not null,
+  operation_type   varchar(32)    not null,
   hash_1           bigint         not null,
-  hash_2           bigint         not null
+  hash_2           bigint         not null,
+  primary key (id, operation_type)
 );

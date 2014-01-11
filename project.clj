@@ -11,12 +11,14 @@
                  [postgresql/postgresql "8.4-702.jdbc4"]
                  [ring/ring-jetty-adapter "1.2.1"]
                  [ring/ring-json "0.2.0"]
+                 [ring-mock "0.1.5"]
                  [clj-http "0.7.7"]
                  [clj-time "0.6.0"]
                  [enlive "1.1.5"]
                  [com.google.guava/guava "15.0"]
                  [com.dbdeploy/dbdeploy-core "3.0M3"]
-                 [watchtower "0.1.1"]]
+                 [watchtower "0.1.1"]
+                 [clj-http "0.7.8"]]
 
   :plugins [[lein-ring "0.8.8"]
             [s3-wagon-private "1.1.2"]]
@@ -27,8 +29,6 @@
 
   :ring {:handler toshtogo.handler/app}
 
-  :profiles {:dev {:dependencies [[javax.servlet/servlet-api "2.5"]
-                                  [ring-mock "0.1.5"]
-                                  [midje "1.5.1"]]
+  :profiles {:dev {:dependencies [[javax.servlet/servlet-api "2.5"]                                                                 [midje "1.5.1"]]
                    :plugins [[lein-midje "3.1.0"]]}
 })

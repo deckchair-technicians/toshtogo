@@ -39,7 +39,7 @@
           body-hash         (req :body-hash)
           check-idempotent* (partial check-idempotent! cnxn body-hash)
           agents            (sql-agents cnxn)
-          contracts         (sql-contracts cnxn)
+          contracts         (sql-contracts cnxn agents)
           jobs              (sql-jobs cnxn agents contracts)]
       (handler (assoc req
           :check-idempotent! check-idempotent*
