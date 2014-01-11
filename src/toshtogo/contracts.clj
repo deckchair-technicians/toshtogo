@@ -49,7 +49,7 @@
        :state
        (if (= :waiting v)
          [out-params
-          (cons "contract_state is null" clauses)]
+          (cons "contract_state is null and commitment_id is null" clauses)]
          [(assoc out-params :contract_state v)
           (cons "contract_state = :contract_state" clauses)])
        :tags
@@ -98,7 +98,7 @@
               (qualify  (contracts-sql params) params))))
 
     (request-work! [this commitment-id tags agent-details]
-      (let [contract (first (get-contracts
+      (if-let [contract (first (get-contracts
                              this
                              {:state :waiting
                               :tags tags
