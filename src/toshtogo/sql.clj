@@ -5,7 +5,7 @@
             [clojure.set :refer [difference]]
             [clojure.string :as str]
             [clojure.pprint :refer [pprint]]
-            [toshtogo.util :refer [debug]])
+            [toshtogo.util :refer [debug ppstr]])
   (:import [java.sql PreparedStatement]
            [clojure.lang Keyword]
            [java.lang IllegalArgumentException]))
@@ -70,6 +70,7 @@
               (reduce (partial add-param-value params) (vector) keywords-usage-order)))))
 
 (defn insert! [cnxn table & records]
+  (println "Insert" table (ppstr records))
   (apply sql/insert!
          cnxn
          table
@@ -80,7 +81,7 @@
    :parameter-name and a map of named parameters"
   (println params)
   (let [fixed-params (named-params sql params)]
-    (sql/query cnxn (debug fixed-params))))
+    (sql/query cnxn (debug "Query: " fixed-params))))
 
 (defn query-single [cnxn sql params]
  (first (query cnxn sql params)))

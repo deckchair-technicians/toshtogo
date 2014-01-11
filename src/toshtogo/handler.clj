@@ -11,8 +11,8 @@
                                          wrap-print-response
                                          wrap-print-request
                                          wrap-retry-on-exceptions]]
-            [toshtogo.jobs :refer [put-job! get-job]]
-            [toshtogo.contracts :refer [request-work! get-contracts]]
+            [toshtogo.jobs :refer :all]
+            [toshtogo.contracts :refer :all]
             [toshtogo.util :refer [uuid ppstr debug]])
   (:import [toshtogo.web IdempotentPutException]
            [java.io InputStream]))
@@ -47,6 +47,15 @@
               (commitment-redirect commitment-id)
               {:status 204})
            #(commitment-redirect commitment-id))))
+
+      (PUT "/:commitment-id" [commitment-id]
+        (let [commitment-id (uuid commitment-id)]
+          (check-idempotent!
+           :complete-commitment commitment-id
+           #(do (complete-work! contracts commitment-id (update body :outcome keyword))
+                (commitment-redirect commitment-id))
+           #(commitment-redirect commitment-id))))
+
       (GET "/:commitment-id" [commitment-id]
         {:body (first (get-contracts
                        contracts

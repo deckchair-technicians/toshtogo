@@ -10,7 +10,8 @@
 (defprotocol Contracts
   (new-contract! [this job-id])
   (get-contracts [this params])
-  (request-work! [this commitment-id tags agent]))
+  (request-work! [this commitment-id tags agent])
+  (complete-work! [this commitment-id result]))
 
 (defn contract-record [job-id]
   {:contract_id (uuid) :job_id job-id :contract_created (now)})
@@ -76,7 +77,7 @@
 (defn normalise-record [contract]
   (-> contract
       (update :contract_state #(or (keyword %) :waiting))
-      (update :body #(json/parse-string % keyword))))
+      (update :request_body #(json/parse-string % keyword))))
 
 (defn commitment-record [commitment-id contract agent]
   {:commitment_id       commitment-id
@@ -99,18 +100,40 @@
 
     (request-work! [this commitment-id tags agent-details]
       (if-let [contract (first (get-contracts
-                             this
-                             {:state :waiting
-                              :tags tags
-                              :order-by-desc :contract_created}))]
+                                this
+                                {:state :waiting
+                                 :tags tags
+                                 :order-by-desc :contract_created}))]
         (tsql/insert!
-               cnxn
-               :agent_commitments
-               (commitment-record commitment-id
-                                  contract
-                                  (agent! agents agent-details)))
+         cnxn
+         :agent_commitments
+         (commitment-record commitment-id
+                            contract
+                            (agent! agents agent-details)))
 
-        (first (get-contracts this {:commitment_id commitment-id}))))))
+        (first (get-contracts this {:commitment_id commitment-id}))))
+
+    (complete-work! [this commitment-id result]
+      (if-let [contract (first (get-contracts this {:commitment_id commitment-id}))]
+        (let [outcome (result :outcome)
+              job-id  (contract :job_id)]
+
+          (tsql/insert! cnxn
+                        :commitment_outcomes
+                        {:outcome_id commitment-id
+                         :error_details (result :error)
+                         :contract_finished (now)
+                         :contract_state outcome})
+
+          (when (= :success outcome)
+            (tsql/insert! cnxn
+                          :job_results
+                          {:job_id (contract :job_id)
+                           :result_body (json/generate-string (result :result))}))
+
+          nil)
+
+        (throw (NullPointerException. (str "Could not find commitment '" commitment-id "'")))))))
 
 (defn sql-contracts [cnxn agents]
   (SqlContracts cnxn agents))

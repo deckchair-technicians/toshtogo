@@ -15,7 +15,7 @@ create table jobs (
   job_id           uuid           primary key,
   requesting_agent uuid           not null references agents(agent_id),
   job_created      timestamp      not null,
-  body             text           not null
+  request_body     text           not null
 );
 
 create index job_created_idx on jobs (job_created);
@@ -65,9 +65,8 @@ create index commitment_finished_idx on commitment_outcomes (contract_finished);
 create index commitment_status_idx   on commitment_outcomes (contract_state);
 
 create table job_results (
-  result_job_id      uuid           primary key references jobs(job_id),
-  result_contract_id uuid           unique not null references commitment_outcomes(outcome_id),
-  result_text        text           not null
+  job_id             uuid           primary key references jobs(job_id),
+  result_body        text           not null
 );
 
 

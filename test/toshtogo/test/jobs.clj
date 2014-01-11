@@ -13,7 +13,7 @@
     => {:job_id ...id...
         :agent agent-details
         :tags [:tag-one :tag-two]
-        :body {:data "value"}}))
+        :request_body {:data "value"}}))
 
 (fact "Adding a job with no dependencies triggers creation of a contract"
   (sql/db-transaction
