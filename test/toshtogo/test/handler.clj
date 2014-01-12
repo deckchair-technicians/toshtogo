@@ -3,6 +3,7 @@
             [ring.adapter.jetty :refer [run-jetty]]
             [toshtogo.handler :refer [app]]
             [toshtogo.client :refer :all]
+            [toshtogo.contracts :refer [success error]]
             [toshtogo.util :refer [uuid uuid-str debug]]))
 
 (def client (app-sender-client app))
@@ -34,12 +35,29 @@
     (put-job! client job-id {:tags [tag]
                              :request_body {:a-field "field value"}})
 
-    (let [f                         (fn [job] (success {:response-field "all good"}))
-          {:keys [contract result]} @(do-work! client [tag] f)]
+    (let [func                      (fn [job] (success {:response-field "all good"}))
+          {:keys [contract result]} @(do-work! client [tag] func)]
       contract
       => (contains {:job_id (str job-id) :request_body {:a-field "field value"}})
       result
       => (contains {:outcome :success :result {:response-field "all good"}}))
 
     (get-job client job-id)
-    => (contains {:result_body {:response-field "all good"}})))
+    => (contains {:outcome "success" :result_body {:response-field "all good"}})))
+
+(fact "Agents can report errors"
+  (let [job-id (uuid)
+        tag    (uuid-str)]
+
+    (put-job! client job-id {:tags [tag]
+                             :request_body {:a-field "field value"}})
+
+    (let [func                      (fn [job] (error "something went wrong"))
+          {:keys [contract result]} @(do-work! client [tag] func)]
+      contract
+      => (contains {:job_id (str job-id) :request_body {:a-field "field value"}})
+      result
+      => (contains {:outcome :error :error "something went wrong"}))
+
+    (get-job client job-id)
+    => (contains {:outcome "error" :error "something went wrong"})))

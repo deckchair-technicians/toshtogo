@@ -1,10 +1,8 @@
 (ns toshtogo.client
   (:require [toshtogo.util :refer [uuid]]
+            [toshtogo.contracts :refer [success error]]
             [toshtogo.senders :refer :all]))
 
-(defn success [response-body]
-  {:outcome :success
-   :result  response-body})
 
 (defprotocol Client
   (put-job! [this job-id job])

@@ -64,6 +64,6 @@
   ([]
      (java.util.UUID/randomUUID))
   ([s]
-     (java.util.UUID/fromString s)))
+     (when s (java.util.UUID/fromString s))))
 
 (defn uuid-str [] (str (uuid)))

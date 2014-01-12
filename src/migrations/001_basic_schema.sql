@@ -40,33 +40,37 @@ create table job_dependencies (
 create table contracts (
   contract_id      uuid           primary key,
   job_id           uuid           not null references jobs(job_id),
-  contract_created timestamp      not null
+  contract_number  integer        not null,
+  contract_created timestamp      not null,
+
+  unique(job_id, contract_number)
 );
 
 create index contract_created_idx  on contracts (contract_created);
+create index contract_number_idx   on contracts (contract_number);
 
 create table agent_commitments (
-  commitment_id       uuid           primary key,
-  commitment_contract uuid           unique not null references contracts(contract_id),
-  commitment_agent    uuid           not null references agents(agent_id),
-  contract_claimed    timestamp      not null
+  commitment_id       uuid        primary key,
+  commitment_contract uuid        unique not null references contracts(contract_id),
+  commitment_agent    uuid        not null references agents(agent_id),
+  contract_claimed    timestamp   not null
 );
 
 create index commitment_claimed_idx  on agent_commitments (contract_claimed);
 
 create table commitment_outcomes (
-  outcome_id       uuid           primary key references agent_commitments(commitment_id),
-  error_details    text,
+  outcome_id        uuid          primary key references agent_commitments(commitment_id),
+  error             text,
   contract_finished timestamp     not null,
-  contract_state    varchar(16)   not null -- success, error, replaced, timeout, try-later
+  outcome           varchar(16)   not null -- success, error, replaced, timeout, try-later
 );
 
 create index commitment_finished_idx on commitment_outcomes (contract_finished);
-create index commitment_status_idx   on commitment_outcomes (contract_state);
+create index commitment_status_idx   on commitment_outcomes (outcome);
 
 create table job_results (
-  job_id             uuid           primary key references jobs(job_id),
-  result_body        text           not null
+  job_id           uuid           primary key references jobs(job_id),
+  result_body      text           not null
 );
 
 
