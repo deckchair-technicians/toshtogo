@@ -134,3 +134,36 @@
           => (contains [(contains {:result_body {:first-dep "first dep"}})
                         (contains {:result_body {:second-dep "second dep"}})]
                        :in-any-order))))))
+
+(facts "Requesting more work"
+  (let [job-id (uuid)
+        parent-tag    (uuid-str)
+        child-tag     (uuid-str)]
+
+    (put-job! client
+              job-id {:tags [parent-tag]
+                      :request_body {:parent-job "parent job"}})
+
+    (let [add-deps       (fn [job]
+                           (add-dependencies (job-map {:first-dep "first dep"} [child-tag])
+                                             (job-map {:second-dep "second dep"} [child-tag])))
+          complete-child (fn [job] (success (job :request_body)))]
+
+      @(do-work! client [parent-tag] add-deps) => truthy
+
+      (fact "Parent job is not ready until new dependencies complete"
+        (request-work! client [parent-tag]) => nil)
+
+      @(do-work! client [child-tag] complete-child) => truthy
+      @(do-work! client [child-tag] complete-child) => truthy
+
+      (fact (str "Parent job is released when dependencies are complete, "
+                 "with dependency responses merged into its request")
+        (let [contract (request-work! client [parent-tag])]
+          contract
+          => (contains {:request_body {:parent-job "parent job"}})
+
+          (contract :dependencies)
+          => (contains [(contains {:result_body {:first-dep "first dep"}})
+                        (contains {:result_body {:second-dep "second dep"}})]
+                       :in-any-order))))))
