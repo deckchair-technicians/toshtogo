@@ -18,6 +18,12 @@
   (IllegalStateException.
    (str "Job " job-id " has been completed. Can't create further contracts")))
 
+(defn- put-dependencies! [api cnxn job-id dependencies agent]
+  (doseq [dependency (map (partial expand-dependency agent)
+                          dependencies)]
+    (put-job! api dependency)
+    (tsql/insert! cnxn :job_dependencies (dependency-record job-id dependency))))
+
 (defn SqlApi [cnxn on-new-job! on-contract-completed! agents]
   (reify Toshtogo
     (put-job! [this job]
@@ -30,10 +36,7 @@
         (tsql/insert! cnxn :jobs job-row)
         (apply tsql/insert! cnxn :job_tags job-tag-records)
 
-        (doseq [dependency (map (partial expand-dependency job-agent)
-                                dependencies)]
-          (put-job! this dependency)
-          (tsql/insert! cnxn :job_dependencies (dependency-record job dependency)))
+        (put-dependencies! this cnxn job-id dependencies job-agent)
 
         (on-new-job! this job)
 
@@ -96,8 +99,9 @@
 
     (complete-work! [this commitment-id result]
       (if-let [contract (get-contract this {:commitment_id commitment-id})]
-        (let [outcome (result :outcome)
-              job-id  (contract :job_id)]
+        (let [outcome       (result :outcome)
+              job-id        (contract :job_id)
+              agent-details (result :agent)]
 
           (tsql/insert! cnxn
                         :commitment_outcomes
@@ -106,10 +110,13 @@
                          :contract_finished (now)
                          :outcome           outcome})
 
-          (when (= :success outcome)
+          (case outcome
+            :success
             (tsql/insert! cnxn
                           :job_results
-                          (outcome-record contract result)))
+                          (outcome-record contract result))
+            :more-work
+            (put-dependencies! this cnxn job-id (result :dependencies) agent-details))
 
           (on-contract-completed! this (get-contract this {:commitment_id commitment-id}))
           nil)

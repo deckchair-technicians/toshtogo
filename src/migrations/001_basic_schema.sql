@@ -31,7 +31,6 @@ create table job_dependencies (
   dependency_id      uuid         primary key,
   parent_job_id      uuid         references jobs(job_id),
   child_job_id       uuid         references jobs(job_id),
-  request_merge_path varchar(256) not null,
 
   unique (parent_job_id, child_job_id)
 );
@@ -62,7 +61,7 @@ create table commitment_outcomes (
   outcome_id        uuid          primary key references agent_commitments(commitment_id),
   error             text,
   contract_finished timestamp     not null,
-  outcome           varchar(16)   not null -- success, error, replaced, timeout, try-later
+  outcome           varchar(16)   not null -- success, error,  more-work, timeout, try-later
 );
 
 create index commitment_finished_idx on commitment_outcomes (contract_finished);

@@ -2,15 +2,14 @@
   (:require [flatland.useful.map :refer [update update-each]]
             [pallet.map-merge :refer [merge-keys]]
             [clj-time.core :refer [now]]
-            [cheshire.core :as json]          
+            [cheshire.core :as json]
 			[toshtogo.api :refer :all]
             [toshtogo.util.core :refer [uuid debug]]))
 
-(defn dependency-record [parent-job child-job]
+(defn dependency-record [parent-job-id child-job]
   {:dependency_id (uuid)
-   :parent_job_id (parent-job :job_id)
-   :child_job_id (child-job :job_id)
-   :request_merge_path (child-job :request_merge_path)})
+   :parent_job_id parent-job-id
+   :child_job_id (child-job :job_id)})
 
 (defn job-record [id agent-id body]
   {:job_id id
@@ -61,13 +60,13 @@
      from job_dependencies
      where parent_job_id = :dependency_of_job_id)")
 
-		(defn dependency-outcomes
-		  "This is incredibly inefficient"
-		  [api job]
-		  (reduce (fn [outcomes dependency]
-		            (cons (dependency :outcome) outcomes))
-		          #{}
-		          (get-jobs api (dependencies-of job))))
+(defn dependency-outcomes
+  "This is incredibly inefficient"
+  [api job]
+  (reduce (fn [outcomes dependency]
+            (cons (dependency :outcome) outcomes))
+          #{}
+          (get-jobs api (dependencies-of job))))
 
 
 (defn collect-tags [job row]

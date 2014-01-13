@@ -1,6 +1,7 @@
 (ns toshtogo.api)
 
-(defn job-map [id agent-details body tags]
+(defn job-map
+  [id agent-details body tags]
   {:job_id id
    :agent agent-details
    :tags tags
@@ -13,6 +14,10 @@
 (defn error [error-text]
   {:outcome :error
    :error   error-text})
+
+(defn add-dependencies [dependency & dependencies]
+  {:outcome      :more-work
+   :dependencies (concat [dependency] dependencies)})
 
 (defn depends-on [contract]
   {:depends_on_job_id (contract :job_id) :order-by :job_created})
