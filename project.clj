@@ -18,7 +18,8 @@
                  [com.google.guava/guava "15.0"]
                  [com.dbdeploy/dbdeploy-core "3.0M3"]
                  [watchtower "0.1.1"]
-                 [clj-http "0.7.8"]]
+                 [clj-http "0.7.8"]
+                 [pallet-map-merge "0.1.0"]]
 
   :plugins [[lein-ring "0.8.8"]
             [s3-wagon-private "1.1.2"]]
@@ -27,7 +28,7 @@
 
   :aot [toshtogo.web.IdempotentPutException]
 
-  :ring {:handler toshtogo.handler/app}
+  :ring {:handler toshtogo.web.handler/app}
 
   :profiles {:dev {:dependencies [[javax.servlet/servlet-api "2.5"]                                                                 [midje "1.5.1"]]
                    :plugins [[lein-midje "3.1.0"]]}

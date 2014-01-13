@@ -1,4 +1,4 @@
-(ns toshtogo.middleware
+(ns toshtogo.web.middleware
   (:require [clojure.java.jdbc :as sql]
             [toshtogo.config :refer [db]]
             [net.cgrand.enlive-html :as html]
@@ -6,18 +6,20 @@
             [clojure.pprint :refer [pprint]]
             [toshtogo.web.idempotentput :refer [check-idempotent!]]
             [toshtogo.agents :refer [sql-agents]]
-            [toshtogo.contracts.sql :refer [sql-contracts]]
-            [toshtogo.jobs.sql :refer [sql-jobs]]
-            [toshtogo.util :refer [murmur! ppstr byte-array-input! byte-array-output!]])
+            [toshtogo.api :refer :all]
+            [toshtogo.sql.api :refer [sql-api]]
+            [toshtogo.util.core :refer [debug ppstr ]]
+			[toshtogo.util.hashing :refer [murmur!]]
+			[toshtogo.util.io :refer [byte-array-input! byte-array-output!]])
   (:import [java.io ByteArrayInputStream]))
 
+
 (defn sql-deps [cnxn]
-  (let [agents    (sql-agents cnxn)
-        contracts (sql-contracts cnxn agents)
-        jobs      (sql-jobs cnxn agents contracts)]
+  (let [agents                 (sql-agents cnxn)
+        api                   (sql-api cnxn agents)]
+
     {:agents    agents
-     :contracts contracts
-     :jobs      jobs}))
+     :api 		api}))
 
 (defn wrap-body-hash
   [handler]

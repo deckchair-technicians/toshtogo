@@ -1,11 +1,11 @@
-(ns toshtogo.sql
+(ns toshtogo.util.sql
   (:require [clojure.java.jdbc :as sql]
             [clj-time.core :refer [now]]
             [flatland.useful.map :refer [map-vals filter-vals]]
             [clojure.set :refer [difference]]
             [clojure.string :as str]
             [clojure.pprint :refer [pprint]]
-            [toshtogo.util :refer [debug ppstr]])
+            [toshtogo.util.core :refer :all])
   (:import [java.sql PreparedStatement]
            [clojure.lang Keyword]
            [java.lang IllegalArgumentException]))
@@ -62,15 +62,26 @@
   (let [keywords-usage-order (param-usages sql)]
     (assert-keys params (set keywords-usage-order))
 
-    (let [in-clause-params            (filter-vals params is-in-clause-param?)
+    (let [in-clause-params            (filter-vals (dissoc params :order-by) is-in-clause-param?)
           sql-with-in-params-replaced (reduce replace-in-clause-param sql in-clause-params)
           sql                         (str/replace sql-with-in-params-replaced param-pattern "?")]
 
       (concat [sql]
               (reduce (partial add-param-value params) (vector) keywords-usage-order)))))
 
+(defn qualify [where-clauses-fn sql params]
+  (no-debug "Qualify:" [sql params])
+  (let [[out-params where-clauses] (where-clauses-fn params)]
+    [(cond-> sql
+             (not-empty where-clauses)
+             (str "\n    where\n      "    (str/join "\n      and " where-clauses))
+
+             (:order-by params)
+             (str "\n    order by " (str/join ", " (map name (:order-by params)))))
+     out-params]))
+
 (defn insert! [cnxn table & records]
-  (println "Insert" table (ppstr records))
+  #_(println "Insert" table (ppstr records))
   (apply sql/insert!
          cnxn
          table
@@ -79,9 +90,8 @@
 (defn query [cnxn sql params]
   "Takes some sql including references to parameters in the form
    :parameter-name and a map of named parameters"
-  (println params)
   (let [fixed-params (named-params sql params)]
-    (sql/query cnxn (debug "Query: " fixed-params))))
+    (sql/query cnxn (no-debug "QUERY" fixed-params))))
 
 (defn query-single [cnxn sql params]
  (first (query cnxn sql params)))

@@ -1,9 +1,10 @@
-(ns toshtogo.contracts.sqlhelper
+(ns toshtogo.sql.contracts-helper
   (:require [flatland.useful.map :refer [map-vals-with-keys update]]
             [cheshire.core :as json]
             [clj-time.core :refer [now]]
             [clojure.string :as str]
-            [toshtogo.util :refer [uuid debug]]))
+            [toshtogo.api :refer :all]
+            [toshtogo.util.core :refer [uuid debug]]))
 
 (defn contract-record [job-id contract-number]
   {:contract_id      (uuid)
@@ -48,7 +49,7 @@
             on jobs.job_id = job_tags.job_id
           where tag in (:tags))")
 
-(defn where-clauses [params]
+(defn contracts-where-fn [params]
   (reduce
    (fn [[out-params clauses] [k v]]
      (case k
@@ -83,16 +84,6 @@
    params))
 
 
-(defn qualify [sql params]
-  (let [[out-params where-clauses] (where-clauses params)]
-    [(cond-> sql
-             (not-empty where-clauses)
-             (str "\n    where\n      "    (str/join "\n      and " where-clauses))
-
-             (:order-by-desc params)
-             (str "\n    order by " (name (:order-by-desc params)) " desc"))
-     out-params]))
-
 (defn normalise-record [contract]
   (-> contract
       (update :outcome #(or (keyword %) :waiting))
@@ -103,3 +94,8 @@
    :commitment_contract (contract :contract_id)
    :commitment_agent    (agent :agent_id)
    :contract_claimed    (now)})
+
+(defn merge-dependencies [contract api]
+  (if (nil? contract)
+    nil
+    (assoc contract :dependencies (get-jobs api {:dependency_of_job_id (contract :job_id)}))))

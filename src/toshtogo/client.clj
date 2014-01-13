@@ -1,7 +1,7 @@
 (ns toshtogo.client
-  (:require [toshtogo.util :refer [uuid]]
-            [toshtogo.contracts :refer [success error]]
-            [toshtogo.senders :refer :all]))
+  (:require [toshtogo.util.core :refer [uuid]]
+            [toshtogo.api :refer [success error]]
+            [toshtogo.client.senders :refer :all]))
 
 
 (defprotocol Client

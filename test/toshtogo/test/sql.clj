@@ -2,7 +2,7 @@
   (:require [midje.sweet :refer :all]
             [clojure.string :as str]
             [clj-time.core :refer [now date-time]]
-           [toshtogo.sql :refer :all]))
+           [toshtogo.util.sql :refer :all]))
 
 (fact "Param pattern for keyword works"
   (str/replace ":some-param" (param-pattern-for :some-param) "?") => "?"

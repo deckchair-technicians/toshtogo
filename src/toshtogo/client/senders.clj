@@ -1,8 +1,8 @@
-(ns toshtogo.senders
+(ns toshtogo.client.senders
   (:require [ring.mock.request :refer [request body header]]
             [cheshire.core :as json]
             [clojure.string :as str]
-            [toshtogo.util :refer [debug]]
+            [toshtogo.util.core :refer [debug]]
             [toshtogo.agents :refer [get-agent-details]]))
 
 (defn hostname
@@ -41,7 +41,6 @@
 (defn AppSender [agent-details app]
   (reify Sender
     (PUT! [this location message]
-      (debug "PUT" [location message])
       (let [req (request
                  :put
                  (str "http://toshtogo.test/" (str/replace-first location #"^/" "")))]
@@ -52,14 +51,22 @@
     (GET [this location]
         (app (request :get (str "http://toshtogo.test/" (str/replace-first location #"^/" "")))))))
 
+(defn DebugSender [sender]
+  (reify Sender
+    (PUT! [this location message]
+      (debug "PUT RESPONSE" (apply PUT! sender (debug "PUT!" [location message]))))
+    (GET [this location]
+        (debug "GET" (GET sender location)))))
+
 (defn app-sender
   ([app]
      (app-sender app "unknown" "unknown"))
   ([app system version]
-     (JsonSender
-      (FollowingSender
-       (AppSender (get-agent-details system version) app)
-       (fn [sender resp] [sender resp]
-         (if (= 303 (:status resp))
-           (GET sender (get-in resp [:headers "Location"] ))
-           resp))))))
+     (DebugSender
+      (JsonSender
+       (FollowingSender
+        (AppSender (get-agent-details system version) app)
+        (fn [sender resp] [sender resp]
+          (if (= 303 (:status resp))
+            (GET sender (get-in resp [:headers "Location"] ))
+            resp)))))))

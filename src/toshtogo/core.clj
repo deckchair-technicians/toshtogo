@@ -1,6 +1,6 @@
 (ns toshtogo.core
   (:require [toshtogo.migrations :refer [run-migrations!]]
-            [toshtogo.handler :refer [app]]
+            [toshtogo.web.handler :refer [app]]
             [ring.adapter.jetty :refer [run-jetty]]
             [watchtower.core :as watcher])
   (:gen-class))
@@ -10,7 +10,7 @@
   (run-jetty app {:port 3000}))
 
 (defn reload-templates! [files]
-  (require 'toshtogo.handler :reload-all))
+  (require 'toshtogo.web.handler :reload-all))
 
 (defn auto-reloading-start!
   "For interactive development ONLY"

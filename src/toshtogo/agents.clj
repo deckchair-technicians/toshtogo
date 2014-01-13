@@ -1,7 +1,7 @@
 (ns toshtogo.agents
   (:require [clojure.java.jdbc :as sql]
-            [toshtogo.sql :as tsql]
-            [toshtogo.util :refer [uuid]]))
+            [toshtogo.util.sql :as tsql]
+            [toshtogo.util.core :refer [uuid]]))
 
 (defn get-agent-details [system version]
   {:hostname (.getHostName (java.net.InetAddress/getLocalHost))

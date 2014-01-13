@@ -1,6 +1,5 @@
 (ns toshtogo.web.idempotentput
-  (:require [toshtogo.util :refer [ppstr]]
-            [toshtogo.sql :as tsql])
+  (:require [toshtogo.util.sql :as tsql])
   (:import [toshtogo.web IdempotentPutException]))
 
 (defn put-is-identical?
