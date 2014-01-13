@@ -37,7 +37,7 @@
 
         (on-new-job! this job)
 
-        job))
+        (get-job this job-id)))
 
     (get-jobs [this params]
       (map from-sql
