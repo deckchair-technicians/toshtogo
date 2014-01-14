@@ -46,14 +46,14 @@
      (given-job-exists api job-id [tag])
 
      (fact "Can't create contract when job is in progress"
-       (new-contract! api job-id)
+       (new-contract! api (contract-req job-id))
        => (throws IllegalStateException
                   (str "Job " job-id " has an unfinished contract. Can't create a new one.")))
 
      (fact "Can't create contract when job has succeeded"
        (given-job-succeeded api job-id)
 
-       (new-contract! api job-id)
+       (new-contract! api (contract-req job-id))
        => (throws IllegalStateException
                   (str "Job " job-id " has been completed. Can't create further contracts"))))))
 

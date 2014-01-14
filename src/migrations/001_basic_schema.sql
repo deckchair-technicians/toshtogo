@@ -41,6 +41,7 @@ create table contracts (
   job_id           uuid           not null references jobs(job_id),
   contract_number  integer        not null,
   contract_created timestamp      not null,
+  contract_due     timestamp      not null,
 
   unique(job_id, contract_number)
 );

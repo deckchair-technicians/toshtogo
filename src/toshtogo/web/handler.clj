@@ -12,7 +12,7 @@
                                          wrap-print-request
                                          wrap-retry-on-exceptions]]
             [toshtogo.api :refer :all]
-            [toshtogo.util.core :refer [uuid ppstr debug]])
+            [toshtogo.util.core :refer [uuid ppstr debug parse-datetime]])
   (:import [toshtogo.web IdempotentPutException]
            [java.io InputStream]))
 
@@ -51,7 +51,10 @@
         (let [commitment-id (uuid commitment-id)]
           (check-idempotent!
            :complete-commitment commitment-id
-           #(do (complete-work! api commitment-id (update body :outcome keyword))
+           #(do (complete-work! api commitment-id
+                                (-> body
+                                    (update :outcome keyword)
+                                    (update :contract_due parse-datetime)))
                 (commitment-redirect commitment-id))
            #(commitment-redirect commitment-id))))
 

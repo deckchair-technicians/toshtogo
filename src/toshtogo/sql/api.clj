@@ -1,6 +1,7 @@
 (ns toshtogo.sql.api
   (:require [clojure.java.jdbc :as sql]
-            [clj-time.core :refer [now]]
+            [clj-time.core :refer [now minus seconds]]
+            [clj-time.format :refer [parse]]
             [cheshire.core :as json]
             [flatland.useful.map :refer [update update-each]]
             [toshtogo.util.core :refer [uuid debug as-coll]]
@@ -69,23 +70,28 @@
       (cond-> (first (get-contracts this params))
               (params :with-dependencies) (merge-dependencies this)))
 
-    (new-contract! [this job-id]
-      (let [last-contract       (get-contract this {:job_id job-id :latest_contract true})
-            new-contract-number (if last-contract (inc (last-contract :contract_number)) 1)
+    (new-contract! [this contract]
+      (debug "CONTRACT" contract)
+      (let [job-id                (contract :job_id)
+            contract-due          (:contract_due contract (minus (now) (seconds 5)))
+            last-contract         (get-contract this {:job_id job-id :latest_contract true})
+            new-contract-number   (if last-contract (inc (last-contract :contract_number)) 1)
             last-contract-outcome (:outcome last-contract)]
+
         (case last-contract-outcome
           :waiting
           (throw (unfinished-contract job-id))
           :success
           (throw (job-finished job-id))
-          (tsql/insert! cnxn :contracts (contract-record job-id new-contract-number)))))
+          (tsql/insert! cnxn :contracts
+                        (contract-record job-id new-contract-number contract-due)))))
 
     (request-work! [this commitment-id tags agent-details]
       (when-let [contract  (get-contract
                             this
-                            {:outcome       :waiting
-                             :tags          tags
-                             :order-by [:contract_created]})]
+                            {:tags           tags
+                             :ready_for_work true
+                             :order-by       [:contract_created]})]
         (tsql/insert!
          cnxn
          :agent_commitments
@@ -116,7 +122,13 @@
                           :job_results
                           (outcome-record contract result))
             :more-work
-            (put-dependencies! this cnxn job-id (result :dependencies) agent-details))
+            (put-dependencies! this cnxn job-id (result :dependencies) agent-details)
+
+            :try-later
+            (new-contract! this (contract-req job-id (result :contract_due)))
+
+            :error
+            nil)
 
           (on-contract-completed! this (get-contract this {:commitment_id commitment-id}))
           nil)
@@ -125,14 +137,14 @@
 
 (defn handle-new-job! [api job]
   (when-not (job :dependencies)
-    (new-contract! api (job :job_id))))
+    (new-contract! api (contract-req (job :job_id)))))
 
 (defn handle-contract-completion! [api contract]
   (when (= :success (contract :outcome))
     (doseq [parent-job (get-jobs api (depends-on contract))]
       (let [dependency-outcomes (dependency-outcomes api parent-job)]
         (when (every? #(= :success %)  dependency-outcomes)
-          (new-contract! api (parent-job :job_id)))))))
+          (new-contract! api (contract-req (parent-job :job_id))))))))
 
 (defn sql-api [cnxn agents]
   (SqlApi cnxn handle-new-job! handle-contract-completion! agents))

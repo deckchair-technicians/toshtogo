@@ -3,6 +3,7 @@
             [cheshire.core :as json]
             [clojure.string :as str]
             [toshtogo.util.core :refer [debug]]
+            [toshtogo.util.json :as tjson]
             [toshtogo.agents :refer [get-agent-details]]))
 
 (defn hostname
@@ -45,24 +46,26 @@
                  :put
                  (str "http://toshtogo.test/" (str/replace-first location #"^/" "")))]
         (app (-> req
-                 (body (json/encode (assoc  message :agent agent-details)))
+                 (body (tjson/encode (assoc  message :agent agent-details)))
                  (assoc :content-type "application/json")))))
 
     (GET [this location]
         (app (request :get (str "http://toshtogo.test/" (str/replace-first location #"^/" "")))))))
 
-(defn DebugSender [sender]
-  (reify Sender
-    (PUT! [this location message]
-      (debug "PUT RESPONSE" (apply PUT! sender (debug "PUT!" [location message]))))
-    (GET [this location]
-        (debug "GET" (GET sender location)))))
+(defn DebugSender [should-debug sender]
+  (if should-debug
+    (reify Sender
+      (PUT! [this location message]
+        (debug "PUT RESPONSE" (apply PUT! sender (debug "PUT!" [location message]))))
+      (GET [this location]
+          (debug "GET" (GET sender location))))
+    sender))
 
 (defn app-sender
   ([app]
      (app-sender app "unknown" "unknown"))
   ([app system version]
-     (DebugSender
+     (DebugSender false
       (JsonSender
        (FollowingSender
         (AppSender (get-agent-details system version) app)

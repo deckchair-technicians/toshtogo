@@ -19,6 +19,20 @@
   {:outcome      :more-work
    :dependencies (concat [dependency] dependencies)})
 
+(defn try-later
+  ([contract-due]
+     {:outcome       :try-later
+      :contract_due contract-due})
+  ([contract-due error-text]
+     (assoc (try-later contract-due)
+       :error error-text)))
+
+(defn contract-req
+  ([job-id]
+     {:job_id job-id})
+  ([job-id contract-due]
+     (assoc (contract-req job-id) :contract_due contract-due)))
+
 (defn depends-on [contract]
   {:depends_on_job_id (contract :job_id) :order-by :job_created})
 
@@ -32,7 +46,7 @@
 
   (get-contracts [this params])
   (get-contract  [this params])
-  (new-contract! [this job-id])
+  (new-contract! [this contract])
 
   (request-work! [this commitment-id tags agent])
   (complete-work! [this commitment-id result]))

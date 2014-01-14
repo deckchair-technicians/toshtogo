@@ -1,5 +1,7 @@
 (ns toshtogo.util.core
-(:require [clojure.pprint :refer [pprint]]))
+  (:require
+   [clj-time.format :as tf]
+   [clojure.pprint :refer [pprint]]))
 
 
 (defn ppstr [x]
@@ -31,6 +33,10 @@
          (println x))
        x)))
 
+
+(defn parse-datetime [s]
+  (when s
+    (tf/parse (tf/formatters :date-time-parser) s)))
 
 (defn uuid
   ([]

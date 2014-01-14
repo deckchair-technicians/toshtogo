@@ -1,14 +1,15 @@
 (ns toshtogo.test.handler
-  (:require [midje.sweet :refer :all]
+  (:require [clj-time.core :refer [now minutes plus]]
+            [midje.sweet :refer :all]
             [ring.adapter.jetty :refer [run-jetty]]
             [toshtogo.web.handler :refer [app]]
             [toshtogo.client :refer :all]
-            [toshtogo.api :refer [success error add-dependencies]]
+            [toshtogo.api :refer [success error add-dependencies try-later]]
             [toshtogo.util.core :refer [uuid uuid-str debug]]))
 
 (def client (app-sender-client app))
 
-#_(fact "Work can be requesteed"
+(fact "Work can be requesteed"
   (let [job-id (uuid)
         tag    (uuid-str)]
 
@@ -18,7 +19,7 @@
     (request-work! client [tag]) => (contains {:job_id (str job-id)
                                                :request_body {:a-field "field value"}})))
 
-#_(fact "Work can only be requested once"
+(fact "Work can only be requested once"
   (let [job-id (uuid)
         tag    (uuid-str)]
 
@@ -28,7 +29,7 @@
     (request-work! client [tag])
     (request-work! client [tag]) => nil))
 
-#_(fact "Agents can request work and then complete it"
+(fact "Agents can request work and then complete it"
   (let [job-id (uuid)
         tag    (uuid-str)]
 
@@ -45,7 +46,7 @@
     (get-job client job-id)
     => (contains {:outcome "success" :result_body {:response-field "all good"}})))
 
-#_(fact "Agents can report errors"
+(fact "Agents can report errors"
   (let [job-id (uuid)
         tag    (uuid-str)]
 
@@ -167,3 +168,23 @@
           => (contains [(contains {:result_body {:first-dep "first dep"}})
                         (contains {:result_body {:second-dep "second dep"}})]
                        :in-any-order))))))
+
+(facts "Try again later"
+  (let [job-id          (uuid)
+        job-tag         (uuid-str)
+        before-due-time (now)
+        due-time        (plus before-due-time (minutes 1))]
+
+    (put-job! client job-id {:tags [job-tag] :request_body {}})
+
+    (let [delay (fn [job] (try-later due-time "some error happened"))]
+      @(do-work! client [job-tag] delay)) => truthy
+
+    (debug "BEFORE" before-due-time)
+    (debug "DUE" due-time)
+
+    (request-work! client [job-tag]) => nil
+    (provided (now) => before-due-time)
+
+    @(do-work! client [job-tag] (fn [job] (success {:result 1}))) => truthy
+    (provided (now) => due-time)))
