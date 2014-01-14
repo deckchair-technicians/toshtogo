@@ -9,7 +9,7 @@
 
 (def client (app-sender-client app))
 
-(fact "Work can be requesteed"
+(fact "Work can be requested"
   (let [job-id (uuid)
         tag    (uuid-str)]
 
@@ -113,8 +113,9 @@
                       :request_body {:parent-job "parent job"}})
 
     (let [add-deps       (fn [job]
-                           (add-dependencies (job-map {:first-dep "first dep"} [child-tag])
-                                             (job-map {:second-dep "second dep"} [child-tag])))
+                           (add-dependencies
+                            (job-map {:first-dep "first dep"} [child-tag])
+                            (job-map {:second-dep "second dep"} [child-tag])))
           complete-child (fn [job] (success (job :request_body)))]
 
       @(do-work! client [parent-tag] add-deps) => truthy
@@ -137,17 +138,20 @@
                        :in-any-order))))))
 
 (facts "Requesting more work"
-  (let [job-id (uuid)
-        parent-tag    (uuid-str)
-        child-tag     (uuid-str)]
+  (let [job-id     (uuid)
+        parent-tag (uuid-str)
+        child-tag  (uuid-str)]
 
-    (put-job! client
-              job-id {:tags [parent-tag]
-                      :request_body {:parent-job "parent job"}})
+    (put-job!
+     client
+     job-id
+     {:tags [parent-tag]
+      :request_body {:parent-job "parent job"}})
 
     (let [add-deps       (fn [job]
-                           (add-dependencies (job-map {:first-dep "first dep"} [child-tag])
-                                             (job-map {:second-dep "second dep"} [child-tag])))
+                           (add-dependencies
+                            (job-map {:first-dep "first dep"} [child-tag])
+                            (job-map {:second-dep "second dep"} [child-tag])))
           complete-child (fn [job] (success (job :request_body)))]
 
       @(do-work! client [parent-tag] add-deps) => truthy
@@ -179,9 +183,6 @@
 
     (let [delay (fn [job] (try-later due-time "some error happened"))]
       @(do-work! client [job-tag] delay)) => truthy
-
-    (debug "BEFORE" before-due-time)
-    (debug "DUE" due-time)
 
     (request-work! client [job-tag]) => nil
     (provided (now) => before-due-time)
