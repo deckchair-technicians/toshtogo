@@ -1,11 +1,17 @@
 (ns toshtogo.api)
 
-(defn job-map
+(defn job-req
   [id agent-details body tags]
   {:job_id id
    :agent agent-details
    :tags tags
    :request_body body})
+
+(defn contract-req
+  ([job-id]
+     {:job_id job-id})
+  ([job-id contract-due]
+     (assoc (contract-req job-id) :contract_due contract-due)))
 
 (defn success [response-body]
   {:outcome :success
@@ -26,12 +32,6 @@
   ([contract-due error-text]
      (assoc (try-later contract-due)
        :error error-text)))
-
-(defn contract-req
-  ([job-id]
-     {:job_id job-id})
-  ([job-id contract-due]
-     (assoc (contract-req job-id) :contract_due contract-due)))
 
 (defn depends-on [contract]
   {:depends_on_job_id (contract :job_id) :order-by :job_created})

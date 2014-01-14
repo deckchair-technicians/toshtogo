@@ -11,7 +11,7 @@
 (def agent-details (get-agent-details "test" "0.0.0"))
 
 (defn given-job-exists [api id tags]
-       (put-job! api (job-map id agent-details {:some-data (uuid)} tags)))
+       (put-job! api (job-req id agent-details {:some-data (uuid)} tags)))
 
 (defn given-job-succeeded [api job-id]
   (let [job      (get-job api job-id)

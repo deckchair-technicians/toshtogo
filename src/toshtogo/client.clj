@@ -3,12 +3,12 @@
             [toshtogo.api :refer [success error]]
             [toshtogo.client.senders :refer :all]))
 
-(defn job-map
+(defn job-req
   ([body tags]
      {:tags tags
        :request_body body})
   ([job-id body tags]
-      (assoc (job-map body tags) :job_id job-id)))
+      (assoc (job-req body tags) :job_id job-id)))
 
 (defprotocol Client
   (put-job! [this job-id job])

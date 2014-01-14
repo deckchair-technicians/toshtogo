@@ -114,8 +114,8 @@
 
     (let [add-deps       (fn [job]
                            (add-dependencies
-                            (job-map {:first-dep "first dep"} [child-tag])
-                            (job-map {:second-dep "second dep"} [child-tag])))
+                            (job-req {:first-dep "first dep"} [child-tag])
+                            (job-req {:second-dep "second dep"} [child-tag])))
           complete-child (fn [job] (success (job :request_body)))]
 
       @(do-work! client [parent-tag] add-deps) => truthy
@@ -150,8 +150,8 @@
 
     (let [add-deps       (fn [job]
                            (add-dependencies
-                            (job-map {:first-dep "first dep"} [child-tag])
-                            (job-map {:second-dep "second dep"} [child-tag])))
+                            (job-req {:first-dep "first dep"} [child-tag])
+                            (job-req {:second-dep "second dep"} [child-tag])))
           complete-child (fn [job] (success (job :request_body)))]
 
       @(do-work! client [parent-tag] add-deps) => truthy

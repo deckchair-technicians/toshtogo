@@ -9,7 +9,7 @@
 
 (fact "Job records are the right shape"
   (let [agent-details (get-agent-details "test" "test")]
-    (job-map ...id... agent-details {:data "value"} [:tag-one :tag-two])
+    (job-req ...id... agent-details {:data "value"} [:tag-one :tag-two])
     => {:job_id ...id...
         :agent agent-details
         :tags [:tag-one :tag-two]
@@ -24,8 +24,8 @@
          tag-two   (uuid-str)
          {:keys [agents api]} (sql-deps cnxn)]
 
-     (put-job! api (job-map id-one (get-agent-details "test" "0.0.0") {:some-data 123} [tag-one]))
-     (put-job! api (job-map id-two  (get-agent-details "test" "0.0.0") {:some-data 456} [tag-two]))
+     (put-job! api (job-req id-one (get-agent-details "test" "0.0.0") {:some-data 123} [tag-one]))
+     (put-job! api (job-req id-two  (get-agent-details "test" "0.0.0") {:some-data 456} [tag-two]))
 
      (get-contracts api {:state :waiting :tags [tag-one]})
      => (contains (contains {:job_id id-one})))))
