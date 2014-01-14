@@ -71,7 +71,6 @@
               (params :with-dependencies) (merge-dependencies this)))
 
     (new-contract! [this contract]
-      (debug "CONTRACT" contract)
       (let [job-id                (contract :job_id)
             contract-due          (:contract_due contract (minus (now) (seconds 5)))
             last-contract         (get-contract this {:job_id job-id :latest_contract true})
