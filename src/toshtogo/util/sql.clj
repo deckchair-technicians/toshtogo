@@ -85,7 +85,8 @@
   (apply sql/insert!
          cnxn
          table
-         (map #(map-vals % fix-type) records)))
+         (concat (map #(map-vals % fix-type) records)
+                 [:transaction? false])))
 
 (defn query [cnxn sql params]
   "Takes some sql including references to parameters in the form

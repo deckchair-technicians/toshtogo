@@ -23,8 +23,7 @@
   (let [job-id (uuid)
         tag    (uuid-str)]
 
-    (put-job! client job-id {:tags [tag]
-                             :request_body {:a-field "field value"}})
+    (put-job! client job-id (job-req {:a-field "field value"} [tag]))
 
     (request-work! client [tag])
     (request-work! client [tag]) => nil))
@@ -33,8 +32,7 @@
   (let [job-id (uuid)
         tag    (uuid-str)]
 
-    (put-job! client job-id {:tags [tag]
-                             :request_body {:a-field "field value"}})
+    (put-job! client job-id (job-req {:a-field "field value"} [tag]))
 
     (let [func                      (fn [job] (success {:response-field "all good"}))
           {:keys [contract result]} @(do-work! client [tag] func)]
@@ -50,8 +48,7 @@
   (let [job-id (uuid)
         tag    (uuid-str)]
 
-    (put-job! client job-id {:tags [tag]
-                             :request_body {:a-field "field value"}})
+    (put-job! client job-id (job-req {:a-field "field value"} [tag]))
 
     (let [func                      (fn [job] (error "something went wrong"))
           {:keys [contract result]} @(do-work! client [tag] func)]
@@ -63,21 +60,17 @@
     (get-job client job-id)
     => (contains {:outcome "error" :error "something went wrong"})))
 
-(facts "Job dependencies"
+(facts "Jobs can have dependencies"
   (let [job-id (uuid)
         parent-tag    (uuid-str)
         child-tag     (uuid-str)]
 
     (put-job!
      client
-     job-id {:tags [parent-tag]
-             :request_body {:a "field value"}
-             :dependencies
-             [{:tags [child-tag]
-               :request_body {:b "child one"}}
-              {:tags [child-tag]
-               :request_body {:b "child two"}}
-              ]})
+     job-id (job-req
+             {:a "field value"} [parent-tag]
+             [(job-req {:b "child one"} [child-tag])
+              (job-req {:b "child two"} [child-tag])]))
 
     (fact "No contract is created for parent job"
       (request-work! client [parent-tag]) => nil)
@@ -108,9 +101,7 @@
         parent-tag    (uuid-str)
         child-tag     (uuid-str)]
 
-    (put-job! client
-              job-id {:tags [parent-tag]
-                      :request_body {:parent-job "parent job"}})
+    (put-job! client job-id (job-req {:parent-job "parent job"} [parent-tag]))
 
     (let [add-deps       (fn [job]
                            (add-dependencies
@@ -137,16 +128,13 @@
                         (contains {:result_body {:second-dep "second dep"}})]
                        :in-any-order))))))
 
+
 (facts "Requesting more work"
   (let [job-id     (uuid)
         parent-tag (uuid-str)
         child-tag  (uuid-str)]
 
-    (put-job!
-     client
-     job-id
-     {:tags [parent-tag]
-      :request_body {:parent-job "parent job"}})
+    (put-job! client job-id (job-req {:parent-job "parent job"} [parent-tag]))
 
     (let [add-deps       (fn [job]
                            (add-dependencies
@@ -179,7 +167,7 @@
         before-due-time (now)
         due-time        (plus before-due-time (minutes 1))]
 
-    (put-job! client job-id {:tags [job-tag] :request_body {}})
+    (put-job! client job-id (job-req [] [job-tag]))
 
     (let [delay (fn [job] (try-later due-time "some error happened"))]
       @(do-work! client [job-tag] delay)) => truthy

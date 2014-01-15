@@ -6,12 +6,12 @@
 (defn job-req
   ([body tags]
      {:tags tags
-       :request_body body})
-  ([job-id body tags]
-      (assoc (job-req body tags) :job_id job-id)))
+      :request_body body})
+  ([body tags dependencies]
+     (assoc (job-req body tags) :dependencies dependencies)))
 
 (defprotocol Client
-  (put-job! [this job-id job])
+  (put-job! [this job-id job-req])
   (get-job [this job-id])
   (request-work! [this tags])
   (complete-work! [this commitment-id result])
@@ -19,10 +19,10 @@
 
 (deftype SenderClient [sender]
   Client
-  (put-job! [this job-id job]
+  (put-job! [this job-id job-req]
     (PUT! sender
           (str "/api/jobs/" job-id)
-          job))
+          job-req))
 
   (get-job [this job-id]
     (GET sender (str "/api/jobs/" job-id)))
