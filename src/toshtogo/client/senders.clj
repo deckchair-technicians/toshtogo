@@ -52,6 +52,8 @@
     (GET [this location]
         (app (request :get (str "http://toshtogo.test/" (str/replace-first location #"^/" "")))))))
 
+
+
 (defn DebugSender [should-debug sender]
   (if should-debug
     (reify Sender

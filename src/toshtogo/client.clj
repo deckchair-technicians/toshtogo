@@ -1,7 +1,8 @@
 (ns toshtogo.client
   (:require [toshtogo.util.core :refer [uuid]]
             [toshtogo.api :refer [success error]]
-            [toshtogo.client.senders :refer :all]))
+            [toshtogo.client.senders :refer :all]
+            [toshtogo.client.http :refer :all]))
 
 (defn job-req
   ([body tags]
@@ -48,3 +49,6 @@
 
 (defn app-sender-client [app]
   (SenderClient. (app-sender app)))
+
+(defn http-sender-client [app]
+  (SenderClient. (http-sender app)))

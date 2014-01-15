@@ -5,8 +5,11 @@
             [clojure.java.jdbc :as sql]
             [toshtogo.web.handler :refer [app]]
             [toshtogo.client :refer :all]
+            [toshtogo.client.http :refer :all]
             [toshtogo.api :refer [success error add-dependencies try-later]]
             [toshtogo.util.core :refer [uuid uuid-str debug]]))
+
+#_(def client (http-sender-client "http://localhost:3000/"))
 
 (def client (app-sender-client app))
 
