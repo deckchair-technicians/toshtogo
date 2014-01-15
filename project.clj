@@ -7,7 +7,7 @@
                  [org.flatland/useful "0.10.3"]
                  [me.raynes/fs "1.4.5"]
                  [cheshire "5.3.0"]
-                 [org.clojure/java.jdbc "0.3.0-beta1"]
+                 [org.clojure/java.jdbc "0.3.2"]
                  [postgresql/postgresql "8.4-702.jdbc4"]
                  [ring/ring-jetty-adapter "1.2.1"]
                  [ring/ring-json "0.2.0"]
@@ -26,7 +26,7 @@
 
   :main toshtogo.core
 
-  :aot [toshtogo.web.IdempotentPutException]
+  :aot [toshtogo.web.IdempotentPutException toshtogo.util.OptimisticLockingException]
 
   :ring {:handler toshtogo.web.handler/app}
 

@@ -1,11 +1,12 @@
 (ns toshtogo.api)
 
 (defn job-req
-  [id agent-details body tags]
-  {:job_id id
-   :agent agent-details
-   :tags tags
-   :request_body body})
+  [id agent-details body tags & dependencies]
+  (cond-> {:job_id       id
+           :agent        agent-details
+           :tags         tags
+           :request_body body}
+          dependencies (assoc :dependencies dependencies)))
 
 (defn contract-req
   ([job-id]

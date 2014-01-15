@@ -88,6 +88,15 @@
          (concat (map #(map-vals % fix-type) records)
                  [:transaction? false])))
 
+(defn update! [cnxn table map where-clause]
+  #_(println "Update" table (ppstr [map where-clause]))
+  (sql/update!
+    cnxn
+    table
+    map
+    where-clause
+    :transaction? false))
+
 (defn query [cnxn sql params]
   "Takes some sql including references to parameters in the form
    :parameter-name and a map of named parameters"

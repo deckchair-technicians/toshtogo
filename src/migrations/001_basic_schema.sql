@@ -15,7 +15,8 @@ create table jobs (
   job_id           uuid           primary key,
   requesting_agent uuid           not null references agents(agent_id),
   job_created      timestamp      not null,
-  request_body     text           not null
+  request_body     text           not null,
+  contracts_completed integer     default 0 not null
 );
 
 create index job_created_idx on jobs (job_created);

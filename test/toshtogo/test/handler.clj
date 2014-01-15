@@ -2,12 +2,15 @@
   (:require [clj-time.core :refer [now minutes plus]]
             [midje.sweet :refer :all]
             [ring.adapter.jetty :refer [run-jetty]]
+            [clojure.java.jdbc :as sql]
             [toshtogo.web.handler :refer [app]]
             [toshtogo.client :refer :all]
             [toshtogo.api :refer [success error add-dependencies try-later]]
             [toshtogo.util.core :refer [uuid uuid-str debug]]))
 
 (def client (app-sender-client app))
+
+(defn return-success [job] (success {:result 1}))
 
 (fact "Work can be requested"
   (let [job-id (uuid)
@@ -81,9 +84,11 @@
         => (contains {:request_body {:b "child one"}}))
 
       (fact "Parent job is not ready until all dependencies complete"
-        (request-work! client [parent-tag]) => nil)
+        (request-work! client [parent-tag]) => nil
+        (get-job client job-id) => (contains {:contracts_completed 1}))
 
       @(do-work! client [child-tag] func)
+      (get-job client job-id) => (contains {:contracts_completed 2})
 
       (fact (str "Parent job is released when dependencies are complete, "
                  "with dependency responses merged into its request")
@@ -175,5 +180,5 @@
     (request-work! client [job-tag]) => nil
     (provided (now) => before-due-time)
 
-    @(do-work! client [job-tag] (fn [job] (success {:result 1}))) => truthy
+    @(do-work! client [job-tag] return-success) => truthy
     (provided (now) => due-time)))

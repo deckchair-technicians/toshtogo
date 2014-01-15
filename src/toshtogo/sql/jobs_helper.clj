@@ -3,8 +3,10 @@
             [pallet.map-merge :refer [merge-keys]]
             [clj-time.core :refer [now]]
             [cheshire.core :as json]
-			[toshtogo.api :refer :all]
-            [toshtogo.util.core :refer [uuid debug]]))
+            [toshtogo.api :refer :all]
+            [toshtogo.util.core :refer [uuid debug]]
+            [toshtogo.util.sql :as tsql])
+  (:import [toshtogo.util OptimisticLockingException]))
 
 (defn dependency-record [parent-job-id child-job]
   {:dependency_id (uuid)
@@ -112,3 +114,31 @@
        [(assoc out-params k v) clauses]))
    [{} []]
    params))
+
+(defn get-completed-contract-count [cnxn job-id]
+  (:contracts_completed (tsql/query-single
+                                          cnxn
+                                          "select contracts_completed from jobs where job_id = :job_id"
+                                          {:job_id job-id})))
+
+(defn update-completed-contract-count! [cnxn job-id]
+  (let [prev-count  (get-completed-contract-count cnxn job-id)]
+    (when-not (= 1 (first (tsql/update! cnxn :jobs
+                                        {:contracts_completed (inc prev-count)}
+                                                 ["contracts_completed = ? and job_id = ?"
+                                                  prev-count  job-id])))
+      (throw (OptimisticLockingException.
+              (str "Contracts completed count updated in another transaction for job "
+                   job-id))))))
+
+(defn handle-contract-completion! [cnxn api contract]
+  (when (= :success (contract :outcome))
+    (doseq [parent-job (get-jobs api (depends-on contract))]
+      (update-completed-contract-count! cnxn  (parent-job :job_id))
+      (let [dependency-outcomes (dependency-outcomes api parent-job)]
+        (when (every? #(= :success %)  dependency-outcomes)
+          (new-contract! api (contract-req (parent-job :job_id))))))))
+
+(defn handle-new-job! [api job]
+  (when-not (job :dependencies)
+    (new-contract! api (contract-req (job :job_id)))))

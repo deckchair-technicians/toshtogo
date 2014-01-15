@@ -38,7 +38,7 @@
    request map under the :cnxn key."
   [handler]
   (fn [req]
-    (sql/db-transaction [cnxn db]
+    (sql/with-db-transaction [cnxn db]
       (handler (assoc req :cnxn cnxn)))))
 
 (defn wrap-dependencies

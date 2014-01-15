@@ -134,16 +134,9 @@
 
         (throw (NullPointerException. (str "Could not find commitment '" commitment-id "'")))))))
 
-(defn handle-new-job! [api job]
-  (when-not (job :dependencies)
-    (new-contract! api (contract-req (job :job_id)))))
-
-(defn handle-contract-completion! [api contract]
-  (when (= :success (contract :outcome))
-    (doseq [parent-job (get-jobs api (depends-on contract))]
-      (let [dependency-outcomes (dependency-outcomes api parent-job)]
-        (when (every? #(= :success %)  dependency-outcomes)
-          (new-contract! api (contract-req (parent-job :job_id))))))))
-
 (defn sql-api [cnxn agents]
-  (SqlApi cnxn handle-new-job! handle-contract-completion! agents))
+  (SqlApi
+   cnxn
+   handle-new-job!
+   (partial handle-contract-completion! cnxn)
+   agents))
