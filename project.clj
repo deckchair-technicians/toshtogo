@@ -1,4 +1,4 @@
-(defproject toshtogo "0.1.0"
+(defproject toshtogo "0.2.0-SNAPSHOT"
 
   :description "An asynchronous job manager"
 
