@@ -1,7 +1,8 @@
 (ns toshtogo.util.core
   (:require
    [clj-time.format :as tf]
-   [clojure.pprint :refer [pprint]]))
+   [clojure.pprint :refer [pprint]]
+   [clojure.stacktrace :as stacktrace]))
 
 
 (defn ppstr [x]
@@ -45,3 +46,7 @@
      (when s (java.util.UUID/fromString s))))
 
 (defn uuid-str [] (str (uuid)))
+
+(defn cause-trace
+  [e]
+  (with-out-str (stacktrace/print-cause-trace e)))

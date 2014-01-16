@@ -1,8 +1,9 @@
 (ns toshtogo.client
-  (:require [toshtogo.util.core :refer [uuid]]
+  (:require [toshtogo.util.core :refer [uuid cause-trace]]
             [toshtogo.api :refer [success error]]
             [toshtogo.client.senders :refer :all]
-            [toshtogo.client.http :refer :all]))
+            [toshtogo.client.http :refer :all]
+            [clojure.stacktrace :as stacktrace]))
 
 (defn job-req
   ([body tags]
@@ -10,6 +11,13 @@
       :request_body body})
   ([body tags dependencies]
      (assoc (job-req body tags) :dependencies dependencies)))
+
+(defn with-exception-handling
+  [f contract]
+  (try
+    (f contract)
+    (catch Throwable t
+      (error (cause-trace t)))))
 
 (defprotocol Client
   (put-job! [this job-id job-req])
@@ -42,7 +50,7 @@
   (do-work! [this tags f]
     (future
       (when-let [contract (request-work! this tags)]
-        (let [result (f contract)]
+        (let [result (with-exception-handling f contract)]
           (complete-work! this (contract :commitment_id) result)
           {:contract contract
            :result   result})))))

@@ -6,7 +6,7 @@
             [toshtogo.util.json :as tjson]
             [toshtogo.agents :refer [get-agent-details]]))
 
-(defn hostname
+(defn- hostname
   []
   (try
     (.getHostName (java.net.InetAddress/getLocalHost))

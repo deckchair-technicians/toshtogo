@@ -66,6 +66,22 @@
     (get-job client job-id)
     => (contains {:outcome "error" :error "something went wrong"})))
 
+(fact "Client can report unhandled exceptions"
+  (let [job-id (uuid)
+        tag    (uuid-str)]
+
+    (put-job! client job-id (job-req {:a-field "field value"} [tag]))
+
+    (let [func                      (fn [job] (throw (Exception. "WTF")))
+          {:keys [contract result]} @(do-work! client [tag] func)]
+      contract
+      => (contains {:job_id (str job-id) :request_body {:a-field "field value"}})
+      result
+      => (contains {:outcome :error :error (contains "WTF")}))
+
+    (get-job client job-id)
+    => (contains {:outcome "error" :error (contains "WTF")})))
+
 (facts "Jobs can have dependencies"
   (let [job-id (uuid)
         parent-tag    (uuid-str)
