@@ -50,5 +50,5 @@
 (defn app-sender-client [app]
   (SenderClient. (app-sender app)))
 
-(defn http-sender-client [app]
-  (SenderClient. (http-sender app)))
+(defn http-sender-client [base-path]
+  (SenderClient. (http-sender base-path)))
