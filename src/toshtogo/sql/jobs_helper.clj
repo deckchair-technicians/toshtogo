@@ -2,6 +2,7 @@
   (:require [flatland.useful.map :refer [update update-each]]
             [pallet.map-merge :refer [merge-keys]]
             [clj-time.core :refer [now]]
+            [clj-time.coerce :as tc]
             [cheshire.core :as json]
             [toshtogo.api :refer :all]
             [toshtogo.util.core :refer [uuid debug]]
@@ -83,11 +84,12 @@
       (assoc :agent job-agent)))
 
 (defn normalise-job [job]
-    (-> job
+  (-> job
       (dissoc :tag)
       (dissoc :job_id_2 :job_id_3 :commitment_contract :outcome_id)
       (update :outcome keyword)
-      (update-each [:request_body :result_body] #(json/parse-string  % keyword))))
+      (update :last_heartbeat #(when % (tc/from-sql-time %)))
+      (update-each [:request_body :result_body] #(json/parse-string % keyword))))
 
 (defn from-sql [job-with-tags]
   (normalise-job

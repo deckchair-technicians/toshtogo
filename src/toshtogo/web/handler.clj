@@ -1,16 +1,16 @@
 (ns toshtogo.web.handler
-  (:use compojure.core )
-  (:require [compojure.handler :as handler]
+  (:require [compojure.core :refer :all]
+            [compojure.handler :as handler]
             [compojure.route :as route]
             [ring.middleware.json :refer [wrap-json-response wrap-json-body]]
             [ring.util.response :as resp]
             [flatland.useful.map :refer [update]]
             [toshtogo.web.middleware :refer [wrap-body-hash
-                                         wrap-db-transaction
-                                         wrap-dependencies
-                                         wrap-print-response
-                                         wrap-print-request
-                                         wrap-retry-on-exceptions]]
+                                             wrap-db-transaction
+                                             wrap-dependencies
+                                             wrap-print-response
+                                             wrap-print-request
+                                             wrap-retry-on-exceptions]]
             [toshtogo.api :refer :all]
             [toshtogo.util.core :refer [uuid ppstr debug parse-datetime]])
   (:import [toshtogo.web IdempotentPutException]
@@ -47,16 +47,20 @@
               {:status 204})
            #(commitment-redirect commitment-id))))
 
-      (PUT "/:commitment-id" [commitment-id]
-        (let [commitment-id (uuid commitment-id)]
-          (check-idempotent!
-           :complete-commitment commitment-id
-           #(do (complete-work! api commitment-id
-                                (-> body
-                                    (update :outcome keyword)
-                                    (update :contract_due parse-datetime)))
-                (commitment-redirect commitment-id))
-           #(commitment-redirect commitment-id))))
+      (context "/:commitment-id" [commitment-id]
+        (PUT "/" []
+            (let [commitment-id (uuid commitment-id)]
+              (check-idempotent!
+               :complete-commitment commitment-id
+               #(do (complete-work! api commitment-id
+                                    (-> body
+                                        (update :outcome keyword)
+                                        (update :contract_due parse-datetime)))
+                    (commitment-redirect commitment-id))
+               #(commitment-redirect commitment-id))))
+
+        (POST "/heartbeat" []
+            (heartbeat! api commitment-id)))
 
       (GET "/:commitment-id" [commitment-id]
         {:body  (get-contract

@@ -102,6 +102,12 @@
                           :return-jobs       true
                           :with-dependencies true}))
 
+    (heartbeat! [this commitment-id]
+      (let [heartbeat-time (now)]
+        (tsql/update! cnxn :agent_commitments
+                      {:last_heartbeat heartbeat-time}
+                      ["commitment_id = ?" (uuid commitment-id)])))
+
     (complete-work! [this commitment-id result]
       (if-let [contract (get-contract this {:commitment_id commitment-id})]
         (let [outcome       (result :outcome)

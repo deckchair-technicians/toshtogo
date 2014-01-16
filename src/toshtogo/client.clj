@@ -1,5 +1,7 @@
 (ns toshtogo.client
-  (:require [toshtogo.util.core :refer [uuid cause-trace]]
+  (:require [clj-time.format :as tf]
+            [flatland.useful.map :refer [update]]
+            [toshtogo.util.core :refer [uuid cause-trace]]
             [toshtogo.api :refer [success error]]
             [toshtogo.client.senders :refer :all]
             [toshtogo.client.http :refer :all]
@@ -12,10 +14,17 @@
   ([body tags dependencies]
      (assoc (job-req body tags) :dependencies dependencies)))
 
+(def heartbeat-time 1000)
+
 (defn with-exception-handling
-  [f contract]
+  [heartbeat! f contract]
   (try
-    (f contract)
+    (let [work-future (future (f contract))]
+      (doseq [done? (take-while false? (repeatedly (fn [] (or (future-cancelled? work-future)
+                                                             (future-done? work-future)))))]
+        (Thread/sleep heartbeat-time)
+        (when (:cancel (heartbeat! contract)) (future-cancel work-future)))
+      @work-future)
     (catch Throwable t
       (error (cause-trace t)))))
 
@@ -34,7 +43,7 @@
           job-req))
 
   (get-job [this job-id]
-    (GET sender (str "/api/jobs/" job-id)))
+    (update (GET sender (str "/api/jobs/" job-id)) :last_heartbeat #(when % (tf/parse (tf/formatters :date-time) %))))
 
   (request-work! [this tags]
     (PUT! sender
@@ -50,7 +59,7 @@
   (do-work! [this tags f]
     (future
       (when-let [contract (request-work! this tags)]
-        (let [result (with-exception-handling f contract)]
+        (let [result (with-exception-handling (fn [c] (POST! sender (str "/api/commitments/" (c :commitment_id) "/heartbeat") {})) f contract)]
           (complete-work! this (contract :commitment_id) result)
           {:contract contract
            :result   result})))))

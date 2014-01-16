@@ -42,12 +42,13 @@
 
 (defprotocol Toshtogo
   (put-job! [this job])
-  (get-job [this job-id])
+  (get-job  [this job-id])
   (get-jobs [this params])
 
   (get-contracts [this params])
   (get-contract  [this params])
   (new-contract! [this contract])
 
-  (request-work! [this commitment-id tags agent])
+  (request-work!  [this commitment-id tags agent])
+  (heartbeat!     [this commitment-id])
   (complete-work! [this commitment-id result]))

@@ -5,15 +5,24 @@
             [toshtogo.util.json :as tjson]
             [toshtogo.client.senders :refer :all]))
 
-(defn HttpSender [agent-details base-path]
-  (reify Sender
-    (PUT! [this location message]
-        @(http/put (str base-path (str/replace-first location #"^/" ""))
-                  {:body (tjson/encode (assoc  message :agent agent-details))
-                   :headers {"Content-Type" "application/json"}}))
 
-    (GET [this location]
-        @(http/get (str base-path (str/replace-first location #"^/" ""))))))
+
+(defn HttpSender [agent-details base-path]
+  (letfn [(prepare-request
+            [location message]
+            [(str base-path (str/replace-first location #"^/" ""))
+              {:body (tjson/encode (assoc  message :agent agent-details))
+               :headers {"Content-Type" "application/json"}}])]
+
+    (reify Sender
+      (POST! [this location message]
+        @(apply http/post (prepare-request location message)))
+
+      (PUT! [this location message]
+        @(apply http/put (prepare-request location message)))
+
+      (GET [this location]
+          @(http/get (str base-path (str/replace-first location #"^/" "")))))))
 
 (defn http-sender
   ([base-path]

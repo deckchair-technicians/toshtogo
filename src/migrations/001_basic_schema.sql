@@ -54,7 +54,8 @@ create table agent_commitments (
   commitment_id       uuid        primary key,
   commitment_contract uuid        unique not null references contracts(contract_id),
   commitment_agent    uuid        not null references agents(agent_id),
-  contract_claimed    timestamp   not null
+  contract_claimed    timestamp   not null,
+  last_heartbeat      timestamp   default now()
 );
 
 create index commitment_claimed_idx  on agent_commitments (contract_claimed);

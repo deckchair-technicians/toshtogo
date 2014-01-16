@@ -88,14 +88,16 @@
          (concat (map #(map-vals % fix-type) records)
                  [:transaction? false])))
 
-(defn update! [cnxn table map where-clause]
-  #_(println "Update" table (ppstr [map where-clause]))
-  (sql/update!
-    cnxn
-    table
-    map
-    where-clause
-    :transaction? false))
+(defn update! [cnxn table set-map where-clause]
+  #_(println "Update" table (ppstr [set-map where-clause]))
+  (try
+    (sql/update!
+     cnxn
+     table
+     (map-vals set-map fix-type)
+     (map fix-type where-clause)
+     :transaction? false)
+    (catch java.sql.BatchUpdateException e (throw (.getNextException e)))))
 
 (defn query [cnxn sql params]
   "Takes some sql including references to parameters in the form
