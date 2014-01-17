@@ -70,6 +70,49 @@
       (get-contract api {:job_id job-id})
       => (contains {:outcome :cancelled}))))
 
+(facts "Should be able to pause a job that has finished"
+  (sql/with-db-transaction
+    [cnxn (dbs :dev)]
+    (let [job-id               (uuid)
+          tag                  (uuid-str)
+          agent                (get-agent-details "test" "0.0.0")
+          commitment-id        (uuid)
+          {:keys [agents api]} (sql-deps cnxn)]
+
+      (put-job! api (job-req job-id agent {:some-data 123} [tag]))
+
+      (request-work! api commitment-id [tag] agent) => truthy
+      (complete-work! api commitment-id (success {}))
+
+      (pause-job! api job-id)
+
+      (get-contract api {:job_id job-id})
+      => (contains {:outcome :success}))))
+
+(facts "Should be able to pause a job with dependencies"
+  (sql/with-db-transaction
+    [cnxn (dbs :dev)]
+    (let [job-id-1             (uuid)
+          job-id-1-1           (uuid)
+          job-id-1-2           (uuid)
+          job-id-1-2-1         (uuid)
+          tag                  (uuid-str)
+          agent                (get-agent-details "test" "0.0.0")
+          commitment-id        (uuid)
+          {:keys [agents api]} (sql-deps cnxn)]
+
+      (put-job! api (job-req job-id-1 agent {} [tag]
+                             (job-req job-id-1-1 agent {} [tag])
+                             (job-req job-id-1-2 agent {} [tag]
+                                      (job-req job-id-1-2-1 agent {} [tag]))))
+
+      (pause-job! api job-id-1)
+
+      (get-contract api {:job_id job-id-1-2-1})
+      => (contains {:outcome :cancelled})
+
+      (request-work! api (uuid) [tag] agent) => nil)))
+
     (future-fact "Should be able to pause a job with dependencies")
 
 (future-fact "Get job returns job tags")

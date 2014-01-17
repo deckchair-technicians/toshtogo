@@ -61,7 +61,7 @@
         (when (= :waiting (:outcome contract))
           (let [commitment-id (ensure-commitment-id! cnxn agents contract (get-agent-details "toshtogo" "1"))]
             (complete-work! this commitment-id (cancelled)))))
-      (doseq [dependency (:dependencies (get-job this job-id))]
+      (doseq [dependency  (get-jobs this {:dependency_of_job_id job-id})]
         (pause-job! this (dependency :job_id))))
 
     (get-contracts [this params]

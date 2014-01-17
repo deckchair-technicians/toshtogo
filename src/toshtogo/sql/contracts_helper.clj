@@ -107,8 +107,7 @@
    :contract_claimed    (now)})
 
 (defn merge-dependencies [contract api]
-  (if (nil? contract)
-    nil
+  (when contract
     (assoc contract :dependencies (get-jobs api {:dependency_of_job_id (contract :job_id)}))))
 
 (defn insert-commitment!
