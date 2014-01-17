@@ -4,6 +4,8 @@
             [clj-time.core :refer [now]]
             [clojure.string :as str]
             [toshtogo.api :refer :all]
+            [toshtogo.agents :refer [agent!]]
+            [toshtogo.util.sql :as tsql]
             [toshtogo.util.core :refer [uuid debug]]))
 
 (defn contract-record [job-id contract-number contract-due]
@@ -108,3 +110,21 @@
   (if (nil? contract)
     nil
     (assoc contract :dependencies (get-jobs api {:dependency_of_job_id (contract :job_id)}))))
+
+(defn insert-commitment!
+  [cnxn agents commitment-id contract agent-details]
+  (tsql/insert!
+   cnxn
+   :agent_commitments
+   (commitment-record
+    commitment-id
+    contract
+    (agent! agents agent-details))))
+
+(defn ensure-commitment-id!
+  [cnxn agents contract agent-details]
+  (if-let [commitment-id (contract :commitment_id)]
+    commitment-id
+    (let [commitment-id (uuid)]
+      (insert-commitment! cnxn agents commitment-id contract agent-details)
+      commitment-id)))

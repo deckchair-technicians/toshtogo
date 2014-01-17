@@ -8,7 +8,7 @@
             [toshtogo.api :refer :all]
             [toshtogo.sql.jobs-helper :refer :all]
             [toshtogo.sql.contracts-helper :refer :all]
-            [toshtogo.agents :refer [agent!]]
+            [toshtogo.agents :refer [agent! get-agent-details]]
             [toshtogo.util.sql :as tsql]))
 
 (defn unfinished-contract [job-id]
@@ -56,6 +56,14 @@
     (get-job [this job-id]
       (first (get-jobs this {:job_id job-id})))
 
+    (pause-job! [this job-id]
+      (let [contract (get-contract this {:job_id job-id})]
+        (when (= :waiting (:outcome contract))
+          (let [commitment-id (ensure-commitment-id! cnxn agents contract (get-agent-details "toshtogo" "1"))]
+            (complete-work! this commitment-id (cancelled)))))
+      (doseq [dependency (:dependencies (get-job this job-id))]
+        (pause-job! this (dependency :job_id))))
+
     (get-contracts [this params]
       (map
        normalise-record
@@ -91,12 +99,7 @@
                             {:tags           tags
                              :ready_for_work true
                              :order-by       [:contract_created]})]
-        (tsql/insert!
-         cnxn
-         :agent_commitments
-         (commitment-record commitment-id
-                            contract
-                            (agent! agents agent-details))))
+        (insert-commitment! cnxn agents commitment-id contract agent-details))
 
       (get-contract this {:commitment_id     commitment-id
                           :return-jobs       true
@@ -113,27 +116,30 @@
         (let [outcome       (result :outcome)
               job-id        (contract :job_id)
               agent-details (result :agent)]
-
-          (tsql/insert! cnxn
-                        :commitment_outcomes
-                        {:outcome_id        commitment-id
-                         :error             (result :error)
-                         :contract_finished (now)
-                         :outcome           outcome})
-
-          (case outcome
-            :success
+          (when (not= :cancelled (contract :outcome))
             (tsql/insert! cnxn
-                          :job_results
-                          (outcome-record contract result))
-            :more-work
-            (put-dependencies! this cnxn job-id (result :dependencies) agent-details)
+                          :commitment_outcomes
+                          {:outcome_id        commitment-id
+                           :error             (result :error)
+                           :contract_finished (now)
+                           :outcome           outcome})
 
-            :try-later
-            (new-contract! this (contract-req job-id (result :contract_due)))
+            (case outcome
+              :success
+              (tsql/insert! cnxn
+                            :job_results
+                            (outcome-record contract result))
+              :more-work
+              (put-dependencies! this cnxn job-id (result :dependencies) agent-details)
 
-            :error
-            nil)
+              :try-later
+              (new-contract! this (contract-req job-id (result :contract_due)))
+
+              :error
+              nil
+
+              :cancelled
+              nil))
 
           (on-contract-completed! this (get-contract this {:commitment_id commitment-id}))
           nil)

@@ -22,6 +22,9 @@
   {:outcome :error
    :error   error-text})
 
+(defn cancelled []
+  {:outcome :cancelled})
+
 (defn add-dependencies [dependency & dependencies]
   {:outcome      :more-work
    :dependencies (concat [dependency] dependencies)})
@@ -41,9 +44,10 @@
   {:dependency_of_job_id (job :job_id) :order-by :job_created})
 
 (defprotocol Toshtogo
-  (put-job! [this job])
-  (get-job  [this job-id])
-  (get-jobs [this params])
+  (put-job!   [this job])
+  (get-job    [this job-id])
+  (get-jobs   [this params])
+  (pause-job! [this job-id])
 
   (get-contracts [this params])
   (get-contract  [this params])

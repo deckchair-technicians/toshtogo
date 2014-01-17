@@ -198,11 +198,11 @@
       (let [delay (fn [job] (try-later due-time "some error happened"))]
         @(do-work! client [job-tag] delay)) => truthy
 
-        (request-work! client [job-tag]) => nil
-        (provided (now) => before-due-time)
+      (request-work! client [job-tag]) => nil
+      (provided (now) => before-due-time)
 
-        @(do-work! client [job-tag] return-success) => truthy
-        (provided (now) => due-time)))
+      @(do-work! client [job-tag] return-success) => truthy
+      (provided (now) => due-time)))
 
   (facts "Heartbeats get stored, but only if they are more recent than the current heartbeat."
     (let [job-id         (uuid)
