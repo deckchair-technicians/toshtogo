@@ -109,7 +109,11 @@
       (let [heartbeat-time (now)]
         (tsql/update! cnxn :agent_commitments
                       {:last_heartbeat heartbeat-time}
-                      ["commitment_id = ?" (uuid commitment-id)])))
+                      ["commitment_id = ?" commitment-id]))
+      (let [contract  (get-contract this {:commitment_id commitment-id})]
+        (if (= :cancelled (contract :outcome))
+          {:instruction :cancel}
+          {:instruction :continue})))
 
     (complete-work! [this commitment-id result]
       (if-let [contract (get-contract this {:commitment_id commitment-id})]

@@ -9,13 +9,13 @@
             [toshtogo.api :refer [success error add-dependencies try-later]]
             [toshtogo.util.core :refer [uuid uuid-str debug]]))
 
+#_(def client (http-sender-client "http://localhost:3000/"))
+
+(def client (app-sender-client app))
+
+(defn return-success [job] (success {:result 1}))
+
 (with-redefs [toshtogo.client/heartbeat-time 1]
-
-  #_(def client (http-sender-client "http://localhost:3000/"))
-
-  (def client (app-sender-client app))
-
-  (defn return-success [job] (success {:result 1}))
 
   (fact "Work can be requested"
     (let [job-id (uuid)
@@ -215,3 +215,31 @@
 
       (let [{:keys [last_heartbeat]} (get-job client job-id)]
         (after? last_heartbeat start-time-ish ) => truthy))))
+
+(with-redefs [toshtogo.client/heartbeat-time 1]
+  (facts "Agents receive a cancellation signal in the heartbeat response when jobs are paused"
+    (let [job-id         (uuid)
+          job-tag        (uuid-str)
+          start-time-ish (now)
+          commitment-id  (promise)]
+
+      (put-job! client job-id (job-req {} [job-tag]))
+
+      (let [commitment (do-work! client [job-tag] (fn [job] (deliver commitment-id (job :commitment_id)) (Thread/sleep 5000)))]
+        (future-done? commitment) => falsey
+
+        (heartbeat! client @commitment-id)
+        => (contains {:instruction "continue"})
+
+        (get-job client job-id)
+        => (contains {:outcome "waiting"})
+
+        (pause-job! client job-id)
+        @commitment
+        (heartbeat! client @commitment-id)
+        => (contains {:instruction "cancel"})
+
+        (Thread/sleep 100)
+        (future-done? commitment) => truthy
+
+        (future-cancel commitment)))))

@@ -41,11 +41,7 @@
 
         (POST "/pause" []
           (let [job-id (uuid job-id)]
-            (check-idempotent!
-             :pause
-             job-id
-             (constantly :wtf)
-             (constantly :wtf))))))
+            {:body (pause-job! api job-id)}))))
 
     (context "/commitments" {:keys [api body check-idempotent!]}
       (PUT "/" []
@@ -70,7 +66,7 @@
              #(commitment-redirect commitment-id))))
 
         (POST "/heartbeat" []
-          (heartbeat! api commitment-id)))
+          {:body (heartbeat! api (uuid commitment-id))}))
 
       (GET "/:commitment-id" [commitment-id]
         {:body  (get-contract

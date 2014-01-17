@@ -72,7 +72,7 @@
   (if should-debug
     (reify Sender
       (POST! [this location message]
-        (debug "POST RESPONSE" (apply PUT! sender (debug "POST!" [location message]))))
+        (debug "POST RESPONSE" (apply POST! sender (debug "POST!" [location message]))))
       (PUT! [this location message]
         (debug "PUT RESPONSE" (apply PUT! sender (debug "PUT!" [location message]))))
       (GET [this location]

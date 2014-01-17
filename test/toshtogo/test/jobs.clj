@@ -113,6 +113,4 @@
 
       (request-work! api (uuid) [tag] agent) => nil)))
 
-    (future-fact "Should be able to pause a job with dependencies")
-
 (future-fact "Get job returns job tags")
