@@ -216,30 +216,31 @@
            (let [{:keys [last_heartbeat]} (get-job client job-id)]
              (after? last_heartbeat start-time-ish) => truthy))))
 
-(with-redefs [toshtogo.client/heartbeat-time 1]
-             (facts "Agents receive a cancellation signal in the heartbeat response when jobs are paused"
-                    (let [job-id (uuid)
-                          job-tag (uuid-str)
-                          start-time-ish (now)
-                          commitment-id (promise)]
+(with-redefs
+  [toshtogo.client/heartbeat-time 1]
+  (facts "Agents receive a cancellation signal in the heartbeat response when jobs are paused"
+         (let [job-id (uuid)
+               job-tag (uuid-str)
+               start-time-ish (now)
+               commitment-id (promise)]
 
-                      (put-job! client job-id (job-req {} [job-tag]))
+           (put-job! client job-id (job-req {} [job-tag]))
 
-                      (let [commitment (do-work! client [job-tag] (fn [job] (deliver commitment-id (job :commitment_id)) (Thread/sleep 5000)))]
-                        (future-done? commitment) => falsey
+           (let [commitment (do-work! client [job-tag] (fn [job] (deliver commitment-id (job :commitment_id)) (Thread/sleep 5000)))]
+             (future-done? commitment) => falsey
 
-                        (heartbeat! client @commitment-id)
-                        => (contains {:instruction "continue"})
+             (heartbeat! client @commitment-id)
+             => (contains {:instruction "continue"})
 
-                        (get-job client job-id)
-                        => (contains {:outcome "waiting"})
+             (get-job client job-id)
+             => (contains {:outcome "waiting"})
 
-                        (pause-job! client job-id)
-                        @commitment
-                        (heartbeat! client @commitment-id)
-                        => (contains {:instruction "cancel"})
+             (pause-job! client job-id)
+             @commitment
+             (heartbeat! client @commitment-id)
+             => (contains {:instruction "cancel"})
 
-                        (Thread/sleep 100)
-                        (future-done? commitment) => truthy
+             (Thread/sleep 100)
+             (future-done? commitment) => truthy
 
-                        (future-cancel commitment)))))
+             (future-cancel commitment)))))
