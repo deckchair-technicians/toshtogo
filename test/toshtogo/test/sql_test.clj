@@ -1,4 +1,5 @@
-(ns toshtogo.test.sql
+(ns toshtogo.test.sql-test
+  (:import (java.sql Timestamp))
   (:require [midje.sweet :refer :all]
             [clojure.string :as str]
             [clj-time.core :refer [now date-time]]
@@ -30,13 +31,13 @@
 
     (named-params ":a :a" {:a d1})
     => ["? ?"
-        (java.sql.Timestamp. (.getMillis d1))
-        (java.sql.Timestamp. (.getMillis d1))]
+        (Timestamp. (.getMillis d1))
+        (Timestamp. (.getMillis d1))]
 
     (named-params "in (:a)" {:a [d1 d2]})
     => ["in (?, ?)"
-        (java.sql.Timestamp. (.getMillis d1))
-        (java.sql.Timestamp. (.getMillis d2))]))
+        (Timestamp. (.getMillis d1))
+        (Timestamp. (.getMillis d2))]))
 
 (fact "named-params fixes keyword parameter values"
   (named-params ":a :a" {:a :a-keyword})
