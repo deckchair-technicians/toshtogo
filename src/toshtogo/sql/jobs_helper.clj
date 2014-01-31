@@ -86,7 +86,7 @@
 (defn normalise-job [job]
   (-> job
       (dissoc :tag)
-      (dissoc :job_id_2 :job_id_3 :commitment_contract :outcome_id)
+      (dissoc :job_id_2 :job_id_3 :job_id_4 :commitment_contract :outcome_id)
       (update :outcome #(if % ( keyword %) :waiting))
       (update :last_heartbeat #(when % (tc/from-sql-time %)))
       (update-each [:request_body :result_body] #(json/parse-string % keyword))))
