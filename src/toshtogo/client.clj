@@ -70,7 +70,6 @@
     (do-work! [this tags f]
       (future
         (when-let [contract (request-work! this tags)]
-          (println "contract" contract)
           (let [result (with-exception-handling (fn [c] (heartbeat! this (c :commitment_id))) f contract)]
             (complete-work! this (contract :commitment_id) result)
             {:contract contract
