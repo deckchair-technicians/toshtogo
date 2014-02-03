@@ -244,3 +244,30 @@
              (future-done? commitment) => truthy
 
              (future-cancel commitment)))))
+
+(facts "Client backs off and retries if the server is not available or returns an error"
+       (let [job-id (uuid)
+             job-tag (uuid-str)
+             start-time-ish (now)
+             commitment-id (promise)]
+
+         (put-job! client job-id (job-req {} [job-tag]))
+
+         (let [commitment (do-work! client [job-tag] (fn [job] (deliver commitment-id (job :commitment_id)) (Thread/sleep 5000)))]
+           (future-done? commitment) => falsey
+
+           (heartbeat! client @commitment-id)
+           => (contains {:instruction "continue"})
+
+           (get-job client job-id)
+           => (contains {:outcome "waiting"})
+
+           (pause-job! client job-id)
+           @commitment
+           (heartbeat! client @commitment-id)
+           => (contains {:instruction "cancel"})
+
+           (Thread/sleep 100)
+           (future-done? commitment) => truthy
+
+           (future-cancel commitment))))
