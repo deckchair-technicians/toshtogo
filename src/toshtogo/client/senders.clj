@@ -88,14 +88,14 @@
 
 (defn RetrySender
   [decorated]
-  (let [opts {:sleep-fn (partial exponential-backoff 5000)}]
-    (reify Sender
-      (POST! [this location message]
-        (POST! decorated location message))
-      (PUT! [this location message]
-        (until-successful-response opts (PUT! decorated location message)))
-      (GET [this location]
-        (GET decorated location)))))
+  (reify Sender
+    (POST! [this location message]
+      (POST! decorated location message))
+    (PUT! [this location message]
+      (until-successful-response {:interval-fn (partial exponential-backoff 5000)}
+                                 (PUT! decorated location message)))
+    (GET [this location]
+      (GET decorated location))))
 
 (defn app-sender
   ([app]
@@ -104,4 +104,5 @@
    (DebugSender false
                 (JsonSender
                   (FollowingSender
-                    (AppSender (get-agent-details system version) app))))))
+                    (RetrySender
+                      (AppSender (get-agent-details system version) app)))))))

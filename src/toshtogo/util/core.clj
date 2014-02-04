@@ -2,7 +2,7 @@
   (:import (java.util UUID))
   (:require
     [clojure.math.numeric-tower :refer [expt]]
-    [clj-time.core :refer [after? now plus millis]]
+    [clj-time.core :refer [after? now plus millis interval]]
     [clj-time.format :as tf]
     [clojure.pprint :refer [pprint]]
     [clojure.stacktrace :as stacktrace]))
@@ -67,22 +67,32 @@
     (catch Throwable e
       [nil e])))
 
+(defn sleep [millis]
+  (Thread/sleep millis))
+
 (defn retry-until-success*
-  ":sleep-fn takes an integer representing the number of retries and returns number of millis to sleep"
-  [func & {:keys [interval sleep-fn timeout max-retries] :or {interval 10} :as opts}]
-  (let [interval-fn         (if sleep-fn sleep-fn (fn [i] interval))
+  ":interval        pause between retries, in millis
+   :interval-fn     function that takes an integer for # of retries and return the # of millis to pause
+   :timeout         number of millis af"
+  [func & {:keys [interval interval-fn timeout max-retries] :or {interval 10} :as opts}]
+  (let [interval-fn         (if interval-fn interval-fn (fn [i] interval))
+        started             (now)
+        elapsed-time        (fn [] (interval started (now)))
         timeout-time        (when timeout (plus (now) (millis timeout)))
         timeout-expired?    (fn [] (and timeout-time (after? (now) timeout-time)))
-        max-tries-exceeded? (fn [i] (and max-retries (> i max-retries)))]
-    (loop [i 1 result (or-exception func)]
+        max-tries-exceeded? (fn [attempt-number] (and max-retries (>= attempt-number max-retries)))]
+    (loop [attempt-number 1
+           result (or-exception func)]
       (if (first result)
         (first result)
-        (if (or (timeout-expired?) (max-tries-exceeded? i))
-          (throw (RuntimeException. "Giving up on retry" (second result)))
-          (do (Thread/sleep (interval-fn i))
-              (recur (inc i) (or-exception func))))))))
+        (if (or (timeout-expired?) (max-tries-exceeded? attempt-number))
+          (throw (RuntimeException.
+                   (str "Giving up on retry after" attempt-number "attempts and" (elapsed-time))
+                   (second result)))
+          (do (sleep (interval-fn attempt-number))
+              (recur (inc attempt-number) (or-exception func))))))))
 
 (defmacro retry-until-success
-  [{:keys [interval sleep-fn timeout max-retries] :or {interval 10} :as opts}
-   & body]
+  "opts "
+  [opts & body]
   `(apply retry-until-success* (fn [] ~@body) (flatten (seq ~opts))))

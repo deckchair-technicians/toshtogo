@@ -11,7 +11,6 @@
 
 (defmacro until-successful-response
   "Calls body repeatedly until it gets a non-500 response"
-  [{:keys [interval sleep-fn timeout max-retries] :or {sleep-fn (partial exponential-backoff 5000)} :as opts}
-   & body]
-  (list 'retry-until-success opts (cons 'throw-500 body)))
+  [opts & body]
+  `(retry-until-success ~opts (throw-500 ~@body)))
 
