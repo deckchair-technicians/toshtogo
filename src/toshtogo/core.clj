@@ -5,9 +5,15 @@
             [watchtower.core :as watcher])
   (:gen-class))
 
+(def dev-db {:classname   "org.postgresql.Driver" ; must be in classpath
+                  :subprotocol "postgresql"
+                  :subname     "//localhost:5432/toshtogo"
+                  :user        "postgres"
+                  :password    "postgres"})
+
 (defn -main [& args]
-  (run-migrations!)
-  (run-jetty app {:port 3000}))
+  (run-migrations! dev-db)
+  (run-jetty (app dev-db) {:port 3000}))
 
 (defn reload-templates! [files]
   (require 'toshtogo.web.handler :reload-all))

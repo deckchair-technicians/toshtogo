@@ -2,7 +2,7 @@
   (:require [midje.sweet :refer :all]
             [clojure.java.jdbc :as sql]
             [toshtogo.web.middleware :refer [sql-deps]]
-            [toshtogo.config :refer [dbs]]
+            [toshtogo.core :refer [dev-db]]
             [toshtogo.util.core :refer [uuid uuid-str debug]]
             [toshtogo.agents :refer :all]
             [toshtogo.api :refer :all]))
@@ -17,7 +17,7 @@
 
 (fact "Adding a job with no dependencies triggers creation of a contract"
   (sql/with-db-transaction
-   [cnxn (dbs :dev)]
+   [cnxn dev-db]
    (let [id-one    (uuid)
          id-two    (uuid)
          tag-one   (uuid-str) ;so we can run against a dirty database
@@ -32,7 +32,7 @@
 
 (facts "Should be able to pause a job that hasn't started"
   (sql/with-db-transaction
-   [cnxn (dbs :dev)]
+   [cnxn dev-db]
    (let [job-id               (uuid)
          tag                  (uuid-str)
          agent                (get-agent-details "test" "0.0.0")
@@ -49,7 +49,7 @@
 
 (facts "Should be able to pause a job that has started"
   (sql/with-db-transaction
-    [cnxn (dbs :dev)]
+    [cnxn dev-db]
     (let [job-id               (uuid)
           tag                  (uuid-str)
           agent                (get-agent-details "test" "0.0.0")
@@ -72,7 +72,7 @@
 
 (facts "Should be able to pause a job that has finished"
   (sql/with-db-transaction
-    [cnxn (dbs :dev)]
+    [cnxn dev-db]
     (let [job-id               (uuid)
           tag                  (uuid-str)
           agent                (get-agent-details "test" "0.0.0")
@@ -91,7 +91,7 @@
 
 (facts "Should be able to pause a job with dependencies"
   (sql/with-db-transaction
-    [cnxn (dbs :dev)]
+    [cnxn dev-db]
     (let [job-id-1             (uuid)
           job-id-1-1           (uuid)
           job-id-1-2           (uuid)

@@ -1,6 +1,5 @@
 (ns toshtogo.migrations
-  (:require  [toshtogo.config :refer [db]]
-             [clojure.java.io :as io]
+  (:require  [clojure.java.io :as io]
              [clojure.java.jdbc :as sql]
              [me.raynes.fs :as fs])
   (:import [java.security CodeSource]
@@ -46,7 +45,7 @@
      );")
 
 (defn run-migrations!
-  []
+  [db]
   (sql/execute! db [create-changelog-sql])
   (let [temp-dir (extract-migrations!)
         db-deploy (doto (DbDeploy.)

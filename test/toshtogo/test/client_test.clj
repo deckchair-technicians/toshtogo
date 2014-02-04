@@ -4,6 +4,7 @@
             [ring.adapter.jetty :refer [run-jetty]]
             [clojure.java.jdbc :as sql]
             [toshtogo.web.handler :refer [app]]
+            [toshtogo.core :refer [dev-db]]
             [toshtogo.client :refer :all]
             [toshtogo.client.http :refer :all]
             [toshtogo.api :refer [success error add-dependencies try-later]]
@@ -11,7 +12,7 @@
 
 #_(def client (http-sender-client "http://localhost:3000/"))
 
-(def client (app-sender-client app))
+(def client (app-sender-client (app dev-db)))
 
 (defn return-success [job] (success {:result 1}))
 

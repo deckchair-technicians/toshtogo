@@ -85,7 +85,7 @@
   (route/not-found {:status "I'm sorry :("})
 
 
-(def app
+(defn app [db]
   (routes
    (-> (handler/api api-routes)
        ;wrap-print-response
@@ -93,5 +93,5 @@
 
        (wrap-json-body {:keywords? true})
        wrap-body-hash
-       wrap-db-transaction
+       (wrap-db-transaction db)
        wrap-json-response)))

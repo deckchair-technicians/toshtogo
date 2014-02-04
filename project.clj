@@ -28,8 +28,6 @@
 
   :aot [toshtogo.web.IdempotentPutException toshtogo.util.OptimisticLockingException toshtogo.client.SenderException]
 
-  :ring {:handler toshtogo.web.handler/app}
-
   :profiles {:dev {:dependencies [[javax.servlet/servlet-api "2.5"]                                                                 [midje "1.5.1"]]
                    :plugins [[lein-midje "3.1.0"]]}
 })
