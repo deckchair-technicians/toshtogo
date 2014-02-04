@@ -4,7 +4,7 @@
             [clojure.string :as str]
             [toshtogo.web.middleware :refer [sql-deps]]
             [toshtogo.util.core :refer [uuid uuid-str debug]]
-            [toshtogo.config :refer [dbs]]
+            [toshtogo.core :refer [dev-db]]
             [toshtogo.agents :refer :all]
             [toshtogo.api :refer :all]))
 
@@ -23,7 +23,7 @@
 
 (fact "Gets contracts by filters "
   (sql/with-db-transaction
-   [cnxn (dbs :dev)]
+   [cnxn dev-db]
    (let [id-one                         (uuid)
          id-two                         (uuid)
          tag-one                        (uuid-str) ;so we can run against a dirty database
@@ -38,7 +38,7 @@
 
 (facts "New contracts check for the state of old contracts"
   (sql/with-db-transaction
-   [cnxn (dbs :dev)]
+   [cnxn dev-db]
    (let [job-id    (uuid)
          tag   (uuid-str)        ;so we can run against a dirty database
          {:keys [agents api]} (sql-deps cnxn)]
@@ -124,7 +124,7 @@
 
     (let [[ first-commitment second-commitment]
           (sql/with-db-transaction
-            [cnxn (dbs :dev)]
+            [cnxn dev-db]
             (let [api ((sql-deps cnxn) :api)]
               (given-job-exists api parent-job-id [parent-tag]
                                 (job-req (uuid) agent-details {:child 1} [child-tag])
@@ -133,7 +133,7 @@
                (request-work! api (uuid) [child-tag] agent-details)]))]
 
       (in-parallel-transactions
-                            (dbs :dev)
+        dev-db
                             (fn [api]
                               (complete-work! api
                                               (first-commitment :commitment_id)
@@ -143,7 +143,7 @@
                                               (second-commitment :commitment_id)
                                               (success [])))))
     (sql/with-db-transaction
-      [cnxn (dbs :dev)]
+      [cnxn dev-db]
       (let [api ((sql-deps cnxn) :api)]
         (get-job api parent-job-id)
         => (contains {:contracts_completed 2})

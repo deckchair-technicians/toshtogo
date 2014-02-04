@@ -1,6 +1,5 @@
 (ns toshtogo.web.middleware
   (:require [clojure.java.jdbc :as sql]
-            [toshtogo.config :refer [db]]
             [net.cgrand.enlive-html :as html]
             [clojure.stacktrace :refer [print-cause-trace]]
             [clojure.pprint :refer [pprint]]
@@ -36,7 +35,7 @@
 (defn wrap-db-transaction
  "Wraps the handler in a db transaction and adds the connection to the
    request map under the :cnxn key."
-  [handler]
+  [handler db]
   (fn [req]
     (sql/with-db-transaction [cnxn db]
       (handler (assoc req :cnxn cnxn)))))
