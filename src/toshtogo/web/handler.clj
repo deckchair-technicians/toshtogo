@@ -29,6 +29,8 @@
 (defroutes api-routes
   (context "/api" []
     (context "/jobs" {:keys [api body check-idempotent!]}
+             (GET "/" []
+                  {:body (get-jobs api {})})
       (context "/:job-id" [job-id]
 
         (PUT  "/" []
@@ -88,7 +90,8 @@
 (defn app [db]
   (routes
    (-> (handler/api api-routes)
-       ;wrap-print-response
+       wrap-print-response
+       wrap-print-request
        wrap-dependencies
 
        (wrap-json-body {:keywords? true})
