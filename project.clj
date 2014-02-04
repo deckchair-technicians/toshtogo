@@ -1,4 +1,4 @@
-(defproject savagematt/toshtogo "0.3.0-SNAPSHOT"
+(defproject savagematt/toshtogo "0.4.0-SNAPSHOT"
 
   :description "An asynchronous job manager"
 
@@ -15,7 +15,6 @@
                  [http-kit "2.1.16"]
                  [clj-time "0.6.0"]
                  [enlive "1.1.5"]
-                 [org.clojure/math.numeric-tower "0.0.4"]
                  [com.google.guava/guava "15.0"]
                  [com.dbdeploy/dbdeploy-core "3.0M3"]
                  [watchtower "0.1.1"]
@@ -26,7 +25,7 @@
 
   :main toshtogo.core
 
-  :aot [toshtogo.web.IdempotentPutException toshtogo.util.OptimisticLockingException toshtogo.client.SenderException]
+  :aot [toshtogo.web.IdempotentPutException toshtogo.util.OptimisticLockingException]
 
   :profiles {:dev {:dependencies [[javax.servlet/servlet-api "2.5"]                                                                 [midje "1.5.1"]]
                    :plugins [[lein-midje "3.1.0"]]}
