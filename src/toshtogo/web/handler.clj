@@ -2,6 +2,7 @@
   (:require [compojure.core :refer :all]
             [compojure.handler :as handler]
             [compojure.route :as route]
+            [cheshire.generate :as json-gen]
             [ring.middleware.json :refer [wrap-json-response wrap-json-body]]
             [ring.util.response :as resp]
             [flatland.useful.map :refer [update]]
@@ -14,7 +15,10 @@
             [toshtogo.api :refer :all]
             [toshtogo.util.core :refer [uuid ppstr debug parse-datetime]])
   (:import [toshtogo.web IdempotentPutException]
-           [java.io InputStream]))
+           [java.io InputStream]
+           [org.joda.time DateTime]))
+
+(json-gen/add-encoder DateTime json-gen/encode-str)
 
 (defn job-redirect [job-id]
   (resp/redirect-after-post (str "/api/jobs/" job-id)))
@@ -36,8 +40,11 @@
              #(job-redirect job-id))))
 
         (GET "/" []
-          (let [job-id (uuid job-id)]
-            {:body (get-job api job-id)}))
+          (let [job-id (uuid job-id)
+                job (get-job api job-id)]
+            (if job
+              {:body job}
+              (route/not-found "Unknown job id"))))
 
         (POST "/pause" []
           (let [job-id (uuid job-id)]
