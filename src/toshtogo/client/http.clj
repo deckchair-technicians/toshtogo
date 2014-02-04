@@ -1,28 +1,33 @@
 (ns toshtogo.client.http
+  (:import (java.io InputStream))
   (:require [org.httpkit.client :as http]
             [clojure.string :as str]
+            [flatland.useful.map :refer [update]]
             [toshtogo.agents :refer [get-agent-details]]
             [toshtogo.util.json :as tjson]
             [toshtogo.client.senders :refer :all]))
 
-
+(defmulti ensure-str class)
+(defmethod ensure-str :default [x] (.toString x))
+(defmethod ensure-str InputStream [x] (slurp x))
 
 (defn HttpSender [agent-details base-path]
-  (letfn [(prepare-request
+  (letfn [(url-and-body
             [location message]
             [(str base-path (str/replace-first location #"^/" ""))
               {:body (tjson/encode (assoc  message :agent agent-details))
-               :headers {"Content-Type" "application/json"}}])]
+               :headers {"Content-Type" "application/json"}}])
+          (slurp-body [resp] (update resp :body ensure-str))]
 
     (reify Sender
       (POST! [this location message]
-        @(apply http/post (prepare-request location message)))
+        (slurp-body @(apply http/post (url-and-body location message))))
 
       (PUT! [this location message]
-        @(apply http/put (prepare-request location message)))
+        (slurp-body @(apply http/put (url-and-body location message))))
 
       (GET [this location]
-          @(http/get (str base-path (str/replace-first location #"^/" "")))))))
+        (slurp-body @(http/get (str base-path (str/replace-first location #"^/" ""))))))))
 
 (defn http-sender
   ([base-path]

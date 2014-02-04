@@ -26,8 +26,11 @@
 
   :main toshtogo.core
 
+  :ring {:handler toshtogo.core/dev-app}
+
   :aot [toshtogo.web.IdempotentPutException toshtogo.util.OptimisticLockingException]
 
-  :profiles {:dev {:dependencies [[javax.servlet/servlet-api "2.5"]                                                                 [midje "1.5.1"]]
+  :profiles {:dev {:dependencies [[javax.servlet/servlet-api "2.5"]
+                                  [midje "1.5.1"]]
                    :plugins [[lein-midje "3.1.0"]]}
 })

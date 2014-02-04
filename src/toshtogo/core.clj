@@ -11,9 +11,11 @@
                   :user        "postgres"
                   :password    "postgres"})
 
+(def dev-app (app dev-db))
+
 (defn -main [& args]
   (run-migrations! dev-db)
-  (run-jetty (app dev-db) {:port 3000}))
+  (run-jetty dev-app {:port 3000}))
 
 (defn reload-templates! [files]
   (require 'toshtogo.web.handler :reload-all))
