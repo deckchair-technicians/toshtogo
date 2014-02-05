@@ -1,5 +1,5 @@
 (ns toshtogo.server.core
-  (:require [toshtogo.server.migrations :refer [run-migrations!]]
+  (:require [toshtogo.server.migrations.run :refer [run-migrations!]]
             [toshtogo.server.handler :refer [app]]
             [ring.adapter.jetty :refer [run-jetty]]
             [watchtower.core :as watcher])

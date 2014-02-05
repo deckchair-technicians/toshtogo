@@ -1,4 +1,4 @@
-(ns toshtogo.server.migrations
+(ns toshtogo.server.migrations.run
   (:require  [clojure.java.io :as io]
              [clojure.java.jdbc :as sql]
              [me.raynes.fs :as fs])
@@ -29,7 +29,7 @@
 (defn extract-migrations!
   "Extracts the migrations"
   []
-  (let [migration-paths (get-resources "migrations/")
+  (let [migration-paths (get-resources "toshtogo/server/migrations/")
         temp-dir (fs/temp-dir "toshtogo_migrations")]
     (doseq [path migration-paths]
       (spit (str temp-dir "/" (fs/base-name path))
