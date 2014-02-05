@@ -1,4 +1,4 @@
-(ns toshtogo.client
+(ns toshtogo.client.core
   (:require [clj-time.format :as tf]
             [flatland.useful.map :refer [update]]
             [toshtogo.util.core :refer [uuid cause-trace debug]]
@@ -75,8 +75,38 @@
             {:contract contract
              :result   result}))))))
 
-(defn app-client [app]
-  (sender-client (app-sender app)))
+(defn decorate [sender & {:keys [error-fn]}]
+  (DebugSender
+    false
+    (JsonSender
+      (FollowingSender
+        (RetrySender sender :error-fn error-fn)))))
+
+(defn http-sender
+  ([base-path]
+   (http-sender base-path "unknown" "unknown"))
+  ([base-path system version]
+   (decorate (HttpSender (get-agent-details system version) base-path))))
+
+(defn app-sender
+  [app & {:keys [system version error-fn] :or {:system "unknown" :version "unknown"}}]
+  (decorate (AppSender (get-agent-details system version) app :error-fn error-fn)))
+
+
+(defn client
+  "Either:
+
+  :type     :app
+  :app      <a ring app>
+
+  or:
+
+  :type     :http
+  :base-url <some url>"
+  [opts]
+  (sender-client (sender opts)))
 
 (defn http-client [base-path]
   (sender-client (http-sender base-path)))
+
+

@@ -1,9 +1,8 @@
-(ns toshtogo.client.http
+(ns toshtogo.client.http-sender
   (:import (java.io InputStream))
   (:require [org.httpkit.client :as http]
             [clojure.string :as str]
             [flatland.useful.map :refer [update]]
-            [toshtogo.agents :refer [get-agent-details]]
             [toshtogo.util.json :as tjson]
             [toshtogo.client.senders :refer :all]))
 
@@ -28,9 +27,3 @@
 
       (GET [this location]
         (slurp-body @(http/get (str base-path (str/replace-first location #"^/" ""))))))))
-
-(defn http-sender
-  ([base-path]
-     (http-sender base-path "unknown" "unknown"))
-  ([base-path system version]
-   (decorate (HttpSender (get-agent-details system version) base-path))))
