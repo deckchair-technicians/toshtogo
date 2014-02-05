@@ -13,6 +13,7 @@
                  [ring/ring-json "0.2.0"]
                  [ring-mock "0.1.5"]
                  [http-kit "2.1.16"]
+                 [com.cemerick/url "0.1.0"]
                  [clj-time "0.6.0"]
                  [enlive "1.1.5"]
                  [org.clojure/math.numeric-tower "0.0.4"]
