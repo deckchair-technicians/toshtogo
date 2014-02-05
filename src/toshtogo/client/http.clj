@@ -33,11 +33,4 @@
   ([base-path]
      (http-sender base-path "unknown" "unknown"))
   ([base-path system version]
-     (DebugSender false
-      (JsonSender
-       (FollowingSender
-        (HttpSender (get-agent-details system version) base-path)
-        (fn [sender resp] [sender resp]
-          (if (= 303 (:status resp))
-            (GET sender (get-in resp [:headers "Location"] ))
-            resp)))))))
+   (decorate (HttpSender (get-agent-details system version) base-path))))

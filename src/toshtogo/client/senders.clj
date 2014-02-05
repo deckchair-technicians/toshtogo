@@ -87,12 +87,16 @@
       (GET [this location]
         (until-successful-response backoff-opts (GET decorated location))))))
 
+(defn decorate [sender]
+  (DebugSender
+    false
+    (JsonSender
+      (FollowingSender
+        (RetrySender
+          sender)))))
+
 (defn app-sender
   ([app]
    (app-sender app "unknown" "unknown"))
   ([app system version]
-   (DebugSender false
-                (JsonSender
-                  (FollowingSender
-                    (RetrySender
-                      (AppSender (get-agent-details system version) app)))))))
+   (decorate (AppSender (get-agent-details system version) app))))
