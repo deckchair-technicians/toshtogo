@@ -10,7 +10,7 @@
 (defmethod ensure-str :default [x] (.toString x))
 (defmethod ensure-str InputStream [x] (slurp x))
 
-(defn HttpSender [agent-details base-path]
+(defn http-sender [agent-details base-path]
   (letfn [(url-and-body
             [location message]
             [(str base-path (str/replace-first location #"^/" ""))

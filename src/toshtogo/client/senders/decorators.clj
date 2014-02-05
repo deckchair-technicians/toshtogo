@@ -60,3 +60,9 @@
       (GET [this location]
         (until-successful-response retry-opts (GET decorated location))))))
 
+(defn default-decoration [sender & {:keys [error-fn]}]
+  (debug-sender
+    false
+    (json-sender
+      (following-sender
+        (retry-sender sender :error-fn error-fn)))))

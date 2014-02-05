@@ -7,19 +7,6 @@
             [toshtogo.client.senders.http-sender :refer :all]
             [toshtogo.client.senders.app-sender :refer :all]))
 
-(defn decorate-sender [sender & {:keys [error-fn]}]
-  (debug-sender
-    false
-    (json-sender
-      (following-sender
-        (retry-sender sender :error-fn error-fn)))))
-
-(defn http-sender
-  ([base-path]
-   (http-sender base-path "unknown" "unknown"))
-  ([base-path system version]
-   (decorate-sender )))
-
 (defn sender
   [client-opts agent-details]
   (case (:type client-opts)
@@ -40,6 +27,6 @@
   :type     :http
   :base-url <some url>"
   [client-opts & {:keys [system version error-fn] :or {:system "unknown" :version "unknown" :error-fn nil} :as opts}]
-  (sender-client (decorate-sender
+  (sender-client (default-decoration
                    (sender client-opts (get-agent-details system version))
                    :error-fn error-fn)))

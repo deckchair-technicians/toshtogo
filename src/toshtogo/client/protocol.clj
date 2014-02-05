@@ -17,8 +17,10 @@
   (put-job! [this job-id job-req])
   (get-job [this job-id])
   (pause-job! [this job-id])
+
   (request-work! [this tags])
   (heartbeat! [this commitment-id])
   (complete-work! [this commitment-id result])
+
   (do-work! [this tags f]))
 
