@@ -1,11 +1,23 @@
 (ns toshtogo.agents
+  (:import (java.net UnknownHostException InetAddress))
   (:require [clojure.java.jdbc :as sql]
             [toshtogo.util.sql :as tsql]
             [toshtogo.util.core :refer [uuid]]))
 
+(defn- hostname
+  []
+  (try
+    (.getHostName (InetAddress/getLocalHost))
+    (catch UnknownHostException e
+      (throw (RuntimeException.
+               (str
+                 "Can't get hostname. POSSIBLE FIX: http://stackoverflow.com/a/16361018. "
+                 "\nException was:"
+                 (.getMessage e)))))))
+
 (defn get-agent-details [system version]
-  {:hostname (.getHostName (java.net.InetAddress/getLocalHost))
-   :system_name system
+  {:hostname       (hostname)
+   :system_name    system
    :system_version version})
 
 (defprotocol Agents

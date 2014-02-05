@@ -1,6 +1,5 @@
 (ns toshtogo.client.senders
-  (:import (java.net InetAddress UnknownHostException)
-           (toshtogo.client SenderException))
+  (:import (toshtogo.client SenderException))
   (:require [ring.mock.request :refer [request body header]]
             [cheshire.core :as json]
             [clojure.string :as str]
@@ -9,16 +8,6 @@
             [toshtogo.client.util :refer [until-successful-response]]
             [toshtogo.agents :refer [get-agent-details]]))
 
-(defn- hostname
-  []
-  (try
-    (.getHostName (InetAddress/getLocalHost))
-    (catch UnknownHostException e
-      (throw (RuntimeException.
-               (str
-                 "Can't get hostname. POSSIBLE FIX: http://stackoverflow.com/a/16361018. "
-                 "\nException was:"
-                 (.getMessage e)))))))
 
 (defprotocol Sender
   (POST! [this location message])
