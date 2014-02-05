@@ -9,11 +9,13 @@
             [toshtogo.util.core :refer [uuid uuid-str debug cause-trace]]))
 
 (def in-process {:type :app :app dev-app})
-(def localhost {:type :http :base-path "http://localhost:3000/"})
+(def localhost {:type :http :base-path "http://localhost:3000"})
 
 (def client-config in-process)
 (def client (ttc/client client-config
                         :error-fn  (fn [e] (println (cause-trace e)))
+                        :debug     false
+                        :timeout   nil
                         :system    "client-test"
                         :version   "0.0"))
 

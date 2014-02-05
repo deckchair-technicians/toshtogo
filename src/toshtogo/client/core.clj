@@ -30,13 +30,13 @@
 
   :type     :http
   :base-url <some url>"
-  [client-opts & {:keys [system version error-fn timeout]
+  [client-opts & {:keys [system version error-fn timeout debug]
                   :or {:system "unknown" :version "unknown"}
                   :as opts}]
 
-  (let [sender     (sender client-opts (get-agent-details system version))
-        retry-opts (select-keys opts [:error-fn :timeout])]
+  (let [sender          (sender client-opts (get-agent-details system version))
+        decoration-opts (select-keys opts [:error-fn :timeout :debug])]
 
     (sender-client (apply default-decoration
                           sender
-                          (flatten (seq retry-opts))))))
+                          (flatten (seq decoration-opts))))))

@@ -49,9 +49,12 @@
     decorated))
 
 (defn retry-sender
-  [decorated & {:keys [error-fn] :or {error-fn (constantly nil)} :as opts}]
+  [decorated & {:keys [error-fn timeout]
+                :or {error-fn (constantly nil)}}]
+
   (let [retry-opts {:interval-fn (partial exponential-backoff 5000)
-                    :error-fn    error-fn}]
+                    :error-fn    error-fn
+                    :timeout     timeout}]
     (reify Sender
       (POST! [this location message]
         (until-successful-response retry-opts (POST! decorated location message)))
@@ -60,9 +63,9 @@
       (GET [this location]
         (until-successful-response retry-opts (GET decorated location))))))
 
-(defn default-decoration [sender & {:keys [error-fn]}]
+(defn default-decoration [sender & {:keys [error-fn timeout debug] :or {debug false} :as opts}]
   (debug-sender
-    false
+    debug
     (json-sender
       (following-sender
-        (retry-sender sender :error-fn error-fn)))))
+        (apply retry-sender sender (flatten (seq (select-keys opts [:error-fn :timeout]))))))))
