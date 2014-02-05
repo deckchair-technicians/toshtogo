@@ -5,6 +5,7 @@
             [toshtogo.web.middleware :refer [sql-deps]]
             [toshtogo.util.core :refer [uuid uuid-str debug]]
             [toshtogo.core :refer [dev-db]]
+            [toshtogo.client.util :refer [get-agent-details]]
             [toshtogo.agents :refer :all]
             [toshtogo.api :refer :all]))
 

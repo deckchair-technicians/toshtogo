@@ -1,5 +1,5 @@
 (ns toshtogo.test.client.util-test
-  (:import [toshtogo.client SenderException]
+  (:import [toshtogo.client.senders SenderException]
            (java.util.concurrent ExecutionException))
   (:require [midje.sweet :refer :all]
             [flatland.useful.map :refer [into-map]]

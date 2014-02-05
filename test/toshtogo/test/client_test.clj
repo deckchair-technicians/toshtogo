@@ -3,21 +3,22 @@
             [midje.sweet :refer :all]
             [ring.adapter.jetty :refer [run-jetty]]
             [clojure.java.jdbc :as sql]
-            [toshtogo.web.handler :refer [app]]
-            [toshtogo.core :refer [dev-db]]
-            [toshtogo.client :refer :all]
-            [toshtogo.client.http :refer :all]
-            [toshtogo.api :refer [success error add-dependencies try-later]]
-            [toshtogo.util.core :refer [uuid uuid-str debug]]))
+            [toshtogo.core :refer [dev-app]]
+            [toshtogo.client.protocol :refer :all]
+            [toshtogo.client.core :as ttc]
+            [toshtogo.util.core :refer [uuid uuid-str debug cause-trace]]))
 
-#_(def client (http-client "http://localhost:3000/"))
-
-(def client (app-client (app dev-db)))
+(def in-process {:type :app :app dev-app})
+(def localhost {:type :http :app "http://localhost:3000/"})
+(def client (ttc/client in-process
+                        :error-fn (fn [e] (println (cause-trace e)))
+                        :system   "client-test"
+                        :version   "0.0"))
 
 (defn return-success [job] (success {:result 1}))
 
 (with-redefs
-  [toshtogo.client/heartbeat-time 1]
+  [toshtogo.client.clients.sender-client/heartbeat-time 1]
   (fact "Work can be requested"
         (let [job-id (uuid)
               tag (uuid-str)]
@@ -218,7 +219,7 @@
              (after? last_heartbeat start-time-ish) => truthy))))
 
 (with-redefs
-  [toshtogo.client/heartbeat-time 1]
+  [toshtogo.client.clients.sender-client/heartbeat-time 1]
   (facts "Agents receive a cancellation signal in the heartbeat response when jobs are paused"
          (let [job-id (uuid)
                job-tag (uuid-str)

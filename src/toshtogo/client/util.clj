@@ -1,6 +1,23 @@
 (ns toshtogo.client.util
-  (:import [toshtogo.client SenderException])
+  (:import [toshtogo.client.senders SenderException]
+           (java.net UnknownHostException InetAddress))
   (:require [toshtogo.util.core :refer [retry-until-success exponential-backoff]]))
+
+(defn- hostname
+  []
+  (try
+    (.getHostName (InetAddress/getLocalHost))
+    (catch UnknownHostException e
+      (throw (RuntimeException.
+               (str
+                 "Can't get hostname. POSSIBLE FIX: http://stackoverflow.com/a/16361018. "
+                 "\nException was:"
+                 (.getMessage e)))))))
+
+(defn get-agent-details [system version]
+  {:hostname       (hostname)
+   :system_name    system
+   :system_version version})
 
 (defmacro throw-500
   [& body]

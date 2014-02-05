@@ -4,8 +4,12 @@
             [toshtogo.web.middleware :refer [sql-deps]]
             [toshtogo.core :refer [dev-db]]
             [toshtogo.util.core :refer [uuid uuid-str debug]]
+            [toshtogo.client.util :refer [get-agent-details]]
             [toshtogo.agents :refer :all]
             [toshtogo.api :refer :all]))
+
+(def agent (get-agent-details "test" "0.0.0"))
+
 
 (fact "Job records are the right shape"
   (let [agent-details (get-agent-details "test" "test")]
@@ -24,8 +28,8 @@
          tag-two   (uuid-str)
          {:keys [agents api]} (sql-deps cnxn)]
 
-     (put-job! api (job-req id-one (get-agent-details "test" "0.0.0") {:some-data 123} [tag-one]))
-     (put-job! api (job-req id-two  (get-agent-details "test" "0.0.0") {:some-data 456} [tag-two]))
+     (put-job! api (job-req id-one agent {:some-data 123} [tag-one]))
+     (put-job! api (job-req id-two  agent {:some-data 456} [tag-two]))
 
      (get-contracts api {:state :waiting :tags [tag-one]})
      => (contains (contains {:job_id id-one})))))
@@ -35,11 +39,10 @@
    [cnxn dev-db]
    (let [job-id               (uuid)
          tag                  (uuid-str)
-         agent                (get-agent-details "test" "0.0.0")
          {:keys [agents api]} (sql-deps cnxn)]
 
      (put-job! api (job-req job-id agent {:some-data 123} [tag]))
-     (pause-job! api job-id)
+     (pause-job! api job-id agent)
 
      (get-contract api {:job_id job-id})
      => (contains {:outcome :cancelled})
@@ -52,7 +55,6 @@
     [cnxn dev-db]
     (let [job-id               (uuid)
           tag                  (uuid-str)
-          agent                (get-agent-details "test" "0.0.0")
           commitment-id        (uuid)
           {:keys [agents api]} (sql-deps cnxn)]
 
@@ -60,7 +62,7 @@
 
       (request-work! api commitment-id [tag] agent) => truthy
 
-      (pause-job! api job-id)
+      (pause-job! api job-id agent)
 
       (get-contract api {:job_id job-id})
       => (contains {:outcome :cancelled})
@@ -75,7 +77,6 @@
     [cnxn dev-db]
     (let [job-id               (uuid)
           tag                  (uuid-str)
-          agent                (get-agent-details "test" "0.0.0")
           commitment-id        (uuid)
           {:keys [agents api]} (sql-deps cnxn)]
 
@@ -84,7 +85,7 @@
       (request-work! api commitment-id [tag] agent) => truthy
       (complete-work! api commitment-id (success {}))
 
-      (pause-job! api job-id)
+      (pause-job! api job-id agent)
 
       (get-contract api {:job_id job-id})
       => (contains {:outcome :success}))))
@@ -97,7 +98,6 @@
           job-id-1-2           (uuid)
           job-id-1-2-1         (uuid)
           tag                  (uuid-str)
-          agent                (get-agent-details "test" "0.0.0")
           commitment-id        (uuid)
           {:keys [agents api]} (sql-deps cnxn)]
 
@@ -106,7 +106,7 @@
                              (job-req job-id-1-2 agent {} [tag]
                                       (job-req job-id-1-2-1 agent {} [tag]))))
 
-      (pause-job! api job-id-1)
+      (pause-job! api job-id-1 agent)
 
       (get-contract api {:job_id job-id-1-2-1})
       => (contains {:outcome :cancelled})

@@ -47,7 +47,7 @@
   (put-job!   [this job])
   (get-job    [this job-id])
   (get-jobs   [this params])
-  (pause-job! [this job-id])
+  (pause-job! [this job-id agent-details])
 
   (get-contracts [this params])
   (get-contract  [this params])

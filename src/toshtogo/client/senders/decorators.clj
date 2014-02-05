@@ -1,4 +1,4 @@
-(ns toshtogo.client.decorators
+(ns toshtogo.client.senders.decorators
   (:import (toshtogo.client.senders SenderException))
   (:require [cheshire.core :as json]
             [toshtogo.util.core :refer [debug exponential-backoff]]

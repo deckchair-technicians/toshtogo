@@ -1,27 +1,17 @@
 (ns toshtogo.client.protocol)
 
-(defn success [response-body]
-  {:outcome :success
-   :result  response-body})
+(defn job-req
+  ([body tags]
+   {:tags tags
+    :request_body body})
+  ([body tags dependencies]
+   (assoc (job-req body tags) :dependencies dependencies)))
 
-(defn error [error-text]
-  {:outcome :error
-   :error   error-text})
-
-(defn cancelled []
-  {:outcome :cancelled})
-
-(defn add-dependencies [dependency & dependencies]
-  {:outcome      :more-work
-   :dependencies (concat [dependency] dependencies)})
-
-(defn try-later
-  ([contract-due]
-   {:outcome       :try-later
-    :contract_due contract-due})
-  ([contract-due error-text]
-   (assoc (try-later contract-due)
-     :error error-text)))
+(def success             toshtogo.api/success)
+(def error               toshtogo.api/error)
+(def cancelled           toshtogo.api/cancelled)
+(def add-dependencies    toshtogo.api/add-dependencies)
+(def try-later           toshtogo.api/try-later)
 
 (defprotocol Client
   (put-job! [this job-id job-req])

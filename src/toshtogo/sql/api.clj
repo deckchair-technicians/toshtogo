@@ -8,7 +8,7 @@
             [toshtogo.api :refer :all]
             [toshtogo.sql.jobs-helper :refer :all]
             [toshtogo.sql.contracts-helper :refer :all]
-            [toshtogo.agents :refer [agent! get-agent-details]]
+            [toshtogo.agents :refer [agent!]]
             [toshtogo.util.sql :as tsql]))
 
 (defn unfinished-contract [job-id]
@@ -56,13 +56,13 @@
     (get-job [this job-id]
       (first (get-jobs this {:job_id job-id})))
 
-    (pause-job! [this job-id]
+    (pause-job! [this job-id agent-details]
       (let [contract (get-contract this {:job_id job-id})]
         (when (= :waiting (:outcome contract))
-          (let [commitment-id (ensure-commitment-id! cnxn agents contract (get-agent-details "toshtogo" "1"))]
+          (let [commitment-id (ensure-commitment-id! cnxn agents contract agent-details)]
             (complete-work! this commitment-id (cancelled)))))
       (doseq [dependency  (get-jobs this {:dependency_of_job_id job-id})]
-        (pause-job! this (dependency :job_id))))
+        (pause-job! this (dependency :job_id) agent-details)))
 
     (get-contracts [this params]
       (map

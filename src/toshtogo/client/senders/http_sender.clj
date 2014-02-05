@@ -1,10 +1,10 @@
-(ns toshtogo.client.http-sender
+(ns toshtogo.client.senders.http-sender
   (:import (java.io InputStream))
   (:require [org.httpkit.client :as http]
             [clojure.string :as str]
             [flatland.useful.map :refer [update]]
             [toshtogo.util.json :as tjson]
-            [toshtogo.client.senders :refer :all]))
+            [toshtogo.client.senders.protocol :refer :all]))
 
 (defmulti ensure-str class)
 (defmethod ensure-str :default [x] (.toString x))

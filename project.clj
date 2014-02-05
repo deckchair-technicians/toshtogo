@@ -28,7 +28,7 @@
 
   :ring {:handler toshtogo.core/dev-app}
 
-  :aot [toshtogo.web.IdempotentPutException toshtogo.util.OptimisticLockingException toshtogo.client.SenderException]
+  :aot [toshtogo.web.IdempotentPutException toshtogo.util.OptimisticLockingException toshtogo.client.senders.SenderException]
 
   :profiles {:dev {:dependencies [[javax.servlet/servlet-api "2.5"]
                                   [midje "1.5.1"]]

@@ -50,7 +50,7 @@
 
         (POST "/pause" []
           (let [job-id (uuid job-id)]
-            {:body (pause-job! api job-id)}))))
+            {:body (pause-job! api job-id (body :agent))}))))
 
     (context "/commitments" {:keys [api body check-idempotent!]}
       (PUT "/" []

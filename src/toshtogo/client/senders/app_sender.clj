@@ -1,10 +1,10 @@
-(ns toshtogo.client.app-sender
+(ns toshtogo.client.senders.app-sender
   (:require [ring.mock.request :refer [request body header]]
             [clojure.string :as str]
-            [toshtogo.client.senders :refer :all]
+            [toshtogo.client.senders.protocol :refer :all]
             [toshtogo.util.json :as tjson]))
 
-(defn AppSender [agent-details app]
+(defn app-sender [agent-details app]
   (letfn [(make-request [method location message]
                         (let [req (request
                                     method
