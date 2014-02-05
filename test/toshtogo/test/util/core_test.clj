@@ -1,7 +1,8 @@
 (ns toshtogo.test.util.core-test
   (:import (java.util.concurrent ExecutionException))
   (:require [flatland.useful.map :refer [into-map]]
-            [midje.sweet :refer :all]))
+            [midje.sweet :refer :all]
+            [toshtogo.util.core :refer [exponential-backoff]]))
 
 (defn fail-a-few-times [return-value & {:keys [failure-count] :or {failure-count 5}}]
   (let [a (atom 0)]
@@ -53,3 +54,9 @@
                 (toshtogo.util.core/sleep 20) => nil :times 1
                 (toshtogo.util.core/sleep 30) => nil :times 1
                 (toshtogo.util.core/sleep 40) => nil :times 0))
+
+(fact "exponential backoff works"
+      (exponential-backoff 4000 2) => 400
+      (exponential-backoff 4000 3) => 800
+      (exponential-backoff 4000 4) => 1600
+      (exponential-backoff 1000 4) => 1000)
