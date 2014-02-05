@@ -10,6 +10,12 @@
       (throw-500 {:status 200}) => {:status 200}
       (throw-500 nil) => nil)
 
+(defn fail-a-few-times [return-value & {:keys [failure-count] :or {failure-count 5}}]
+  (let [a (atom 0)]
+    (fn []
+      (if (<= (swap! a inc) failure-count)
+        (throw (RuntimeException. (str @a)))
+        return-value))))
 
 (defn _500-a-few-times [return-value & {:keys [failure-count] :or {failure-count 5}}]
   (let [a (atom 0)]
@@ -38,6 +44,8 @@
     ))
 
 (fact "until-successful-response keeps retrying until it gets a success"
+      (until-successful-response (fail-a-few-times {:status 200})) => {:status 200}
+
       (until-successful-response (_500-a-few-times {:status 200})) => {:status 200}
       (until-successful-response (_500-a-few-times "result")) => "result"
 
