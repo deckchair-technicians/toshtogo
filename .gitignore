@@ -11,3 +11,4 @@ pom.xml.asc
 /.nrepl-port
 .idea
 *.iml
+src/toshtogo/scratch.clj
