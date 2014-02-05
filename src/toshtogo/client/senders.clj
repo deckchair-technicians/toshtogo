@@ -77,14 +77,14 @@
 
 (defn RetrySender
   [decorated]
-  (reify Sender
-    (POST! [this location message]
-      (POST! decorated location message))
-    (PUT! [this location message]
-      (until-successful-response {:interval-fn (partial exponential-backoff 5000)}
-                                 (PUT! decorated location message)))
-    (GET [this location]
-      (GET decorated location))))
+  (let [backoff-opts {:interval-fn (partial exponential-backoff 5000)}]
+    (reify Sender
+      (POST! [this location message]
+        (until-successful-response backoff-opts (POST! decorated location message)))
+      (PUT! [this location message]
+        (until-successful-response backoff-opts (PUT! decorated location message)))
+      (GET [this location]
+        (until-successful-response backoff-opts (GET decorated location))))))
 
 (defn app-sender
   ([app]
