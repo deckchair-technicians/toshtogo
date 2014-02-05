@@ -10,7 +10,7 @@
             [toshtogo.api :refer [success error add-dependencies try-later]]
             [toshtogo.util.core :refer [uuid uuid-str debug]]))
 
-(def client (http-sender-client "http://localhost:3000/"))
+(def client (http-client "http://localhost:3000/"))
 
 #_(def client (app-sender-client (app dev-db)))
 

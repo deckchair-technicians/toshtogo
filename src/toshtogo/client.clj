@@ -75,8 +75,8 @@
             {:contract contract
              :result   result}))))))
 
-(defn app-sender-client [app]
+(defn app-client [app]
   (sender-client (app-sender app)))
 
-(defn http-sender-client [base-path]
+(defn http-client [base-path]
   (sender-client (http-sender base-path)))
