@@ -1,4 +1,4 @@
-(ns toshtogo.test.sql-test
+(ns toshtogo.test.server.api.sql-test
   (:import (java.sql Timestamp))
   (:require [midje.sweet :refer :all]
             [clojure.string :as str]

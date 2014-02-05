@@ -1,4 +1,4 @@
-(ns toshtogo.test.jobs-test
+(ns toshtogo.test.server.api.sql-jobs-test
   (:require [midje.sweet :refer :all]
             [clojure.java.jdbc :as sql]
             [toshtogo.server.util.middleware :refer [sql-deps]]

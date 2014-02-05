@@ -1,4 +1,4 @@
-(ns toshtogo.test.contracts-test
+(ns toshtogo.test.server.api.sql-contracts-test
   (:require [midje.sweet :refer :all]
             [clojure.java.jdbc :as sql]
             [clojure.string :as str]

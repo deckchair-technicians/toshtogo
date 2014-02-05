@@ -1,4 +1,4 @@
-(ns toshtogo.test.client-test
+(ns toshtogo.test.client.clients.sender-client-test
   (:require [clj-time.core :refer [now minutes plus after?]]
             [midje.sweet :refer :all]
             [ring.adapter.jetty :refer [run-jetty]]
