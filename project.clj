@@ -24,11 +24,13 @@
   :plugins [[lein-ring "0.8.8"]
             [s3-wagon-private "1.1.2"]]
 
-  :main toshtogo.core
+  :main toshtogo.server.core
 
-  :ring {:handler toshtogo.core/dev-app}
+  :ring {:handler toshtogo.server.core/dev-app}
 
-  :aot [toshtogo.web.IdempotentPutException toshtogo.util.OptimisticLockingException toshtogo.client.senders.SenderException]
+  :aot [toshtogo.server.util.IdempotentPutException
+        toshtogo.util.OptimisticLockingException
+        toshtogo.client.senders.SenderException]
 
   :profiles {:dev {:dependencies [[javax.servlet/servlet-api "2.5"]
                                   [midje "1.5.1"]]

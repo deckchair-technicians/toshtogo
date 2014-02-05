@@ -2,12 +2,12 @@
   (:require [midje.sweet :refer :all]
             [clojure.java.jdbc :as sql]
             [clojure.string :as str]
-            [toshtogo.web.middleware :refer [sql-deps]]
+            [toshtogo.server.util.middleware :refer [sql-deps]]
             [toshtogo.util.core :refer [uuid uuid-str debug]]
-            [toshtogo.core :refer [dev-db]]
+            [toshtogo.server.core :refer [dev-db]]
             [toshtogo.client.util :refer [get-agent-details]]
-            [toshtogo.agents :refer :all]
-            [toshtogo.api :refer :all]))
+            [toshtogo.server.agents.protocol :refer :all]
+            [toshtogo.server.api.protocol :refer :all]))
 
 (def agent-details (get-agent-details "test" "0.0.0"))
 

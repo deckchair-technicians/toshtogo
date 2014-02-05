@@ -1,10 +1,10 @@
-(ns toshtogo.sql.jobs-helper
+(ns toshtogo.server.api.sql-jobs-helper
   (:require [flatland.useful.map :refer [update update-each]]
             [pallet.map-merge :refer [merge-keys]]
             [clj-time.core :refer [now]]
             [clj-time.coerce :as tc]
             [cheshire.core :as json]
-            [toshtogo.api :refer :all]
+            [toshtogo.server.api.protocol :refer :all]
             [toshtogo.util.core :refer [uuid debug]]
             [toshtogo.util.sql :as tsql])
   (:import [toshtogo.util OptimisticLockingException]))

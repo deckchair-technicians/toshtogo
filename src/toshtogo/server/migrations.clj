@@ -1,8 +1,8 @@
-(ns toshtogo.migrations
+(ns toshtogo.server.migrations
   (:require  [clojure.java.io :as io]
              [clojure.java.jdbc :as sql]
              [me.raynes.fs :as fs])
-  (:import [java.security CodeSource]
+  (:import [java.security CodeSource ProtectionDomain]
            [java.net URL]
            [java.util.zip ZipInputStream]
            [com.dbdeploy DbDeploy]))

@@ -1,4 +1,4 @@
-(ns toshtogo.web.handler
+(ns toshtogo.server.handler
   (:require [compojure.core :refer :all]
             [compojure.handler :as handler]
             [compojure.route :as route]
@@ -6,15 +6,15 @@
             [ring.middleware.json :refer [wrap-json-response wrap-json-body]]
             [ring.util.response :as resp]
             [flatland.useful.map :refer [update]]
-            [toshtogo.web.middleware :refer [wrap-body-hash
+            [toshtogo.server.util.middleware :refer [wrap-body-hash
                                              wrap-db-transaction
                                              wrap-dependencies
                                              wrap-print-response
                                              wrap-print-request
                                              wrap-retry-on-exceptions]]
-            [toshtogo.api :refer :all]
+            [toshtogo.server.api.protocol :refer :all]
             [toshtogo.util.core :refer [uuid ppstr debug parse-datetime]])
-  (:import [toshtogo.web IdempotentPutException]
+  (:import [toshtogo.server.util IdempotentPutException]
            [java.io InputStream]
            [org.joda.time DateTime]))
 

@@ -3,16 +3,18 @@
             [midje.sweet :refer :all]
             [ring.adapter.jetty :refer [run-jetty]]
             [clojure.java.jdbc :as sql]
-            [toshtogo.core :refer [dev-app]]
+            [toshtogo.server.core :refer [dev-app]]
             [toshtogo.client.protocol :refer :all]
             [toshtogo.client.core :as ttc]
             [toshtogo.util.core :refer [uuid uuid-str debug cause-trace]]))
 
 (def in-process {:type :app :app dev-app})
-(def localhost {:type :http :app "http://localhost:3000/"})
-(def client (ttc/client in-process
-                        :error-fn (fn [e] (println (cause-trace e)))
-                        :system   "client-test"
+(def localhost {:type :http :base-path "http://localhost:3000/"})
+
+(def client-config in-process)
+(def client (ttc/client client-config
+                        :error-fn  (fn [e] (println (cause-trace e)))
+                        :system    "client-test"
                         :version   "0.0"))
 
 (defn return-success [job] (success {:result 1}))
@@ -190,21 +192,22 @@
                                   :in-any-order))))))
 
   (facts "Try again later"
-         (let [job-id (uuid)
-               job-tag (uuid-str)
-               before-due-time (now)
-               due-time (plus before-due-time (minutes 1))]
+         (when (= :app (:type client-config))
+           (let [job-id (uuid)
+                 job-tag (uuid-str)
+                 before-due-time (now)
+                 due-time (plus before-due-time (minutes 1))]
 
-           (put-job! client job-id (job-req [] [job-tag]))
+             (put-job! client job-id (job-req [] [job-tag]))
 
-           (let [delay (fn [job] (try-later due-time "some error happened"))]
-             @(do-work! client [job-tag] delay)) => truthy
+             (let [delay (fn [job] (try-later due-time "some error happened"))]
+               @(do-work! client [job-tag] delay)) => truthy
 
-           (request-work! client [job-tag]) => nil
-           (provided (now) => before-due-time)
+             (request-work! client [job-tag]) => nil
+             (provided (now) => before-due-time)
 
-           @(do-work! client [job-tag] return-success) => truthy
-           (provided (now) => due-time)))
+             @(do-work! client [job-tag] return-success) => truthy
+             (provided (now) => due-time))))
 
   (facts "Heartbeats get stored, but only if they are more recent than the current heartbeat."
          (let [job-id (uuid)

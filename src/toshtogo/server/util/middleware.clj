@@ -1,12 +1,12 @@
-(ns toshtogo.web.middleware
+(ns toshtogo.server.util.middleware
   (:require [clojure.java.jdbc :as sql]
             [net.cgrand.enlive-html :as html]
             [clojure.stacktrace :refer [print-cause-trace]]
             [clojure.pprint :refer [pprint]]
-            [toshtogo.web.idempotentput :refer [check-idempotent!]]
-            [toshtogo.agents :refer [sql-agents]]
-            [toshtogo.api :refer :all]
-            [toshtogo.sql.api :refer [sql-api]]
+            [toshtogo.server.util.idempotentput :refer [check-idempotent!]]
+            [toshtogo.server.agents.sql :refer [sql-agents]]
+            [toshtogo.server.api.protocol :refer :all]
+            [toshtogo.server.api.sql :refer [sql-api]]
             [toshtogo.util.core :refer [debug ppstr]]
             [toshtogo.util.hashing :refer [murmur!]]
             [toshtogo.util.io :refer [byte-array-input! byte-array-output!]])

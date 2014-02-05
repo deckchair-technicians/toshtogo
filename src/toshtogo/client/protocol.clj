@@ -1,4 +1,5 @@
-(ns toshtogo.client.protocol)
+(ns toshtogo.client.protocol
+  (:require [toshtogo.server.api.protocol :as server-protocol]))
 
 (defn job-req
   ([body tags]
@@ -7,11 +8,11 @@
   ([body tags dependencies]
    (assoc (job-req body tags) :dependencies dependencies)))
 
-(def success             toshtogo.api/success)
-(def error               toshtogo.api/error)
-(def cancelled           toshtogo.api/cancelled)
-(def add-dependencies    toshtogo.api/add-dependencies)
-(def try-later           toshtogo.api/try-later)
+(def success             server-protocol/success)
+(def error               server-protocol/error)
+(def cancelled           server-protocol/cancelled)
+(def add-dependencies    server-protocol/add-dependencies)
+(def try-later           server-protocol/try-later)
 
 (defprotocol Client
   (put-job! [this job-id job-req])

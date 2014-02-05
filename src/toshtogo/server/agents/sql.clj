@@ -1,10 +1,8 @@
-(ns toshtogo.agents
+(ns toshtogo.server.agents.sql
   (:require [clojure.java.jdbc :as sql]
             [toshtogo.util.sql :as tsql]
-            [toshtogo.util.core :refer [uuid]]))
-
-(defprotocol Agents
-  (agent! [this agent-details]))
+            [toshtogo.util.core :refer [uuid]]
+            [toshtogo.server.agents.protocol :refer :all]))
 
 (def select-agent-sql
   "select

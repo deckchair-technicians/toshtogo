@@ -11,6 +11,8 @@
 (defmethod ensure-str InputStream [x] (slurp x))
 
 (defn http-sender [agent-details base-path]
+  (assert agent-details)
+  (assert base-path)
   (letfn [(url-and-body
             [location message]
             [(str base-path (str/replace-first location #"^/" ""))

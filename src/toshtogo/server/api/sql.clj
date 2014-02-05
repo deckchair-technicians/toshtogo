@@ -1,14 +1,14 @@
-(ns toshtogo.sql.api
+(ns toshtogo.server.api.sql
   (:require [clojure.java.jdbc :as sql]
             [clj-time.core :refer [now minus seconds]]
             [clj-time.format :refer [parse]]
             [cheshire.core :as json]
             [flatland.useful.map :refer [update update-each]]
             [toshtogo.util.core :refer [uuid debug as-coll]]
-            [toshtogo.api :refer :all]
-            [toshtogo.sql.jobs-helper :refer :all]
-            [toshtogo.sql.contracts-helper :refer :all]
-            [toshtogo.agents :refer [agent!]]
+            [toshtogo.server.api.protocol :refer :all]
+            [toshtogo.server.api.sql-jobs-helper :refer :all]
+            [toshtogo.server.api.sql-contracts-helper :refer :all]
+            [toshtogo.server.agents.protocol :refer [agent!]]
             [toshtogo.util.sql :as tsql]))
 
 (defn unfinished-contract [job-id]

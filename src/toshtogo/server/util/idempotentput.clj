@@ -1,6 +1,6 @@
-(ns toshtogo.web.idempotentput
+(ns toshtogo.server.util.idempotentput
   (:require [toshtogo.util.sql :as tsql])
-  (:import [toshtogo.web IdempotentPutException]))
+  (:import [toshtogo.server.util IdempotentPutException]))
 
 (defn put-is-identical?
   [previous-put hash-1 hash-2]

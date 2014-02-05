@@ -1,10 +1,10 @@
-(ns toshtogo.sql.contracts-helper
+(ns toshtogo.server.api.sql-contracts-helper
   (:require [flatland.useful.map :refer [map-vals-with-keys update]]
             [cheshire.core :as json]
             [clj-time.core :refer [now]]
             [clojure.string :as str]
-            [toshtogo.api :refer :all]
-            [toshtogo.agents :refer [agent!]]
+            [toshtogo.server.api.protocol :refer :all]
+            [toshtogo.server.agents.protocol :refer [agent!]]
             [toshtogo.util.sql :as tsql]
             [toshtogo.util.core :refer [uuid debug]]))
 

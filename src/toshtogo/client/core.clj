@@ -11,9 +11,13 @@
   [client-opts agent-details]
   (case (:type client-opts)
     :http
-    (http-sender agent-details (:base-path client-opts))
+    (let [base-path (:base-path client-opts)]
+      (assert base-path)
+      (http-sender agent-details base-path))
     :app
-    (app-sender agent-details (:app client-opts))))
+    (let [app (:app client-opts)]
+      (assert app)
+      (app-sender agent-details app))))
 
 
 (defn client
@@ -26,7 +30,13 @@
 
   :type     :http
   :base-url <some url>"
-  [client-opts & {:keys [system version error-fn] :or {:system "unknown" :version "unknown" :error-fn nil} :as opts}]
-  (sender-client (default-decoration
-                   (sender client-opts (get-agent-details system version))
-                   :error-fn error-fn)))
+  [client-opts & {:keys [system version error-fn timeout]
+                  :or {:system "unknown" :version "unknown"}
+                  :as opts}]
+
+  (let [sender     (sender client-opts (get-agent-details system version))
+        retry-opts (select-keys opts [:error-fn :timeout])]
+
+    (sender-client (apply default-decoration
+                          sender
+                          (flatten (seq retry-opts))))))

@@ -6,9 +6,10 @@
             [clojure.string :as str]
             [clojure.pprint :refer [pprint]]
             [toshtogo.util.core :refer :all])
-  (:import [java.sql PreparedStatement]
+  (:import [java.sql PreparedStatement BatchUpdateException Timestamp]
            [clojure.lang Keyword]
-           [java.lang IllegalArgumentException]))
+           [java.lang IllegalArgumentException]
+           (org.joda.time DateTime)))
 
 (defn missing-keys-exception [m missing-keys]
   (IllegalArgumentException.
@@ -47,7 +48,7 @@
     (str/replace sql pattern question-marks)))
 
 (defmulti fix-type class)
-(defmethod fix-type org.joda.time.DateTime [v] (java.sql.Timestamp.(.getMillis v)))
+(defmethod fix-type DateTime [v] (Timestamp. (.getMillis v)))
 (defmethod fix-type Keyword [v] (name v))
 (defmethod fix-type :default [v] (identity v))
 
@@ -97,7 +98,7 @@
      (map-vals set-map fix-type)
      (map fix-type where-clause)
      :transaction? false)
-    (catch java.sql.BatchUpdateException e (throw (.getNextException e)))))
+    (catch BatchUpdateException e (throw (.getNextException e)))))
 
 (defn query [cnxn sql params]
   "Takes some sql including references to parameters in the form

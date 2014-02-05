@@ -1,4 +1,4 @@
-(ns toshtogo.api)
+(ns toshtogo.server.api.protocol)
 
 (defn job-req
   [id agent-details body tags & dependencies]
