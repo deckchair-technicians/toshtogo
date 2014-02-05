@@ -74,8 +74,9 @@
    :interval-fn     function that takes an integer for # of retries and return the # of millis to pause
    :timeout         number of millis after which we give up
    :error-fn        function to pass errors to"
-  [func & {:keys [interval interval-fn timeout max-retries error-fn] :or {interval 10 error-fn (constantly nil)} :as opts}]
-  (let [interval-fn         (if interval-fn interval-fn (fn [i] interval))
+  [func & {:keys [interval interval-fn timeout max-retries error-fn] :or {interval 10 error-fn nil} :as opts}]
+  (let [error-fn             (or error-fn (constantly nil))
+        interval-fn         (if interval-fn interval-fn (fn [i] interval))
         started             (now)
         elapsed-time        (fn [] (interval started (now)))
         timeout-time        (when timeout (plus (now) (millis timeout)))

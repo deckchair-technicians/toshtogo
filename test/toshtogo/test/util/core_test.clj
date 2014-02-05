@@ -61,7 +61,9 @@
             error-fn (fn [e] (swap! errors (fn [v] (cons e v))))]
 
         (retry-until-success (fail-a-few-times "succeeds eventually" :failure-count failure-count) :error-fn error-fn) => "succeeds eventually"
-        (count @errors) => failure-count))
+        (count @errors) => failure-count)
+
+      (retry-until-success (fail-a-few-times "succeeds eventually") :error-fn nil) => "succeeds eventually")
 
 (fact "exponential backoff"
       (exponential-backoff 4000 2) => 400
