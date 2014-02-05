@@ -72,8 +72,9 @@
 (defn retry-until-success*
   ":interval        pause between retries, in millis
    :interval-fn     function that takes an integer for # of retries and return the # of millis to pause
-   :timeout         number of millis af"
-  [func & {:keys [interval interval-fn timeout max-retries] :or {interval 10} :as opts}]
+   :timeout         number of millis after which we give up
+   :error-fn        function to pass errors to"
+  [func & {:keys [interval interval-fn timeout max-retries error-fn] :or {interval 10 error-fn (constantly nil)} :as opts}]
   (let [interval-fn         (if interval-fn interval-fn (fn [i] interval))
         started             (now)
         elapsed-time        (fn [] (interval started (now)))
@@ -88,7 +89,8 @@
           (throw (RuntimeException.
                    (str "Giving up on retry after" attempt-number "attempts and" (elapsed-time))
                    (second result)))
-          (do (sleep (interval-fn attempt-number))
+          (do (error-fn (second result))
+              (sleep (interval-fn attempt-number))
               (recur (inc attempt-number) (or-exception func))))))))
 
 (defmacro retry-until-success

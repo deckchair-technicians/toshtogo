@@ -55,7 +55,15 @@
                 (toshtogo.util.core/sleep 30) => nil :times 1
                 (toshtogo.util.core/sleep 40) => nil :times 0))
 
-(fact "exponential backoff works"
+(fact "retry-until-success uses error function"
+      (let [failure-count 3
+            errors   (atom [])
+            error-fn (fn [e] (swap! errors (fn [v] (cons e v))))]
+
+        (retry-until-success (fail-a-few-times "succeeds eventually" :failure-count failure-count) :error-fn error-fn) => "succeeds eventually"
+        (count @errors) => failure-count))
+
+(fact "exponential backoff"
       (exponential-backoff 4000 2) => 400
       (exponential-backoff 4000 3) => 800
       (exponential-backoff 4000 4) => 1600
