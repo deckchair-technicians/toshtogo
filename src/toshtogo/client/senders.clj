@@ -72,7 +72,8 @@
       (PUT! [this location message]
         (debug "PUT RESPONSE" (apply PUT! decorated (debug "PUT!" [location message]))))
       (GET [this location]
-        (debug "GET" (GET decorated location))))
+        (println "GET " location)
+        (debug "GET RESPONSE" (GET decorated location))))
     decorated))
 
 (defn RetrySender
