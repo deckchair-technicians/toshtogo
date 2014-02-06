@@ -1,6 +1,6 @@
 (ns toshtogo.test.client.clients.sender-client-test
   (:import (java.util UUID))
-  (:require [clj-time.core :refer [now minutes seconds plus minus after?]]
+  (:require [clj-time.core :refer [now minutes seconds plus minus after? interval within?]]
             [midje.sweet :refer :all]
             [ring.adapter.jetty :refer [run-jetty]]
             [clojure.java.jdbc :as sql]
@@ -260,26 +260,34 @@
 (defn isinstance [c]
   (fn [x] (instance? c x)))
 
+(defn close-to [expected tolerance-period]
+  (let [acceptable-interval (interval (minus expected tolerance-period)
+                                      (plus expected tolerance-period))]
+    (fn [x] (within? acceptable-interval expected))))
+
 (fact "Current job state is serialised between server and client as expected"
       (let [job-id (uuid)
             commitment-id (atom "not set")
             tag (uuid-str)
             created-time (now)
             due-time (minus created-time (seconds 5))
-            request-body {:a-field "field value"}]
+            request-body {:a-field "field value"}
+            timestamp-tolerance (case (client-config :type)
+                                  :app (seconds 0)
+                                  :http (seconds 5))]
 
         (put-job! client job-id (job-req request-body [tag]))
         => (just {:commitment_agent    nil
                   :commitment_id       nil
                   :contract_claimed    nil
-                  :contract_created    created-time
-                  :contract_due        due-time
+                  :contract_created    (close-to created-time timestamp-tolerance)
+                  :contract_due        (close-to due-time timestamp-tolerance)
                   :contract_finished   nil
                   :contract_id         (isinstance UUID)
                   :contract_number     1
                   :contracts_completed 0
                   :error               nil
-                  :job_created         created-time
+                  :job_created         (close-to created-time timestamp-tolerance)
                   :job_id              job-id
                   :last_heartbeat      nil
                   :outcome             :waiting
