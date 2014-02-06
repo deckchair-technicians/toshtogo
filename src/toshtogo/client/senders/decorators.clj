@@ -1,7 +1,7 @@
 (ns toshtogo.client.senders.decorators
   (:import (toshtogo.client.senders SenderException))
-  (:require [cheshire.core :as json]
-            [toshtogo.util.core :refer [debug exponential-backoff]]
+  (:require [toshtogo.util.core :refer [debug exponential-backoff]]
+            [toshtogo.util.json :as json]
             [toshtogo.client.util :refer [until-successful-response]]
             [toshtogo.client.senders.protocol :refer :all]))
 
@@ -28,13 +28,13 @@
   (reify
     Sender
     (POST! [this location message]
-      (json/parse-string (:body (POST! decorated location message)) keyword))
+      (json/decode (:body (POST! decorated location message))))
 
     (PUT! [this location message]
-      (json/parse-string (:body (PUT! decorated location message)) keyword))
+      (json/decode (:body (PUT! decorated location message))))
 
     (GET [this location]
-      (json/parse-string (:body (GET decorated location)) keyword))))
+      (json/decode (:body (GET decorated location))))))
 
 (defn debug-sender [should-debug decorated]
   (if should-debug
