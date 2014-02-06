@@ -3,22 +3,22 @@
             [compojure.handler :as handler]
             [compojure.route :as route]
             [cheshire.generate :as json-gen]
-            [ring.middleware.json :refer [wrap-json-response wrap-json-body]]
+            [ring.middleware.json :refer [wrap-json-body]]
             [ring.util.response :as resp]
             [flatland.useful.map :refer [update]]
+
+
             [toshtogo.server.util.middleware :refer [wrap-body-hash
                                              wrap-db-transaction
                                              wrap-dependencies
                                              wrap-print-response
                                              wrap-print-request
-                                             wrap-retry-on-exceptions]]
+                                             wrap-retry-on-exceptions
+                                             wrap-json-response]]
             [toshtogo.server.api.protocol :refer :all]
             [toshtogo.util.core :refer [uuid ppstr debug parse-datetime]])
   (:import [toshtogo.server.util IdempotentPutException]
-           [java.io InputStream]
-           [org.joda.time DateTime]))
-
-(json-gen/add-encoder DateTime json-gen/encode-str)
+           [java.io InputStream]))
 
 (defn job-redirect [job-id]
   (resp/redirect-after-post (str "/api/jobs/" job-id)))
@@ -87,14 +87,15 @@
   (route/not-found {:status "I'm sorry :("})
 
 
-(defn app [db]
+(defn app [db & {:keys [debug] :or {debug false}}]
   (routes
-   (-> (handler/api api-routes)
-       wrap-print-response
-       wrap-print-request
-       wrap-dependencies
+    (cond->
+      (-> (handler/api api-routes)
+          wrap-dependencies
 
-       (wrap-json-body {:keywords? true})
-       wrap-body-hash
-       (wrap-db-transaction db)
-       wrap-json-response)))
+          (wrap-json-body {:keywords? true})
+          wrap-body-hash
+          (wrap-db-transaction db)
+          wrap-json-response)
+      debug wrap-print-response
+      debug wrap-print-request)))

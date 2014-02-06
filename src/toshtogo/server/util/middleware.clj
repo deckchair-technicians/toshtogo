@@ -8,6 +8,7 @@
             [toshtogo.server.api.protocol :refer :all]
             [toshtogo.server.api.sql :refer [sql-api]]
             [toshtogo.util.core :refer [debug ppstr]]
+            [toshtogo.util.json :as json]
             [toshtogo.util.hashing :refer [murmur!]]
             [toshtogo.util.io :refer [byte-array-input! byte-array-output!]])
   (:import [java.io ByteArrayInputStream]))
@@ -69,20 +70,34 @@
       )))
 
 (defn wrap-print-response
-  [handler]
+  [handler & messages]
   (fn [req]
     (let [resp (handler req)]
       (println)
       (println "Response")
+      (when messages (println messages))
       (println "---------------------------")
       (pprint resp)
       resp)))
 
 (defn wrap-print-request
-  [handler]
+  [handler & messages]
   (fn [req]
     (println)
     (println "Request")
+    (when messages (println messages))
     (println "---------------------------")
     (pprint req)
     (handler req)))
+
+(defn wrap-json-response
+  "Identical to ring.middleware.json/wrap-json-response but using our json encoder,
+  to ensure consistency."
+  [handler]
+  (fn [request]
+    (let [response (handler request)]
+      (if (coll? (:body response))
+        (-> response
+            (ring.util.response/content-type "application/json; charset=utf-8")
+            (update-in [:body] json/encode))
+        response))))
