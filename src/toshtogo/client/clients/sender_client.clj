@@ -1,23 +1,9 @@
 (ns toshtogo.client.clients.sender-client
   (:require [clj-time.format :as tf]
             [flatland.useful.map :refer [update]]
-            [toshtogo.util.core :refer [uuid cause-trace]]
+            [toshtogo.util.core :refer [uuid]]
             [toshtogo.client.protocol :refer :all]
             [toshtogo.client.senders.protocol :refer :all]))
-
-(def heartbeat-time 1000)
-
-(defn with-exception-handling
-  [heartbeat! f contract]
-  (try
-    (let [work-future (future (f contract))]
-      (doseq [done? (take-while false? (repeatedly (fn [] (or (future-cancelled? work-future)
-                                                              (future-done? work-future)))))]
-        (Thread/sleep heartbeat-time)
-        (when (= "cancel" (:instruction (heartbeat! contract))) (future-cancel work-future)))
-      @work-future)
-    (catch Throwable t
-      (error (cause-trace t)))))
 
 (defn sender-client [sender]
   (reify
@@ -47,12 +33,4 @@
             result))
 
     (heartbeat! [this commitment-id]
-      (POST! sender (str "/api/commitments/" commitment-id "/heartbeat") {}))
-
-    (do-work! [this tags f]
-      (future
-        (when-let [contract (request-work! this tags)]
-          (let [result (with-exception-handling (fn [c] (heartbeat! this (c :commitment_id))) f contract)]
-            (complete-work! this (contract :commitment_id) result)
-            {:contract contract
-             :result   result}))))))
+      (POST! sender (str "/api/commitments/" commitment-id "/heartbeat") {}))))
