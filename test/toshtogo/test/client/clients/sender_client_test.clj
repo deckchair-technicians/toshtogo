@@ -1,6 +1,6 @@
 (ns toshtogo.test.client.clients.sender-client-test
   (:import (java.util UUID))
-  (:require [clj-time.core :refer [now minutes seconds plus minus after? interval within?]]
+  (:require [clj-time.core :refer [now minutes seconds millis plus minus after? interval within?]]
             [midje.sweet :refer :all]
             [ring.adapter.jetty :refer [run-jetty]]
             [clojure.java.jdbc :as sql]
@@ -263,7 +263,8 @@
 (defn close-to [expected tolerance-period]
   (let [acceptable-interval (interval (minus expected tolerance-period)
                                       (plus expected tolerance-period))]
-    (fn [x] (within? acceptable-interval expected))))
+    (fn [x]
+      (within? acceptable-interval x))))
 
 (fact "Current job state is serialised between server and client as expected"
       (let [job-id (uuid)
@@ -273,7 +274,7 @@
             due-time (minus created-time (seconds 5))
             request-body {:a-field "field value"}
             timestamp-tolerance (case (client-config :type)
-                                  :app (seconds 0)
+                                  :app (millis 1)
                                   :http (seconds 5))]
 
         (put-job! client job-id (job-req request-body [tag]))
@@ -295,6 +296,4 @@
                   :requesting_agent    (isinstance UUID)
                   :result_body         nil
                   :tags                [tag]})
-        (provided (now) => created-time)
-
-        ))
+        (provided (now) => created-time)))
