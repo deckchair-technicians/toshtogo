@@ -27,7 +27,7 @@
 
   :main toshtogo.server.core
 
-  :ring {:handler toshtogo.server.core/dev-app}
+  :ring {:handler toshtogo.server.core/dev-app-instance}
 
   :aot [toshtogo.server.util.IdempotentPutException
         toshtogo.util.OptimisticLockingException

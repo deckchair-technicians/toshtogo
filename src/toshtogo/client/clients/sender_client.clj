@@ -14,7 +14,7 @@
             job-req))
 
     (get-job [this job-id]
-      (update (GET sender (str "/api/jobs/" job-id)) :last_heartbeat #(when % (tf/parse (tf/formatters :date-time) %))))
+      (GET sender (str "/api/jobs/" job-id)))
 
     (pause-job! [this job-id]
       (POST! sender

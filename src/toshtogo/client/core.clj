@@ -2,6 +2,7 @@
   (:require [toshtogo.util.core :refer [uuid cause-trace debug]]
             [toshtogo.client.protocol :refer [success error]]
             [toshtogo.client.clients.sender-client :refer :all]
+            [toshtogo.client.clients.json-converting-client :refer :all]
             [toshtogo.client.util :refer :all]
             [toshtogo.client.senders.decorators :refer :all]
             [toshtogo.client.senders.http-sender :refer :all]
@@ -36,7 +37,7 @@
 
   (let [sender          (sender client-opts (get-agent-details system version))
         decoration-opts (select-keys opts [:error-fn :timeout :debug])]
-
-    (sender-client (apply default-decoration
-                          sender
-                          (flatten (seq decoration-opts))))))
+    (json-converting-client
+      (sender-client (apply default-decoration
+                            sender
+                            (flatten (seq decoration-opts)))))))

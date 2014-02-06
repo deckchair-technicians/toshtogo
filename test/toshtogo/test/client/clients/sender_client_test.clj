@@ -1,5 +1,6 @@
 (ns toshtogo.test.client.clients.sender-client-test
-  (:require [clj-time.core :refer [now minutes plus after?]]
+  (:import (java.util UUID))
+  (:require [clj-time.core :refer [now minutes seconds plus minus after?]]
             [midje.sweet :refer :all]
             [ring.adapter.jetty :refer [run-jetty]]
             [clojure.java.jdbc :as sql]
@@ -8,21 +9,21 @@
             [toshtogo.client.core :as ttc]
             [toshtogo.util.core :refer [uuid uuid-str debug cause-trace]]))
 
-(def in-process {:type :app :app dev-app})
+(def in-process {:type :app :app (dev-app :debug false)})
 (def localhost {:type :http :base-path "http://localhost:3000"})
 
 (def client-config in-process)
 (def client (ttc/client client-config
                         :error-fn  (fn [e] (println (cause-trace e)))
                         :debug     false
-                        :timeout   nil
+                        :timeout   1000
                         :system    "client-test"
                         :version   "0.0"))
 
 (defn return-success [job] (success {:result 1}))
 
 (with-redefs
-  [toshtogo.client.clients.sender-client/heartbeat-time 1]
+  [toshtogo.client.protocol/heartbeat-time 1]
   (fact "Work can be requested"
         (let [job-id (uuid)
               tag (uuid-str)]
@@ -30,7 +31,7 @@
           (put-job! client job-id {:tags         [tag]
                                    :request_body {:a-field "field value"}})
 
-          (request-work! client [tag]) => (contains {:job_id       (str job-id)
+          (request-work! client [tag]) => (contains {:job_id job-id
                                                      :request_body {:a-field "field value"}})))
 
   (fact "Work can only be requested once"
@@ -51,12 +52,12 @@
           (let [func (fn [job] (success {:response-field "all good"}))
                 {:keys [contract result]} @(do-work! client [tag] func)]
             contract
-            => (contains {:job_id (str job-id) :request_body {:a-field "field value"}})
+            => (contains {:job_id job-id :request_body {:a-field "field value"}})
             result
             => (contains {:outcome :success :result {:response-field "all good"}}))
 
           (get-job client job-id)
-          => (contains {:outcome "success" :result_body {:response-field "all good"}})))
+          => (contains {:outcome :success :result_body {:response-field "all good"}})))
 
   (fact "Agents can report errors"
         (let [job-id (uuid)
@@ -67,12 +68,12 @@
           (let [func (fn [job] (error "something went wrong"))
                 {:keys [contract result]} @(do-work! client [tag] func)]
             contract
-            => (contains {:job_id (str job-id) :request_body {:a-field "field value"}})
+            => (contains {:job_id job-id :request_body {:a-field "field value"}})
             result
             => (contains {:outcome :error :error "something went wrong"}))
 
           (get-job client job-id)
-          => (contains {:outcome "error" :error "something went wrong"})))
+          => (contains {:outcome :error :error "something went wrong"})))
 
   (fact "Client can report unhandled exceptions"
         (let [job-id (uuid)
@@ -83,12 +84,12 @@
           (let [func (fn [job] (throw (Exception. "WTF")))
                 {:keys [contract result]} @(do-work! client [tag] func)]
             contract
-            => (contains {:job_id (str job-id) :request_body {:a-field "field value"}})
+            => (contains {:job_id job-id :request_body {:a-field "field value"}})
             result
             => (contains {:outcome :error :error (contains "WTF")}))
 
           (get-job client job-id)
-          => (contains {:outcome "error" :error (contains "WTF")})))
+          => (contains {:outcome :error :error (contains "WTF")})))
 
   (facts "Jobs can have dependencies"
          (let [job-id (uuid)
@@ -224,7 +225,7 @@
              (after? last_heartbeat start-time-ish) => truthy))))
 
 (with-redefs
-  [toshtogo.client.clients.sender-client/heartbeat-time 1]
+  [toshtogo.client.protocol/heartbeat-time 1]
   (facts "Agents receive a cancellation signal in the heartbeat response when jobs are paused"
          (let [job-id (uuid)
                job-tag (uuid-str)
@@ -240,17 +241,52 @@
              (future-done? commitment) => falsey
 
              (heartbeat! client @commitment-id)
-             => (contains {:instruction "continue"})
+             => (contains {:instruction :continue})
 
              (get-job client job-id)
-             => (contains {:outcome "waiting"})
+             => (contains {:outcome :waiting})
 
              (pause-job! client job-id)
              @commitment
              (heartbeat! client @commitment-id)
-             => (contains {:instruction "cancel"})
+             => (contains {:instruction :cancel})
 
              (Thread/sleep 100)
              (future-done? commitment) => truthy
 
              (future-cancel commitment)))))
+
+
+(defn isinstance [c]
+  (fn [x] (instance? c x)))
+
+(fact "Current job state is serialised between server and client as expected"
+      (let [job-id (uuid)
+            commitment-id (atom "not set")
+            tag (uuid-str)
+            created-time (now)
+            due-time (minus created-time (seconds 5))
+            request-body {:a-field "field value"}]
+
+        (put-job! client job-id (job-req request-body [tag]))
+        => (just {:commitment_agent    nil
+                  :commitment_id       nil
+                  :contract_claimed    nil
+                  :contract_created    created-time
+                  :contract_due        due-time
+                  :contract_finished   nil
+                  :contract_id         (isinstance UUID)
+                  :contract_number     1
+                  :contracts_completed 0
+                  :error               nil
+                  :job_created         created-time
+                  :job_id              job-id
+                  :last_heartbeat      nil
+                  :outcome             :waiting
+                  :request_body        request-body
+                  :requesting_agent    (isinstance UUID)
+                  :result_body         nil
+                  :tags                [tag]})
+        (provided (now) => created-time)
+
+        ))
