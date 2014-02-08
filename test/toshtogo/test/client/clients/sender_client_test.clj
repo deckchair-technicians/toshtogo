@@ -20,6 +20,10 @@
                         :system    "client-test"
                         :version   "0.0"))
 
+(def timestamp-tolerance (case (client-config :type)
+                           :app (seconds 0)
+                           :http (seconds 5)))
+
 (defn return-success [job] (success {:result 1}))
 
 (with-redefs
@@ -263,8 +267,7 @@
 (defn close-to [expected tolerance-period]
   (let [acceptable-interval (interval (minus expected tolerance-period)
                                       (plus expected tolerance-period))]
-    (fn [x]
-      (within? acceptable-interval x))))
+    (fn [x] (within? acceptable-interval expected))))
 
 (fact "Current job state is serialised between server and client as expected"
       (let [job-id (uuid)
@@ -272,10 +275,7 @@
             tag (uuid-str)
             created-time (now)
             due-time (minus created-time (seconds 5))
-            request-body {:a-field "field value"}
-            timestamp-tolerance (case (client-config :type)
-                                  :app (millis 1)
-                                  :http (seconds 5))]
+            request-body {:a-field "field value"}]
 
         (put-job! client job-id (job-req request-body [tag]))
         => (just {:commitment_agent    nil
