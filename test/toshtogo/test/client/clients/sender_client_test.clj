@@ -21,7 +21,7 @@
                         :version   "0.0"))
 
 (def timestamp-tolerance (case (client-config :type)
-                           :app (seconds 0)
+                           :app (millis 1)
                            :http (seconds 5)))
 
 (defn return-success [job] (success {:result 1}))
