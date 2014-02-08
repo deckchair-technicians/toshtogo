@@ -31,7 +31,7 @@
       (let [job-id          (job :job_id)
             job-tag-records (map (fn [tag] {:job_id job-id :tag tag}) (job :tags))
             job-agent       (agent! agents (job :agent))
-            job-row         (job-record job-id (job-agent :agent_id) (job :request_body))
+            job-row         (job-record job-id (job-agent :agent_id) (job :request_body) (job :notes))
             dependencies    (job :dependencies)]
 
         (tsql/insert! cnxn :jobs job-row)

@@ -14,11 +14,11 @@
 
 (def client-config in-process)
 (def client (ttc/client client-config
-                        :error-fn  (fn [e] (println (cause-trace e)))
-                        :debug     false
-                        :timeout   1000
-                        :system    "client-test"
-                        :version   "0.0"))
+                        :error-fn (fn [e] (println (cause-trace e)))
+                        :debug false
+                        :timeout 1000
+                        :system "client-test"
+                        :version "0.0"))
 
 (def timestamp-tolerance (case (client-config :type)
                            :app (millis 1)
@@ -35,7 +35,7 @@
           (put-job! client job-id {:tags         [tag]
                                    :request_body {:a-field "field value"}})
 
-          (request-work! client [tag]) => (contains {:job_id job-id
+          (request-work! client [tag]) => (contains {:job_id       job-id
                                                      :request_body {:a-field "field value"}})))
 
   (fact "Work can only be requested once"
@@ -104,8 +104,8 @@
              client
              job-id (job-req
                       {:a "field value"} [parent-tag]
-                      [(job-req {:b "child one"} [child-tag])
-                       (job-req {:b "child two"} [child-tag])]))
+                      :dependencies [(job-req {:b "child one"} [child-tag])
+                                     (job-req {:b "child two"} [child-tag])]))
 
            (fact "No contract is created for parent job"
                  (request-work! client [parent-tag]) => nil)
@@ -277,7 +277,7 @@
             due-time (minus created-time (seconds 5))
             request-body {:a-field "field value"}]
 
-        (put-job! client job-id (job-req request-body [tag]))
+        (put-job! client job-id (job-req request-body [tag] :notes "Some description of the job"))
         => (just {:commitment_agent    nil
                   :commitment_id       nil
                   :contract_claimed    nil
@@ -287,6 +287,7 @@
                   :contract_id         (isinstance UUID)
                   :contract_number     1
                   :contracts_completed 0
+                  :notes               "Some description of the job"
                   :error               nil
                   :job_created         (close-to created-time timestamp-tolerance)
                   :job_id              job-id

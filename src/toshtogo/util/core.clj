@@ -8,6 +8,16 @@
     [clojure.pprint :refer [pprint]]
     [clojure.stacktrace :as stacktrace]))
 
+(defn assoc-not-nil
+  ([m key val]
+   (if val
+     (assoc m key val)
+     m))
+  ([m key val & kvs]
+   (let [ret (assoc-not-nil map key val)]
+     (if kvs
+       (recur ret (first kvs) (second kvs) (nnext kvs))
+       ret))))
 
 (defn ppstr [x]
   (with-out-str (pprint x)))
@@ -90,26 +100,26 @@
    :timeout         number of millis after which we give up
    :error-fn        function to pass errors to"
   [func & {:keys [interval interval-fn timeout max-retries error-fn] :or {interval 10 error-fn nil} :as opts}]
-  (let [error-fn            (or error-fn (constantly nil))
-        interval-fn         (if interval-fn interval-fn (fn [i] interval))
-        started             (now)
-        elapsed-time        (fn [] (interval started (now)))
-        timeout-time        (when timeout (plus (now) (millis timeout)))
-        timeout-expired?    (fn [] (and timeout-time (after? (now) timeout-time)))
+  (let [error-fn (or error-fn (constantly nil))
+        interval-fn (if interval-fn interval-fn (fn [i] interval))
+        started (now)
+        elapsed-time (fn [] (interval started (now)))
+        timeout-time (when timeout (plus (now) (millis timeout)))
+        timeout-expired? (fn [] (and timeout-time (after? (now) timeout-time)))
         max-tries-exceeded? (fn [attempt-number] (and max-retries (>= attempt-number max-retries)))]
 
     (with-timeout timeout "Giving up on retry"
-      (loop [attempt-number 1
-             result (or-exception func)]
-        (if (first result)
-          (first result)
-          (if (or (timeout-expired?) (max-tries-exceeded? attempt-number))
-            (throw (RuntimeException.
-                     (str "Giving up on retry after" attempt-number "attempts and" (elapsed-time))
-                     (second result)))
-            (do (error-fn (second result))
-                (sleep (interval-fn attempt-number))
-                (recur (inc attempt-number) (or-exception func)))))))))
+                  (loop [attempt-number 1
+                         result (or-exception func)]
+                    (if (first result)
+                      (first result)
+                      (if (or (timeout-expired?) (max-tries-exceeded? attempt-number))
+                        (throw (RuntimeException.
+                                 (str "Giving up on retry after" attempt-number "attempts and" (elapsed-time))
+                                 (second result)))
+                        (do (error-fn (second result))
+                            (sleep (interval-fn attempt-number))
+                            (recur (inc attempt-number) (or-exception func)))))))))
 
 (defmacro retry-until-success
   "opts "

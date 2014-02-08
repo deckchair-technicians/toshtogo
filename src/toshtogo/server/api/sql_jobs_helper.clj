@@ -14,11 +14,12 @@
    :parent_job_id parent-job-id
    :child_job_id (child-job :job_id)})
 
-(defn job-record [id agent-id body]
-  {:job_id id
-   :requesting_agent agent-id
-   :job_created (now)
-   :request_body (json/generate-string body)})
+(defn job-record [id agent-id body notes]
+  {:job_id            id
+   :requesting_agent  agent-id
+   :job_created       (now)
+   :request_body      (json/generate-string body)
+   :notes             notes})
 
 (def job-sql
   "select

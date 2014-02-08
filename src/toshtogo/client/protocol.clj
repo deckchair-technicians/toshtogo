@@ -1,13 +1,13 @@
 (ns toshtogo.client.protocol
-  (:require [toshtogo.util.core :refer [uuid cause-trace]]
+  (:require [toshtogo.util.core :refer [uuid cause-trace assoc-not-nil]]
             [toshtogo.server.api.protocol :as server-protocol]))
 
 (defn job-req
-  ([body tags]
-   {:tags         tags
-    :request_body body})
-  ([body tags dependencies]
-   (assoc (job-req body tags) :dependencies dependencies)))
+  ([body tags & {:keys [dependencies notes]}]
+   (-> {:tags         tags
+        :request_body body}
+       (assoc-not-nil :dependencies dependencies)
+       (assoc-not-nil :notes notes))))
 
 (def success             server-protocol/success)
 (def error               server-protocol/error)
