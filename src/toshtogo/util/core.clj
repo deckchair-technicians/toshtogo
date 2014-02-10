@@ -14,7 +14,7 @@
      (assoc m key val)
      m))
   ([m key val & kvs]
-   (let [ret (assoc-not-nil map key val)]
+   (let [ret (assoc-not-nil m key val)]
      (if kvs
        (recur ret (first kvs) (second kvs) (nnext kvs))
        ret))))
