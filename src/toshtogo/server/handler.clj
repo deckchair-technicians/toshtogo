@@ -57,7 +57,7 @@
         (let [commitment-id (uuid (body :commitment_id))]
           (check-idempotent!
            :create-commitment commitment-id
-           #(if-let [commitment (request-work! api commitment-id (body :tags) (body :agent))]
+           #(if-let [commitment (request-work! api commitment-id (body :job_type) (body :agent))]
               (commitment-redirect commitment-id)
               {:status 204})
            #(commitment-redirect commitment-id))))
@@ -81,14 +81,16 @@
         {:body  (get-contract
                  api
                  {:commitment_id (uuid commitment-id)
-                  :return-jobs true
                   :with-dependencies true})}))))
 
   (route/not-found {:status "I'm sorry :("})
 
+(defroutes site-routes
+           (route/resources "/" :root "toshtogo/gui/"))
 
 (defn app [db & {:keys [debug] :or {debug false}}]
   (routes
+    site-routes
     (cond->
       (-> (handler/api api-routes)
           wrap-dependencies

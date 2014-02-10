@@ -11,12 +11,12 @@
 
 (def agent-details (get-agent-details "test" "0.0.0"))
 
-(defn given-job-exists [api id tags & deps]
-  (put-job! api (apply job-req id agent-details {:some-data (uuid)} tags deps)))
+(defn given-job-exists [api id job-type & deps]
+  (put-job! api (job-req id agent-details {:some-data (uuid)} job-type :dependencies deps)))
 
 (defn given-job-succeeded [api job-id]
   (let [job      (get-job api job-id)
-        contract (request-work! api (uuid) (job :tags) agent-details)]
+        contract (request-work! api (uuid) (job :job_type) agent-details)]
     (when (not= (contract :job_id) job-id)
       (throw (RuntimeException. "More than one job exists for tags")))
 
@@ -27,24 +27,24 @@
    [cnxn dev-db]
    (let [id-one                         (uuid)
          id-two                         (uuid)
-         tag-one                        (uuid-str) ;so we can run against a dirty database
-         tag-two                        (uuid-str)
+         job-type-one                        (uuid-str) ;so we can run against a dirty database
+         job-type-two                        (uuid-str)
          {:keys [agents api]} (sql-deps cnxn)]
 
-     (given-job-exists api id-two [tag-two])
-     (given-job-exists api id-one [tag-one])
+     (given-job-exists api id-two job-type-two)
+     (given-job-exists api id-one job-type-one)
 
-     (get-contracts api {:state :waiting :tags [tag-one]})
+     (get-contracts api {:state :waiting :job_type [job-type-one]})
      => (contains (contains {:job_id id-one})))))
 
 (facts "New contracts check for the state of old contracts"
   (sql/with-db-transaction
    [cnxn dev-db]
    (let [job-id    (uuid)
-         tag   (uuid-str)        ;so we can run against a dirty database
+         job-type   (uuid-str)        ;so we can run against a dirty database
          {:keys [agents api]} (sql-deps cnxn)]
 
-     (given-job-exists api job-id [tag])
+     (given-job-exists api job-id job-type)
 
      (fact "Can't create contract when job is in progress"
        (new-contract! api (contract-req job-id))
@@ -117,8 +117,8 @@
     [@f-first @f-second]))
 
 (fact "Two agents completing work at the same time still triggers the parent job"
-  (let [parent-tag    (uuid-str)
-        child-tag     (uuid-str)
+  (let [parent-job-type    (uuid-str)
+        child-job-type     (uuid-str)
         parent-job-id (uuid)]
 
 
@@ -127,11 +127,11 @@
           (sql/with-db-transaction
             [cnxn dev-db]
             (let [api ((sql-deps cnxn) :api)]
-              (given-job-exists api parent-job-id [parent-tag]
-                                (job-req (uuid) agent-details {:child 1} [child-tag])
-                                (job-req (uuid) agent-details {:child 2} [child-tag]))
-              [(request-work! api (uuid) [child-tag] agent-details)
-               (request-work! api (uuid) [child-tag] agent-details)]))]
+              (given-job-exists api parent-job-id parent-job-type
+                                (job-req (uuid) agent-details {:child 1} child-job-type)
+                                (job-req (uuid) agent-details {:child 2} child-job-type))
+              [(request-work! api (uuid) child-job-type agent-details)
+               (request-work! api (uuid) child-job-type agent-details)]))]
 
       (in-parallel-transactions
         dev-db
@@ -149,7 +149,7 @@
         (get-job api parent-job-id)
         => (contains {:contracts_completed 2})
 
-        (request-work! api (uuid) [parent-tag] agent-details)
+        (request-work! api (uuid) parent-job-type agent-details)
         => (contains {:job_id parent-job-id})))))
 
 

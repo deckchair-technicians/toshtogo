@@ -3,11 +3,12 @@
             [toshtogo.server.api.protocol :as server-protocol]))
 
 (defn job-req
-  ([body tags & {:keys [dependencies notes]}]
-   (-> {:tags         tags
+  ([body job-type & {:keys [dependencies notes tags]}]
+   (-> {:job_type     job-type
         :request_body body}
-       (assoc-not-nil :dependencies dependencies)
-       (assoc-not-nil :notes notes))))
+       (assoc-not-nil :dependencies dependencies
+                      :notes notes
+                      :tags tags))))
 
 (def success             server-protocol/success)
 (def error               server-protocol/error)
@@ -20,7 +21,7 @@
   (get-job [this job-id])
   (pause-job! [this job-id])
 
-  (request-work! [this tags])
+  (request-work! [this job-type])
   (heartbeat! [this commitment-id])
   (complete-work! [this commitment-id result]))
 
@@ -38,9 +39,9 @@
     (catch Throwable t
       (error (cause-trace t)))))
 
-(defn do-work! [client tags f]
+(defn do-work! [client job-type f]
   (future
-    (when-let [contract (request-work! client tags)]
+    (when-let [contract (request-work! client job-type)]
       (let [result (with-exception-handling (fn [c] (heartbeat! client (c :commitment_id))) f contract)]
         (complete-work! client (contract :commitment_id) result)
         {:contract contract

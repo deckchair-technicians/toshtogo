@@ -13,6 +13,7 @@ create index agent_idx on agents (hostname, system_name, system_version);
 -- JOBS
 create table jobs (
   job_id           uuid           primary key,
+  job_type         varchar(64)    not null,
   requesting_agent uuid           not null references agents(agent_id),
   job_created      timestamp      not null,
   notes            text,

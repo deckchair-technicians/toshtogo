@@ -11,9 +11,10 @@
 (def agent-details (get-agent-details "test" "0.0.0"))
 
 (fact "Job records are the right shape"
-      (job-req ...id... agent-details {:data "value"} [:tag-one :tag-two])
+      (job-req ...id... agent-details {:data "value"} :job-type :tags [:tag-one :tag-two])
       => {:job_id       ...id...
           :agent        agent-details
+          :job_type         :job-type
           :tags         [:tag-one :tag-two]
           :request_body {:data "value"}})
 
@@ -22,43 +23,43 @@
         [cnxn dev-db]
         (let [id-one (uuid)
               id-two (uuid)
-              tag-one (uuid-str) ;so we can run against a dirty database
-              tag-two (uuid-str)
+              job-type-one (uuid-str) ;so we can run against a dirty database
+              job-type-two (uuid-str)
               {:keys [agents api]} (sql-deps cnxn)]
 
-          (put-job! api (job-req id-one agent-details {:some-data 123} [tag-one]))
-          (put-job! api (job-req id-two agent-details {:some-data 456} [tag-two]))
+          (put-job! api (job-req id-one agent-details {:some-data 123} job-type-one))
+          (put-job! api (job-req id-two agent-details {:some-data 456} job-type-two))
 
-          (get-contracts api {:state :waiting :tags [tag-one]})
+          (get-contracts api {:state :waiting :job_type job-type-one})
           => (contains (contains {:job_id id-one})))))
 
 (facts "Should be able to pause a job that hasn't started"
        (sql/with-db-transaction
          [cnxn dev-db]
          (let [job-id (uuid)
-               tag (uuid-str)
+               job-type (uuid-str)
                {:keys [agents api]} (sql-deps cnxn)]
 
-           (put-job! api (job-req job-id agent-details {:some-data 123} [tag]))
+           (put-job! api (job-req job-id agent-details {:some-data 123} job-type))
            (pause-job! api job-id agent-details)
 
            (get-contract api {:job_id job-id})
            => (contains {:outcome :cancelled})
 
-           (request-work! api (uuid) [tag] agent-details)
+           (request-work! api (uuid) job-type agent-details)
            => nil)))
 
 (facts "Should be able to pause a job that has started"
        (sql/with-db-transaction
          [cnxn dev-db]
          (let [job-id (uuid)
-               tag (uuid-str)
+               job-type (uuid-str)
                commitment-id (uuid)
                {:keys [agents api]} (sql-deps cnxn)]
 
-           (put-job! api (job-req job-id agent-details {:some-data 123} [tag]))
+           (put-job! api (job-req job-id agent-details {:some-data 123} job-type))
 
-           (request-work! api commitment-id [tag] agent-details) => truthy
+           (request-work! api commitment-id job-type agent-details) => truthy
 
            (pause-job! api job-id agent-details)
 
@@ -74,13 +75,13 @@
        (sql/with-db-transaction
          [cnxn dev-db]
          (let [job-id (uuid)
-               tag (uuid-str)
+               job-type (uuid-str)
                commitment-id (uuid)
                {:keys [agents api]} (sql-deps cnxn)]
 
-           (put-job! api (job-req job-id agent-details {:some-data 123} [tag]))
+           (put-job! api (job-req job-id agent-details {:some-data 123} job-type))
 
-           (request-work! api commitment-id [tag] agent-details) => truthy
+           (request-work! api commitment-id job-type agent-details) => truthy
            (complete-work! api commitment-id (success {}))
 
            (pause-job! api job-id agent-details)
@@ -95,20 +96,20 @@
                job-id-1-1 (uuid)
                job-id-1-2 (uuid)
                job-id-1-2-1 (uuid)
-               tag (uuid-str)
+               job-type (uuid-str)
                commitment-id (uuid)
                {:keys [agents api]} (sql-deps cnxn)]
 
-           (put-job! api (job-req job-id-1 agent-details {} [tag]
-                                  (job-req job-id-1-1 agent-details {} [tag])
-                                  (job-req job-id-1-2 agent-details {} [tag]
-                                           (job-req job-id-1-2-1 agent-details {} [tag]))))
-
+           (put-job! api (job-req job-id-1 agent-details {} job-type
+                                  :dependencies
+                                  [ (job-req job-id-1-1 agent-details {} job-type)
+                                    (job-req job-id-1-2 agent-details {} job-type
+                                             :dependencies [(job-req job-id-1-2-1 agent-details {} job-type)])]))
            (pause-job! api job-id-1 agent-details)
 
            (get-contract api {:job_id job-id-1-2-1})
            => (contains {:outcome :cancelled})
 
-           (request-work! api (uuid) [tag] agent-details) => nil)))
+           (request-work! api (uuid) job-type agent-details) => nil)))
 
 (future-fact "Get job returns job tags")

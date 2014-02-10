@@ -19,9 +19,8 @@
   {:job_id      (contract :job_id)
    :result_body (json/generate-string (result :result))})
 
-(defn contracts-sql [params]
-  (cond->
-   "select
+(def contracts-sql
+  "select
      *
 
    from
@@ -33,8 +32,11 @@
 
    left join
      commitment_outcomes
-     on commitments.commitment_id = commitment_outcomes.outcome_id "
-   (params :return-jobs) (str "left join jobs on contracts.job_id = jobs.job_id")))
+     on commitments.commitment_id = commitment_outcomes.outcome_id
+
+   left join
+     jobs
+     on contracts.job_id = jobs.job_id")
 
 (def latest-contract-sql
   "contract_number = (
@@ -67,6 +69,10 @@
           (cons "outcome is null and commitment_id is null" clauses)]
          [(assoc out-params k v)
           (cons "outcome = :outcome" clauses)])
+
+       :job_type
+       [(assoc out-params k v)
+        (cons "job_type = :job_type" clauses)]
 
        :tags
        [(assoc out-params k (map name v))

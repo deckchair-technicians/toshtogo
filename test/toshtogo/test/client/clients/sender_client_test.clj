@@ -30,31 +30,30 @@
   [toshtogo.client.protocol/heartbeat-time 1]
   (fact "Work can be requested"
         (let [job-id (uuid)
-              tag (uuid-str)]
+              job-type (uuid-str)]
 
-          (put-job! client job-id {:tags         [tag]
-                                   :request_body {:a-field "field value"}})
+          (put-job! client job-id (job-req {:a-field "field value"} job-type))
 
-          (request-work! client [tag]) => (contains {:job_id       job-id
-                                                     :request_body {:a-field "field value"}})))
+          (request-work! client job-type) => (contains {:job_id       job-id
+                                                        :request_body {:a-field "field value"}})))
 
   (fact "Work can only be requested once"
         (let [job-id (uuid)
-              tag (uuid-str)]
+              job-type (uuid-str)]
 
-          (put-job! client job-id (job-req {:a-field "field value"} [tag]))
+          (put-job! client job-id (job-req {:a-field "field value"} job-type))
 
-          (request-work! client [tag])
-          (request-work! client [tag]) => nil))
+          (request-work! client job-type)
+          (request-work! client job-type) => nil))
 
   (fact "Agents can request work and then complete it"
         (let [job-id (uuid)
-              tag (uuid-str)]
+              job-type (uuid-str)]
 
-          (put-job! client job-id (job-req {:a-field "field value"} [tag]))
+          (put-job! client job-id (job-req {:a-field "field value"} job-type))
 
           (let [func (fn [job] (success {:response-field "all good"}))
-                {:keys [contract result]} @(do-work! client [tag] func)]
+                {:keys [contract result]} @(do-work! client job-type func)]
             contract
             => (contains {:job_id job-id :request_body {:a-field "field value"}})
             result
@@ -65,12 +64,12 @@
 
   (fact "Agents can report errors"
         (let [job-id (uuid)
-              tag (uuid-str)]
+              job-type (uuid-str)]
 
-          (put-job! client job-id (job-req {:a-field "field value"} [tag]))
+          (put-job! client job-id (job-req {:a-field "field value"} job-type))
 
           (let [func (fn [job] (error "something went wrong"))
-                {:keys [contract result]} @(do-work! client [tag] func)]
+                {:keys [contract result]} @(do-work! client job-type func)]
             contract
             => (contains {:job_id job-id :request_body {:a-field "field value"}})
             result
@@ -81,12 +80,12 @@
 
   (fact "Client can report unhandled exceptions"
         (let [job-id (uuid)
-              tag (uuid-str)]
+              job-type (uuid-str)]
 
-          (put-job! client job-id (job-req {:a-field "field value"} [tag]))
+          (put-job! client job-id (job-req {:a-field "field value"} job-type))
 
           (let [func (fn [job] (throw (Exception. "WTF")))
-                {:keys [contract result]} @(do-work! client [tag] func)]
+                {:keys [contract result]} @(do-work! client job-type func)]
             contract
             => (contains {:job_id job-id :request_body {:a-field "field value"}})
             result
@@ -97,34 +96,34 @@
 
   (facts "Jobs can have dependencies"
          (let [job-id (uuid)
-               parent-tag (uuid-str)
-               child-tag (uuid-str)]
+               parent-job-type (uuid-str)
+               child-job-type (uuid-str)]
 
            (put-job!
              client
              job-id (job-req
-                      {:a "field value"} [parent-tag]
-                      :dependencies [(job-req {:b "child one"} [child-tag])
-                                     (job-req {:b "child two"} [child-tag])]))
+                      {:a "field value"} parent-job-type
+                      :dependencies [(job-req {:b "child one"} child-job-type)
+                                     (job-req {:b "child two"} child-job-type)]))
 
            (fact "No contract is created for parent job"
-                 (request-work! client [parent-tag]) => nil)
+                 (request-work! client parent-job-type) => nil)
 
            (let [func (fn [job] (success (job :request_body)))]
              (fact "Dependencies are executed in order"
-                   (:contract @(do-work! client [child-tag] func))
+                   (:contract @(do-work! client child-job-type func))
                    => (contains {:request_body {:b "child one"}}))
 
              (fact "Parent job is not ready until all dependencies complete"
-                   (request-work! client [parent-tag]) => nil
+                   (request-work! client parent-job-type) => nil
                    (get-job client job-id) => (contains {:contracts_completed 1}))
 
-             @(do-work! client [child-tag] func)
+             @(do-work! client child-job-type func)
              (get-job client job-id) => (contains {:contracts_completed 2})
 
              (fact (str "Parent job is released when dependencies are complete, "
                         "with dependency responses merged into its request")
-                   (let [contract (request-work! client [parent-tag])]
+                   (let [contract (request-work! client parent-job-type)]
                      contract
                      => (contains {:request_body {:a "field value"}})
 
@@ -135,28 +134,28 @@
 
   (facts "Requesting more work"
          (let [job-id (uuid)
-               parent-tag (uuid-str)
-               child-tag (uuid-str)]
+               parent-job-type (uuid-str)
+               child-job-type (uuid-str)]
 
-           (put-job! client job-id (job-req {:parent-job "parent job"} [parent-tag]))
+           (put-job! client job-id (job-req {:parent-job "parent job"} parent-job-type))
 
            (let [add-deps (fn [job]
                             (add-dependencies
-                              (job-req {:first-dep "first dep"} [child-tag])
-                              (job-req {:second-dep "second dep"} [child-tag])))
+                              (job-req {:first-dep "first dep"} child-job-type)
+                              (job-req {:second-dep "second dep"} child-job-type)))
                  complete-child (fn [job] (success (job :request_body)))]
 
-             @(do-work! client [parent-tag] add-deps) => truthy
+             @(do-work! client parent-job-type add-deps) => truthy
 
              (fact "Parent job is not ready until new dependencies complete"
-                   (request-work! client [parent-tag]) => nil)
+                   (request-work! client parent-job-type) => nil)
 
-             @(do-work! client [child-tag] complete-child) => truthy
-             @(do-work! client [child-tag] complete-child) => truthy
+             @(do-work! client child-job-type complete-child) => truthy
+             @(do-work! client child-job-type complete-child) => truthy
 
              (fact (str "Parent job is released when dependencies are complete, "
                         "with dependency responses merged into its request")
-                   (let [contract (request-work! client [parent-tag])]
+                   (let [contract (request-work! client parent-job-type)]
                      contract
                      => (contains {:request_body {:parent-job "parent job"}})
 
@@ -168,28 +167,28 @@
 
   (facts "Requesting more work"
          (let [job-id (uuid)
-               parent-tag (uuid-str)
-               child-tag (uuid-str)]
+               parent-job-type (uuid-str)
+               child-job-type (uuid-str)]
 
-           (put-job! client job-id (job-req {:parent-job "parent job"} [parent-tag]))
+           (put-job! client job-id (job-req {:parent-job "parent job"} parent-job-type))
 
            (let [add-deps (fn [job]
                             (add-dependencies
-                              (job-req {:first-dep "first dep"} [child-tag])
-                              (job-req {:second-dep "second dep"} [child-tag])))
+                              (job-req {:first-dep "first dep"} child-job-type)
+                              (job-req {:second-dep "second dep"} child-job-type)))
                  complete-child (fn [job] (success (job :request_body)))]
 
-             @(do-work! client [parent-tag] add-deps) => truthy
+             @(do-work! client parent-job-type add-deps) => truthy
 
              (fact "Parent job is not ready until new dependencies complete"
-                   (request-work! client [parent-tag]) => nil)
+                   (request-work! client parent-job-type) => nil)
 
-             @(do-work! client [child-tag] complete-child) => truthy
-             @(do-work! client [child-tag] complete-child) => truthy
+             @(do-work! client child-job-type complete-child) => truthy
+             @(do-work! client child-job-type complete-child) => truthy
 
              (fact (str "Parent job is released when dependencies are complete, "
                         "with dependency responses merged into its request")
-                   (let [contract (request-work! client [parent-tag])]
+                   (let [contract (request-work! client [parent-job-type])]
                      contract
                      => (contains {:request_body {:parent-job "parent job"}})
 
@@ -201,29 +200,29 @@
   (facts "Try again later"
          (when (= :app (:type client-config))
            (let [job-id (uuid)
-                 job-tag (uuid-str)
+                 job-type (uuid-str)
                  before-due-time (now)
                  due-time (plus before-due-time (minutes 1))]
 
-             (put-job! client job-id (job-req [] [job-tag]))
+             (put-job! client job-id (job-req [] job-type))
 
              (let [delay (fn [job] (try-later due-time "some error happened"))]
-               @(do-work! client [job-tag] delay)) => truthy
+               @(do-work! client job-type delay)) => truthy
 
-             (request-work! client [job-tag]) => nil
+             (request-work! client job-type) => nil
              (provided (now) => before-due-time)
 
-             @(do-work! client [job-tag] return-success) => truthy
+             @(do-work! client job-type return-success) => truthy
              (provided (now) => due-time))))
 
   (facts "Heartbeats get stored, but only if they are more recent than the current heartbeat."
          (let [job-id (uuid)
-               job-tag (uuid-str)
+               job-type (uuid-str)
                start-time-ish (now)]
 
-           (put-job! client job-id (job-req [] [job-tag]))
+           (put-job! client job-id (job-req [] job-type))
 
-           @(do-work! client [job-tag] (fn [job] (Thread/sleep 1) (success "Oh yeah")))
+           @(do-work! client job-type (fn [job] (Thread/sleep 1) (success "Oh yeah")))
 
            (let [{:keys [last_heartbeat]} (get-job client job-id)]
              (after? last_heartbeat start-time-ish) => truthy))))
@@ -232,13 +231,13 @@
   [toshtogo.client.protocol/heartbeat-time 1]
   (facts "Agents receive a cancellation signal in the heartbeat response when jobs are paused"
          (let [job-id (uuid)
-               job-tag (uuid-str)
+               job-type (uuid-str)
                start-time-ish (now)
                commitment-id (promise)]
 
-           (put-job! client job-id (job-req {} [job-tag]))
+           (put-job! client job-id (job-req {} job-type))
 
-           (let [commitment (do-work! client [job-tag] (fn [job]
+           (let [commitment (do-work! client job-type (fn [job]
                                                          (deliver commitment-id (job :commitment_id))
                                                          (Thread/sleep 5000)
                                                          (error "Ignored return")))]
@@ -272,12 +271,13 @@
 (fact "Current job state is serialised between server and client as expected"
       (let [job-id (uuid)
             commitment-id (atom "not set")
-            tag (uuid-str)
+            job-type (uuid-str)
+            tags (set [(uuid-str) (uuid-str)])
             created-time (now)
             due-time (minus created-time (seconds 5))
             request-body {:a-field "field value"}]
 
-        (put-job! client job-id (job-req request-body [tag] :notes "Some description of the job"))
+        (put-job! client job-id (job-req request-body job-type :tags tags :notes "Some description of the job"))
         => (just {:commitment_agent    nil
                   :commitment_id       nil
                   :contract_claimed    nil
@@ -296,5 +296,6 @@
                   :request_body        request-body
                   :requesting_agent    (isinstance UUID)
                   :result_body         nil
-                  :tags                [tag]})
+                  :job_type            job-type
+                  :tags                (just tags :in-any-order)})
         (provided (now) => created-time)))

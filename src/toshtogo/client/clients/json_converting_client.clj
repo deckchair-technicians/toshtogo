@@ -28,8 +28,8 @@
     (pause-job! [this job-id]
       (pause-job! decorated job-id))
 
-    (request-work! [this tags]
-      (convert-job (request-work! decorated tags)))
+    (request-work! [this job-type]
+      (convert-job (request-work! decorated job-type)))
 
     (heartbeat! [this commitment-id]
       (convert-heartbeat (heartbeat! decorated commitment-id)))

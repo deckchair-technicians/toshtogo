@@ -31,11 +31,12 @@
       (let [job-id          (job :job_id)
             job-tag-records (map (fn [tag] {:job_id job-id :tag tag}) (job :tags))
             job-agent       (agent! agents (job :agent))
-            job-row         (job-record job-id (job-agent :agent_id) (job :request_body) (job :notes))
+            job-row         (job-record job-id (job :job_type) (job-agent :agent_id) (job :request_body) (job :notes))
             dependencies    (job :dependencies)]
 
         (tsql/insert! cnxn :jobs job-row)
-        (apply tsql/insert! cnxn :job_tags job-tag-records)
+        (when (not (empty? job-tag-records))
+          (apply tsql/insert! cnxn :job_tags job-tag-records))
 
         (put-dependencies! this cnxn job-id dependencies job-agent)
 
@@ -71,7 +72,7 @@
               cnxn
               (tsql/qualify
                contracts-where-fn
-               (contracts-sql params)
+               contracts-sql
                params))))
 
     (get-contract [this params]
@@ -93,16 +94,15 @@
           (tsql/insert! cnxn :contracts
                         (contract-record job-id new-contract-number contract-due)))))
 
-    (request-work! [this commitment-id tags agent-details]
+    (request-work! [this commitment-id job-type agent-details]
       (when-let [contract  (get-contract
                             this
-                            {:tags           tags
+                            {:job_type           job-type
                              :ready_for_work true
                              :order-by       [:contract_created]})]
         (insert-commitment! cnxn agents commitment-id contract agent-details))
 
       (get-contract this {:commitment_id     commitment-id
-                          :return-jobs       true
                           :with-dependencies true}))
 
     (heartbeat! [this commitment-id]

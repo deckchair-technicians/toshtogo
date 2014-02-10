@@ -21,11 +21,11 @@
              (str "/api/jobs/" job-id "/pause")
              nil))
 
-    (request-work! [this tags]
+    (request-work! [this job-type]
       (PUT! sender
             "/api/commitments"
             {:commitment_id (uuid)
-             :tags          tags}))
+             :job_type          job-type}))
 
     (complete-work! [this commitment-id result]
       (PUT! sender

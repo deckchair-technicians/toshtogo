@@ -1,12 +1,15 @@
-(ns toshtogo.server.api.protocol)
+(ns toshtogo.server.api.protocol
+  (:require [toshtogo.util.core :refer [assoc-not-nil]]))
 
 (defn job-req
-  [id agent-details body tags & dependencies]
-  (cond-> {:job_id       id
+  [id agent-details body job-type & {:keys [dependencies notes tags]}]
+  (-> {:job_id       id
            :agent        agent-details
-           :tags         tags
+           :job_type     job-type
            :request_body body}
-          dependencies (assoc :dependencies dependencies)))
+      (assoc-not-nil :dependencies dependencies
+                     :notes notes
+                     :tags tags)))
 
 (defn contract-req
   ([job-id]
@@ -53,6 +56,6 @@
   (get-contract  [this params])
   (new-contract! [this contract])
 
-  (request-work!  [this commitment-id tags agent])
+  (request-work!  [this commitment-id job-type agent])
   (heartbeat!     [this commitment-id])
   (complete-work! [this commitment-id result]))
