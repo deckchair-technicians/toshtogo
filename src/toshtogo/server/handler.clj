@@ -29,8 +29,9 @@
 (defroutes api-routes
   (context "/api" []
     (context "/jobs" {:keys [api body check-idempotent!]}
-             (GET "/" []
-                  {:body (get-jobs api {})})
+             (GET "/" {params :params}
+                  {:body (get-jobs api {:page     (Integer/parseInt (:page (debug "PARAMS" params) "1"))
+                                        :order-by [:contract_finished :contract_claimed :contract_created :job_created]})})
       (context "/:job-id" [job-id]
 
         (PUT  "/" []

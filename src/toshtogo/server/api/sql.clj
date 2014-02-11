@@ -45,14 +45,15 @@
         (get-job this job-id)))
 
     (get-jobs [this params]
-      (map from-sql
-           (partition-by
-            :job_id
-            (apply tsql/query
-                   cnxn
-                   (tsql/qualify jobs-where-fn
-                                 job-sql
-                                 (update params :order-by #(concat (as-coll %) [:jobs.job_id])))))))
+      (let [params (update params :order-by #(concat (as-coll %) [:jobs.job_id]))]
+        (if (:page params)
+          (update
+            (tsql/page cnxn jobs-where-fn job-sql params :count-params (assoc params :get-tags false))
+            :data normalise-job-rows)
+          (normalise-job-rows
+            (tsql/query
+              cnxn
+              (tsql/qualify jobs-where-fn (job-sql (assoc params :get-tags true)) params))))))
 
     (get-job [this job-id]
       (first (get-jobs this {:job_id job-id})))

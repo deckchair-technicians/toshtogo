@@ -1,6 +1,7 @@
 (ns toshtogo.util.sql
   (:require [clojure.java.jdbc :as sql]
             [clj-time.core :refer [now]]
+            [clojure.math.numeric-tower :refer [ceil]]
             [flatland.useful.map :refer [map-vals filter-vals]]
             [clojure.set :refer [difference]]
             [clojure.string :as str]
@@ -78,7 +79,14 @@
              (str "\n    where\n      "    (str/join "\n      and " where-clauses))
 
              (:order-by params)
-             (str "\n    order by " (str/join ", " (map name (:order-by params)))))
+             (str "\n    order by " (str/join " nulls last, " (map name (:order-by params))))
+
+             (or (:page params) (:page-size params))
+             (str "\n    offset " (* (:page-size params 20) (- (:page params 1) 1))
+                  "\n    limit " (:page-size params 20))
+
+             (:get-count params)
+             (str/replace #"^\s*select\s*.*\s*from\s*" "select count(*) as cnt from "))
      out-params]))
 
 (defn insert! [cnxn table & records]
@@ -100,11 +108,31 @@
      :transaction? false)
     (catch BatchUpdateException e (throw (.getNextException e)))))
 
-(defn query [cnxn sql params]
+(defn query
   "Takes some sql including references to parameters in the form
    :parameter-name and a map of named parameters"
-  (let [fixed-params (named-params sql params)]
-    (sql/query cnxn (no-debug "QUERY" fixed-params))))
+  ([cnxn sql-params]
+   (query cnxn (first sql-params) (second sql-params)))
+  ([cnxn sql params]
+   (let [fixed-params (named-params sql params)]
+     (sql/query cnxn (no-debug "QUERY" fixed-params)))))
 
-(defn query-single [cnxn sql params]
- (first (query cnxn sql params)))
+(defn query-single
+  ([cnxn sql-params]
+   (query-single cnxn (first sql-params) (second sql-params)))
+  ([cnxn sql params]
+   (first (query cnxn sql params))))
+
+(defn page [cnxn where-clauses-fn sql-fn params & {:keys [count-params]}]
+  (assert (:order-by params) "Paging only makes sense with deterministic ordering")
+  (let [page          (:page params 1)
+        page-size     (:page-size params 20)
+        count-params  (assoc (or count-params params) :get-count true :order-by nil)
+        record-count  (:cnt (query-single
+                              cnxn
+                              (qualify where-clauses-fn (sql-fn count-params) count-params)))
+        page-count    (ceil (/ record-count page-size))]
+    {
+      :paging {:page page :pages page-count}
+      :data   (query cnxn (qualify where-clauses-fn (sql-fn params) params))})
+  )

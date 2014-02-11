@@ -22,36 +22,35 @@
    :request_body      (json/generate-string body)
    :notes             notes})
 
-(def job-sql
-  "select
-     *
+(defn job-sql [params]
+  (cond->
+    "select
+       *
 
-   from
-     jobs
+     from
+       jobs
 
-   left join
-     job_results
-     on jobs.job_id = job_results.job_id
+     left join
+       job_results
+       on jobs.job_id = job_results.job_id
 
-   left join
-     job_tags
-     on jobs.job_id = job_tags.job_id
+     left join
+       contracts
+       on jobs.job_id = contracts.job_id
+       and contracts.contract_number = (
+         select max(contract_number)
+         from contracts c
+         where jobs.job_id = c.job_id)
 
-   left join
-     contracts
-     on jobs.job_id = contracts.job_id
-     and contracts.contract_number = (
-       select max(contract_number)
-       from contracts c
-       where jobs.job_id = c.job_id)
+     left join
+       agent_commitments commitments
+       on contracts.contract_id = commitments.commitment_contract
 
-   left join
-     agent_commitments commitments
-     on contracts.contract_id = commitments.commitment_contract
-
-   left join
-     commitment_outcomes
-     on commitments.commitment_id = commitment_outcomes.outcome_id")
+     left join
+       commitment_outcomes
+       on commitments.commitment_id = commitment_outcomes.outcome_id"
+    (:get-tags params) (str "   left join job_tags on jobs.job_id = job_tags.job_id
+")))
 
 (def depends-on-sql
   "jobs.job_id in (
@@ -104,11 +103,16 @@
       (update :last_heartbeat #(when % (tc/from-sql-time %)))
       (update-each [:request_body :result_body] #(json/parse-string % keyword))))
 
-(defn from-sql [job-with-tags]
-  (normalise-job
-   (reduce collect-tags
-           nil
-           job-with-tags)))
+(defn fold-in-tags [job-with-tags]
+  (reduce collect-tags
+          nil
+          job-with-tags))
+
+(defn normalise-job-rows
+  "job-rows might include joins in to the tags table"
+  [job-rows]
+  (map (comp normalise-job fold-in-tags)
+       (partition-by :job_id job-rows)))
 
 (defn jobs-where-fn [params]
   (reduce

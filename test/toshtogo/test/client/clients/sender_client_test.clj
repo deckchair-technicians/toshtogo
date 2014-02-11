@@ -322,9 +322,13 @@
                   :requesting_agent    (isinstance UUID)})
 
         (complete-work! client (@commitment :commitment_id) (success {:some-field "some value"}))
+        => truthy
+        (provided (now) => finished-time)
+
+        (get-job client job-id)
         => (contains {:contract_finished   (close-to finished-time)
                       :contract_number     1
                       :error               nil
                       :outcome             :success
                       :result_body         {:some-field "some value"}})
-        (provided (now) => finished-time)))
+        ))
