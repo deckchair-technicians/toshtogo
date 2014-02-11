@@ -9,7 +9,7 @@
   (when job
     (-> job
         (update-each [:contract_created :contract_claimed :contract_due :contract_finished :job_created :last_heartbeat] parse-datetime)
-        (update-each [:commitment_id :contract_id :job_id :requesting_agent] uuid)
+        (update-each [:commitment_id :contract_id :job_id :requesting_agent :commitment_agent] uuid)
         (update-each [:outcome] keyword))))
 
 (defn convert-heartbeat [heartbeat]
@@ -35,4 +35,4 @@
       (convert-heartbeat (heartbeat! decorated commitment-id)))
 
     (complete-work! [this commitment-id result]
-      (complete-work! decorated commitment-id result))))
+      (convert-job (complete-work! decorated commitment-id result)))))

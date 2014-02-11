@@ -263,10 +263,13 @@
 (defn isinstance [c]
   (fn [x] (instance? c x)))
 
-(defn close-to [expected tolerance-period]
-  (let [acceptable-interval (interval (minus expected tolerance-period)
-                                      (plus expected tolerance-period))]
-    (fn [x] (within? acceptable-interval expected))))
+(defn close-to
+  ([expected]
+   (close-to expected timestamp-tolerance))
+  ([expected tolerance-period]
+   (let [acceptable-interval (interval (minus expected tolerance-period)
+                                       (plus expected tolerance-period))]
+     (fn [x] (within? acceptable-interval expected)))))
 
 (fact "Current job state is serialised between server and client as expected"
       (let [job-id (uuid)
@@ -274,22 +277,26 @@
             job-type (uuid-str)
             tags (set [(uuid-str) (uuid-str)])
             created-time (now)
+            claimed-time (plus created-time (millis 5))
+            finished-time (plus claimed-time (millis 5))
             due-time (minus created-time (seconds 5))
-            request-body {:a-field "field value"}]
+            request-body {:a-field "field value"}
+            commitment  (promise)]
 
+        ; Newly created
         (put-job! client job-id (job-req request-body job-type :tags tags :notes "Some description of the job"))
         => (just {:commitment_agent    nil
                   :commitment_id       nil
                   :contract_claimed    nil
-                  :contract_created    (close-to created-time timestamp-tolerance)
-                  :contract_due        (close-to due-time timestamp-tolerance)
+                  :contract_created    (close-to created-time)
+                  :contract_due        (close-to due-time)
                   :contract_finished   nil
                   :contract_id         (isinstance UUID)
                   :contract_number     1
                   :dependencies_succeeded 0
                   :notes               "Some description of the job"
                   :error               nil
-                  :job_created         (close-to created-time timestamp-tolerance)
+                  :job_created         (close-to created-time)
                   :job_id              job-id
                   :last_heartbeat      nil
                   :outcome             :waiting
@@ -298,4 +305,26 @@
                   :result_body         nil
                   :job_type            job-type
                   :tags                (just tags :in-any-order)})
-        (provided (now) => created-time)))
+        (provided (now) => created-time)
+
+        (deliver commitment (request-work! client job-type))
+        => truthy
+        (provided (now) => claimed-time)
+
+        (get-job client job-id)
+        => (contains {:commitment_agent    (isinstance UUID)
+                  :commitment_id       (isinstance UUID)
+                  :contract_claimed    (close-to claimed-time)
+                  :contract_finished   nil
+                  :error               nil
+                  :last_heartbeat      (close-to claimed-time)
+                  :outcome             :running
+                  :requesting_agent    (isinstance UUID)})
+
+        (complete-work! client (@commitment :commitment_id) (success {:some-field "some value"}))
+        => (contains {:contract_finished   (close-to finished-time)
+                      :contract_number     1
+                      :error               nil
+                      :outcome             :success
+                      :result_body         {:some-field "some value"}})
+        (provided (now) => finished-time)))
