@@ -247,7 +247,7 @@
              => (contains {:instruction :continue})
 
              (get-job client job-id)
-             => (contains {:outcome :waiting})
+             => (contains {:outcome :running})
 
              (pause-job! client job-id)
              @commitment

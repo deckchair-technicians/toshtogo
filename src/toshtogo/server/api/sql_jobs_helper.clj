@@ -85,11 +85,22 @@
       (assoc :job_id (:job_id job (uuid)))
       (assoc :agent job-agent)))
 
+(defn job-outcome [job]
+  (if (:outcome job)
+    (:outcome job)
+    (if (:contract_claimed job)
+      :running
+      :waiting)))
+
+(defn fix-job-outcome [job]
+  (assoc job :outcome (job-outcome job)))
+
 (defn normalise-job [job]
   (-> job
       (dissoc :tag)
       (dissoc :job_id_2 :job_id_3 :job_id_4 :commitment_contract :outcome_id)
-      (update :outcome #(if % ( keyword %) :waiting))
+      (update :outcome keyword)
+      (fix-job-outcome)
       (update :last_heartbeat #(when % (tc/from-sql-time %)))
       (update-each [:request_body :result_body] #(json/parse-string % keyword))))
 
