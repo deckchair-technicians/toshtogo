@@ -18,7 +18,7 @@ create table jobs (
   job_created      timestamp      not null,
   notes            text,
   request_body     text           not null,
-  contracts_completed integer     default 0 not null
+  dependencies_succeeded integer     default 0 not null
 );
 
 create index job_created_idx on jobs (job_created);

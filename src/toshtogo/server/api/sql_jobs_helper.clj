@@ -119,26 +119,26 @@
    [{} []]
    params))
 
-(defn get-completed-contract-count [cnxn job-id]
-  (:contracts_completed (tsql/query-single
+(defn get-succeeded-dependency-count [cnxn job-id]
+  (:dependencies_succeeded (tsql/query-single
                                           cnxn
-                                          "select contracts_completed from jobs where job_id = :job_id"
+                                          "select dependencies_succeeded from jobs where job_id = :job_id"
                                           {:job_id job-id})))
 
-(defn update-completed-contract-count! [cnxn job-id]
-  (let [prev-count  (get-completed-contract-count cnxn job-id)]
+(defn incremement-succeeded-dependency-count! [cnxn job-id]
+  (let [prev-count  (get-succeeded-dependency-count cnxn job-id)]
     (when-not (= 1 (first (tsql/update! cnxn :jobs
-                                        {:contracts_completed (inc prev-count)}
-                                                 ["contracts_completed = ? and job_id = ?"
+                                        {:dependencies_succeeded (inc prev-count)}
+                                                 ["dependencies_succeeded = ? and job_id = ?"
                                                   prev-count  job-id])))
       (throw (OptimisticLockingException.
-              (str "Contracts completed count updated in another transaction for job "
+              (str "dependencies_succeeded updated in another transaction for job "
                    job-id))))))
 
 (defn handle-contract-completion! [cnxn api contract]
   (when (= :success (contract :outcome))
     (doseq [parent-job (get-jobs api (depends-on contract))]
-      (update-completed-contract-count! cnxn  (parent-job :job_id))
+      (incremement-succeeded-dependency-count! cnxn  (parent-job :job_id))
       (let [dependency-outcomes (dependency-outcomes api parent-job)]
         (when (every? #(= :success %)  dependency-outcomes)
           (new-contract! api (contract-req (parent-job :job_id))))))))

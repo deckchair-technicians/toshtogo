@@ -147,7 +147,7 @@
       [cnxn dev-db]
       (let [api ((sql-deps cnxn) :api)]
         (get-job api parent-job-id)
-        => (contains {:contracts_completed 2})
+        => (contains {:dependencies_succeeded 2})
 
         (request-work! api (uuid) parent-job-type agent-details)
         => (contains {:job_id parent-job-id})))))
