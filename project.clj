@@ -27,7 +27,7 @@
 
   :main toshtogo.server.core
 
-  :ring {:handler toshtogo.server.core/dev-app-instance}
+  :ring {:handler toshtogo.server.core/dev-app-instance :reload-paths ["src"]}
 
   :aot [toshtogo.server.util.IdempotentPutException
         toshtogo.util.OptimisticLockingException
