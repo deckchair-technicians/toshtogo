@@ -3,7 +3,6 @@
             [compojure.handler :as handler]
             [compojure.route :as route]
             [cheshire.generate :as json-gen]
-            [ring.middleware.json :refer [wrap-json-body]]
             [ring.util.response :as resp]
             [flatland.useful.map :refer [update]]
 
@@ -15,7 +14,9 @@
                                              wrap-print-request
                                              wrap-retry-on-exceptions
                                              wrap-json-response
-                                             wrap-json-exception]]
+                                             wrap-json-exception
+                                             wrap-json-body
+                                             wrap-if]]
             [toshtogo.server.api.protocol :refer :all]
             [toshtogo.util.core :refer [uuid ppstr debug parse-datetime]])
   (:import [toshtogo.server.util IdempotentPutException]
@@ -100,10 +101,6 @@
            (GET "/jobs" [] (html-resource "jobs.html"))
            (GET "/jobs/:job-id" [job-id] (html-resource "job.html")))
 
-(defn wrap-if [handler pred middleware & args]
-  (if pred
-    (apply middleware handler args)
-    handler))
 
 (defn app [db & {:keys [debug] :or {debug false}}]
   (routes
@@ -111,8 +108,8 @@
     (-> (handler/api api-routes)
         wrap-dependencies
 
-        (wrap-json-body {:keywords? true})
         (wrap-if debug wrap-print-request)
+        wrap-json-body
         wrap-body-hash
         (wrap-db-transaction db)
         wrap-json-response

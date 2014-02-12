@@ -3,6 +3,8 @@
             [net.cgrand.enlive-html :as html]
             [clojure.stacktrace :refer [print-cause-trace]]
             [clojure.pprint :refer [pprint]]
+            [ring.middleware.json :as ring-json]
+            [flatland.useful.map :refer [update]]
             [toshtogo.server.util.idempotentput :refer [check-idempotent!]]
             [toshtogo.server.agents.sql :refer [sql-agents]]
             [toshtogo.server.api.protocol :refer :all]
@@ -89,6 +91,7 @@
     (println "---------------------------")
     (pprint req)
     (handler req)))
+
 (defn json-response [resp]
   (ring.util.response/content-type resp "application/json; charset=utf-8"))
 
@@ -104,6 +107,14 @@
             (update-in [:body] json/encode))
         response))))
 
+(defn wrap-json-body
+  "Like ring.middleware.json/wrap-json-body, but always tries to
+  parse the request body"
+  [handler]
+  (fn [request]
+    (handler (update request :body json/decode))))
+
+
 (defn wrap-json-exception
   [handler]
   (fn [request]
@@ -112,3 +123,8 @@
            (json-response {:body   (cause-trace e)
                            :status 500
                            })))))
+
+(defn wrap-if [handler pred middleware & args]
+  (if pred
+    (apply middleware handler args)
+    handler))
