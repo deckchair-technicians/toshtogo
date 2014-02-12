@@ -7,7 +7,7 @@
             [toshtogo.server.agents.sql :refer [sql-agents]]
             [toshtogo.server.api.protocol :refer :all]
             [toshtogo.server.api.sql :refer [sql-api]]
-            [toshtogo.util.core :refer [debug ppstr]]
+            [toshtogo.util.core :refer [debug ppstr cause-trace]]
             [toshtogo.util.json :as json]
             [toshtogo.util.hashing :refer [murmur!]]
             [toshtogo.util.io :refer [byte-array-input! byte-array-output!]])
@@ -89,6 +89,8 @@
     (println "---------------------------")
     (pprint req)
     (handler req)))
+(defn json-response [resp]
+  (ring.util.response/content-type resp "application/json; charset=utf-8"))
 
 (defn wrap-json-response
   "Identical to ring.middleware.json/wrap-json-response but using our json encoder,
@@ -98,6 +100,15 @@
     (let [response (handler request)]
       (if (coll? (:body response))
         (-> response
-            (ring.util.response/content-type "application/json; charset=utf-8")
+            json-response
             (update-in [:body] json/encode))
         response))))
+
+(defn wrap-json-exception
+  [handler]
+  (fn [request]
+    (try (handler request)
+         (catch Throwable e
+           (json-response {:body   (cause-trace e)
+                           :status 500
+                           })))))

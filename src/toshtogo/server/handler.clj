@@ -14,7 +14,8 @@
                                              wrap-print-response
                                              wrap-print-request
                                              wrap-retry-on-exceptions
-                                             wrap-json-response]]
+                                             wrap-json-response
+                                             wrap-json-exception]]
             [toshtogo.server.api.protocol :refer :all]
             [toshtogo.util.core :refer [uuid ppstr debug parse-datetime]])
   (:import [toshtogo.server.util IdempotentPutException]
@@ -115,4 +116,5 @@
         wrap-body-hash
         (wrap-db-transaction db)
         wrap-json-response
-        (wrap-if debug wrap-print-response))))
+        (wrap-if debug wrap-print-response)
+        wrap-json-exception)))
