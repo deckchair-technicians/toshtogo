@@ -294,6 +294,7 @@
                   :contract_id         (isinstance UUID)
                   :contract_number     1
                   :dependencies_succeeded 0
+                  :dependencies        []
                   :notes               "Some description of the job"
                   :error               nil
                   :job_created         (close-to created-time)
@@ -312,23 +313,46 @@
         (provided (now) => claimed-time)
 
         (get-job client job-id)
-        => (contains {:commitment_agent    (isinstance UUID)
-                  :commitment_id       (isinstance UUID)
-                  :contract_claimed    (close-to claimed-time)
-                  :contract_finished   nil
-                  :error               nil
-                  :last_heartbeat      (close-to claimed-time)
-                  :outcome             :running
-                  :requesting_agent    (isinstance UUID)})
+        => (contains {:commitment_agent  (isinstance UUID)
+                      :commitment_id     (isinstance UUID)
+                      :contract_claimed  (close-to claimed-time)
+                      :contract_finished nil
+                      :error             nil
+                      :last_heartbeat    (close-to claimed-time)
+                      :outcome           :running
+                      :requesting_agent  (isinstance UUID)})
 
         (complete-work! client (@commitment :commitment_id) (success {:some-field "some value"}))
         => truthy
         (provided (now) => finished-time)
 
         (get-job client job-id)
-        => (contains {:contract_finished   (close-to finished-time)
-                      :contract_number     1
-                      :error               nil
-                      :outcome             :success
-                      :result_body         {:some-field "some value"}})
-        ))
+        => (contains {:contract_finished (close-to finished-time)
+                      :contract_number   1
+                      :error             nil
+                      :outcome           :success
+                      :result_body       {:some-field "some value"}})))
+
+(fact "Current job state is serialised between server and client as expected"
+      (let [job-id (uuid)
+            job-type (uuid-str)]
+
+        ; Newly created
+        (put-job! client job-id (job-req {:job "1"} job-type
+                                         :dependencies
+                                         [(job-req {:job "1.1"} job-type
+                                                   :dependencies
+                                                   [(job-req {:job "1.1.1"} job-type)
+                                                    (job-req {:job "1.1.2"} job-type)])
+                                          (job-req {:job "1.2"} job-type)]))
+
+        (get-job client job-id)
+        => (contains {:request_body {:job "1"}
+                      :dependencies (contains [
+                                                (contains {:request_body {:job "1.1"}
+                                                           :dependencies (contains [(contains {:request_body {:job "1.1.1"}})
+                                                                                    (contains {:request_body {:job "1.1.2"}})]
+                                                                                   :in-any-order)})
+                                                (contains {:request_body {:job "1.2"}})
+                                                ]
+                                              :in-any-order)})))
