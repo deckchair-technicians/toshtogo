@@ -86,19 +86,28 @@
 
   (route/not-found {:status "I'm sorry :("})
 
+(defn html-resource [path]
+  (resp/resource-response path {:root "toshtogo/gui/"}))
+
 (defroutes site-routes
-           (route/resources "/" :root "toshtogo/gui/"))
+           (route/resources "/" {:root "toshtogo/gui/"})
+           (GET "/jobs" [] (html-resource "jobs.html"))
+           (GET "/jobs/:job-id" [job-id] (html-resource "job.html")))
+
+(defn wrap-if [handler pred middleware & args]
+  (if pred
+    (apply middleware handler args)
+    handler))
 
 (defn app [db & {:keys [debug] :or {debug false}}]
   (routes
-    site-routes
-    (cond->
-      (-> (handler/api api-routes)
-          wrap-dependencies
+    (handler/site site-routes)
+    (-> (handler/api api-routes)
+        wrap-dependencies
 
-          (wrap-json-body {:keywords? true})
-          wrap-body-hash
-          (wrap-db-transaction db)
-          wrap-json-response)
-      debug wrap-print-response
-      debug wrap-print-request)))
+        (wrap-json-body {:keywords? true})
+        (wrap-if debug wrap-print-request)
+        wrap-body-hash
+        (wrap-db-transaction db)
+        wrap-json-response
+        (wrap-if debug wrap-print-response))))
