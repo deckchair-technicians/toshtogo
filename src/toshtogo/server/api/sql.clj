@@ -28,8 +28,9 @@
 (defn- recursively-add-dependencies
   "This should really be a postgres recursive CTE- this is terribly inefficient"
   [api job]
-  (assoc job :dependencies (doall (map (partial recursively-add-dependencies api)
-                                       (get-jobs api {:dependency_of_job_id (job :job_id)})))))
+  (when job
+    (assoc job :dependencies (doall (map (partial recursively-add-dependencies api)
+                                         (get-jobs api {:dependency_of_job_id (job :job_id)}))))))
 
 (defn SqlApi [cnxn on-new-job! on-contract-completed! agents]
   (reify Toshtogo

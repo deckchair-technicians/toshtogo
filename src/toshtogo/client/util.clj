@@ -26,6 +26,13 @@
        (throw (SenderException. (str result#)))
        result#)))
 
+(defmacro nil-on-404
+  [& body]
+  `(let [result# (do ~@body)]
+     (if (= 404 (:status result#))
+       nil
+       result#)))
+
 (defmacro until-successful-response
   "Calls body repeatedly until it gets a non-500 response"
   [opts & body]

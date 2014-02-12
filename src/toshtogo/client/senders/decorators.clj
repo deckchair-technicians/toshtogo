@@ -2,7 +2,7 @@
   (:import (toshtogo.client.senders SenderException))
   (:require [toshtogo.util.core :refer [debug exponential-backoff]]
             [toshtogo.util.json :as json]
-            [toshtogo.client.util :refer [until-successful-response]]
+            [toshtogo.client.util :refer [until-successful-response nil-on-404]]
             [toshtogo.client.senders.protocol :refer :all]))
 
 (defn following-sender
@@ -63,9 +63,20 @@
       (GET [this location]
         (until-successful-response retry-opts (GET decorated location))))))
 
+(defn nil-404
+  [decorated]
+  (reify Sender
+    (POST! [this location message]
+      (nil-on-404 (POST! decorated location message)))
+    (PUT! [this location message]
+      (nil-on-404 (PUT! decorated location message)))
+    (GET [this location]
+      (nil-on-404 (GET decorated location)))))
+
 (defn default-decoration [sender & {:keys [error-fn timeout debug] :or {debug false} :as opts}]
   (debug-sender
     debug
     (json-sender
-      (following-sender
-        (apply retry-sender sender (flatten (seq (select-keys opts [:error-fn :timeout]))))))))
+      (nil-404
+        (following-sender
+          (apply retry-sender sender (flatten (seq (select-keys opts [:error-fn :timeout])))))))))

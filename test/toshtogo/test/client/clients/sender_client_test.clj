@@ -356,3 +356,5 @@
                                                 (contains {:request_body {:job "1.2"}})
                                                 ]
                                               :in-any-order)})))
+(fact "Getting a non-existent job returns null"
+      (get-job client (uuid)) => nil)
