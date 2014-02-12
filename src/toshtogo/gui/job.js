@@ -2,7 +2,7 @@ $(document).ready(function getJob() {
         $.getJSON("/api/jobs/" + purl().segment(-1), function (job) {
             $('#all-the-jsons').JSONView(job);
 
-            if(true){
+            if(["waiting", "success", "running", "more-work"].indexOf(job.outcome) < 0){
                 var retry_button = $('#retry-button');
                 retry_button.show();
                 retry_button.click(function(){
