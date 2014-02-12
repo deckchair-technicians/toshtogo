@@ -66,10 +66,11 @@
       (doall (recursively-add-dependencies this (first (get-jobs this {:job_id job-id})))))
 
     (pause-job! [this job-id agent-details]
-      (let [contract (get-contract this {:job_id job-id})]
-        (when (= :waiting (:outcome contract))
-          (let [commitment-id (ensure-commitment-id! cnxn agents contract agent-details)]
+      (let [job (get-job this job-id)]
+        (when (#{:waiting :running} (:outcome job))
+          (let [commitment-id (ensure-commitment-id! cnxn agents job agent-details)]
             (complete-work! this commitment-id (cancelled)))))
+
       (doseq [dependency  (get-jobs this {:dependency_of_job_id job-id})]
         (pause-job! this (dependency :job_id) agent-details)))
 

@@ -127,6 +127,10 @@
     (agent! agents agent-details))))
 
 (defn ensure-commitment-id!
+  "If contract has a :commitment_id, return it.
+
+   Otherwise, create a new commitment and return
+   that commitment id"
   [cnxn agents contract agent-details]
   (if-let [commitment-id (contract :commitment_id)]
     commitment-id
