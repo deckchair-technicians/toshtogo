@@ -28,6 +28,9 @@
     (pause-job! [this job-id]
       (pause-job! decorated job-id))
 
+    (retry-job! [this job-id]
+      (retry-job! decorated job-id))
+
     (request-work! [this job-type]
       (convert-job (request-work! decorated job-type)))
 

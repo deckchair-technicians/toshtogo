@@ -257,7 +257,29 @@
              (Thread/sleep 100)
              (future-done? commitment) => truthy
 
-             (future-cancel commitment)))))
+             (future-cancel commitment))))
+
+  (fact "Paused jobs can be retried"
+         (let [job-id (uuid)
+               job-type (uuid-str)]
+
+           (put-job! client job-id (job-req {} job-type))
+
+           (pause-job! client job-id)
+
+           (get-job client job-id)
+           => (contains {:outcome :cancelled})
+
+           (retry-job! client job-id)
+
+           (get-job client job-id)
+           => (contains {:outcome :waiting})
+
+           @(do-work! client job-type (constantly (success {:some-field "some value"})))
+           => truthy
+
+           (get-job client job-id)
+           => (contains {:outcome :success}))))
 
 
 (defn isinstance [c]

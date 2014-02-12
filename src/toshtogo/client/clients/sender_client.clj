@@ -18,7 +18,12 @@
 
     (pause-job! [this job-id]
       (POST! sender
-             (str "/api/jobs/" job-id "/pause")
+             (str "/api/jobs/" job-id "?action=pause")
+             nil))
+
+    (retry-job! [this job-id]
+      (POST! sender
+             (str "/api/jobs/" job-id "?action=retry")
              nil))
 
     (request-work! [this job-type]

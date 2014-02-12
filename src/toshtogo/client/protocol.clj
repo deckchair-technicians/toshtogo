@@ -20,6 +20,7 @@
   (put-job! [this job-id job-req])
   (get-job [this job-id])
   (pause-job! [this job-id])
+  (retry-job! [this job-id])
 
   (request-work! [this job-type])
   (heartbeat! [this commitment-id])

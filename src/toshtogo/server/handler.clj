@@ -49,9 +49,14 @@
               {:body job}
               (route/not-found "Unknown job id"))))
 
-        (POST "/pause" []
-          (let [job-id (uuid job-id)]
-            {:body (pause-job! api job-id (body :agent))}))))
+        (POST "/" [action]
+              (let [job-id (uuid job-id)]
+                (case action
+                  "pause"
+                  {:body (pause-job! api job-id (body :agent))}
+                  "retry"
+                  {:body (new-contract! api (contract-req job-id))}
+                  )))))
 
     (context "/commitments" {:keys [api body check-idempotent!]}
       (PUT "/" []
