@@ -54,7 +54,7 @@
 
   (get-contracts [this params])
   (get-contract  [this params])
-  (new-contract! [this contract])
+  (new-contract! [this contract-req])
 
   (request-work!  [this commitment-id job-type agent])
   (heartbeat!     [this commitment-id])

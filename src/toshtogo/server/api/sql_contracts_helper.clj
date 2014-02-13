@@ -106,34 +106,8 @@
       (update :outcome #(or (keyword %) :waiting))
       (update :request_body #(json/parse-string % keyword))))
 
-(defn commitment-record [commitment-id contract agent]
-  {:commitment_id       commitment-id
-   :commitment_contract (contract :contract_id)
-   :commitment_agent    (agent :agent_id)
-   :contract_claimed    (now)})
 
 (defn merge-dependencies [contract api]
   (when contract
     (assoc contract :dependencies (get-jobs api {:dependency_of_job_id (contract :job_id)}))))
 
-(defn insert-commitment!
-  [cnxn agents commitment-id contract agent-details]
-  (tsql/insert!
-   cnxn
-   :agent_commitments
-   (commitment-record
-    commitment-id
-    contract
-    (agent! agents agent-details))))
-
-(defn ensure-commitment-id!
-  "If contract has a :commitment_id, return it.
-
-   Otherwise, create a new commitment and return
-   that commitment id"
-  [cnxn agents contract agent-details]
-  (if-let [commitment-id (contract :commitment_id)]
-    commitment-id
-    (let [commitment-id (uuid)]
-      (insert-commitment! cnxn agents commitment-id contract agent-details)
-      commitment-id)))

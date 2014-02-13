@@ -68,7 +68,7 @@
     (pause-job! [this job-id agent-details]
       (let [job (get-job this job-id)]
         (when (#{:waiting :running} (:outcome job))
-          (let [commitment-id (ensure-commitment-id! cnxn agents job agent-details)]
+          (let [commitment-id (ensure-commitment-id! this cnxn agents job agent-details)]
             (complete-work! this commitment-id (cancelled)))))
 
       (doseq [dependency  (get-jobs this {:dependency_of_job_id job-id})]
@@ -88,9 +88,9 @@
       (cond-> (first (get-contracts this params))
               (params :with-dependencies) (merge-dependencies this)))
 
-    (new-contract! [this contract]
-      (let [job-id                (contract :job_id)
-            contract-due          (:contract_due contract (minus (now) (seconds 5)))
+    (new-contract! [this contract-req]
+      (let [job-id                (contract-req :job_id)
+            contract-due          (:contract_due contract-req (minus (now) (seconds 5)))
             last-contract         (get-contract this {:job_id job-id :latest_contract true})
             new-contract-number   (if last-contract (inc (last-contract :contract_number)) 1)
             last-contract-outcome (:outcome last-contract)]
@@ -100,8 +100,9 @@
           (throw (unfinished-contract job-id))
           :success
           (throw (job-finished job-id))
-          (tsql/insert! cnxn :contracts
-                        (contract-record job-id new-contract-number contract-due)))))
+          (let [contract (contract-record job-id new-contract-number contract-due)]
+            (tsql/insert! cnxn :contracts contract)
+            contract))))
 
     (request-work! [this commitment-id job-type agent-details]
       (when-let [contract  (get-contract
@@ -109,7 +110,7 @@
                             {:job_type           job-type
                              :ready_for_work true
                              :order-by       [:contract_created]})]
-        (insert-commitment! cnxn agents commitment-id contract agent-details))
+        (insert-commitment! cnxn agents commitment-id (contract :contract_id) agent-details))
 
       (get-contract this {:commitment_id     commitment-id
                           :with-dependencies true}))

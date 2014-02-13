@@ -4,6 +4,7 @@
             [clj-time.core :refer [now]]
             [clj-time.coerce :as tc]
             [cheshire.core :as json]
+            [toshtogo.server.agents.protocol :refer [agent!]]
             [toshtogo.server.api.protocol :refer :all]
             [toshtogo.util.core :refer [uuid debug]]
             [toshtogo.util.sql :as tsql])
@@ -161,3 +162,40 @@
 (defn handle-new-job! [api job]
   (when-not (job :dependencies)
     (new-contract! api (contract-req (job :job_id)))))
+
+(defn commitment-record [commitment-id contract-id agent]
+  {:commitment_id       commitment-id
+   :commitment_contract contract-id
+   :commitment_agent    (agent :agent_id)
+   :contract_claimed    (now)})
+
+(defn insert-commitment!
+  [cnxn agents commitment-id contract-id agent-details]
+  (assert contract-id "no contract-id")
+  (assert commitment-id "no commitment-id")
+
+  (tsql/insert!
+    cnxn
+    :agent_commitments
+    (commitment-record
+      commitment-id
+      contract-id
+      (agent! agents agent-details))))
+
+(defn ensure-contract-id!
+  [api job]
+  (if-let [contract-id (job :contract_id)]
+    contract-id
+    (:contract_id (new-contract! api (contract-req (job :job_id))))))
+
+(defn ensure-commitment-id!
+  "If contract has a :commitment_id, return it.
+
+   Otherwise, create a new commitment and return
+   that commitment id"
+  [api cnxn agents job agent-details]
+  (if-let [commitment-id (job :commitment_id)]
+    commitment-id
+    (let [commitment-id (uuid)]
+      (insert-commitment! cnxn agents commitment-id (ensure-contract-id! api job) agent-details)
+      commitment-id)))
