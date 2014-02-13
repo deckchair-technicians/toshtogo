@@ -239,8 +239,8 @@
 
            (let [commitment (do-work! client job-type (fn [job]
                                                          (deliver commitment-id (job :commitment_id))
-                                                         (Thread/sleep 5000)
-                                                         (error "Ignored return")))]
+                                                         (Thread/sleep 10000)
+                                                         (error "Should never return")))]
              (future-done? commitment) => falsey
 
              (heartbeat! client @commitment-id)
@@ -250,9 +250,12 @@
              => (contains {:outcome :running})
 
              (pause-job! client job-id)
-             @commitment
-             (heartbeat! client @commitment-id)
-             => (contains {:instruction :cancel})
+
+             (get-job client job-id)
+             => (contains {:outcome :cancelled})
+
+             (deref commitment 5000 nil)
+             => (contains {:result {:outcome :cancelled}})
 
              (Thread/sleep 100)
              (future-done? commitment) => truthy
