@@ -79,7 +79,7 @@
              (str "\n    where\n      "    (str/join "\n      and " where-clauses))
 
              (:order-by params)
-             (str "\n    order by " (str/join " nulls last, " (map name (:order-by params))))
+             (str "\n    order by " (str/join " desc nulls last, " (map name (:order-by params))))
 
              (or (:page params) (:page-size params))
              (str "\n    offset " (* (:page-size params 20) (- (:page params 1) 1))
