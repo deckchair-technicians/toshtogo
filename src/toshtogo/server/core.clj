@@ -6,10 +6,10 @@
   (:gen-class))
 
 (def dev-db {:classname   "org.postgresql.Driver" ; must be in classpath
-                  :subprotocol "postgresql"
-                  :subname     "//localhost:5432/toshtogo"
-                  :user        "postgres"
-                  :password    "postgres"})
+             :subprotocol "postgresql"
+             :subname     "//localhost:5432/toshtogo"
+             :user        "postgres"
+             :password    "postgres"})
 
 (defn dev-app [& {:keys [debug] :or {debug false}}]
   (app dev-db :debug debug))
