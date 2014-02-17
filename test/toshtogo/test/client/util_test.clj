@@ -3,7 +3,7 @@
            (java.util.concurrent ExecutionException))
   (:require [midje.sweet :refer :all]
             [flatland.useful.map :refer [into-map]]
-            [toshtogo.client.util :refer [throw-500]]))
+            [toshtogo.client.util :refer [throw-500 request-with-dependency-results]]))
 
 (fact "throw-500 works"
       (throw-500 {:status 500}) => (throws SenderException)
@@ -53,3 +53,13 @@
       (until-successful-response (_500-for 100 "no timeout")) => "no timeout"
       (until-successful-response (_500-for 1500 "does not succeed in time") :timeout 10) => (throws ExecutionException)
       (until-successful-response (constantly "succeeds in time") :timeout 100) => "succeeds in time")
+
+(fact "Merge dependency results into request"
+      (request-with-dependency-results {:request_body {:some-value 1}
+                                              :dependencies [{:job_type    "dependency_one"
+                                                              :result_body {:dep1-value 1}}
+                                                             {:job_type    "dependency_two"
+                                                              :result_body {:dep2-value 1}}]})
+      => (just {:some-value  1
+                :dependency_one  {:dep1-value 1}
+                :dependency_two {:dep2-value 1}}))

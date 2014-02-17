@@ -18,6 +18,24 @@
   {:hostname       (hostname)
    :system_name    system
    :system_version version})
+(defn request-with-dependency-results
+  "Takes a toshtogo job.
+
+  Builds a map of the :result_body of each child job in :dependencies, keyed by the
+  :job_type of the dependency.
+
+  Returns the result of merging this job into the parent job's :request_body.
+
+  Useful for making toshtogo agents agnostic to whether dependencies are provided
+  directly in the :request_body, or by dependent jobs.
+
+  If there are multiple dependencies of the same type, the last one will win, so this
+  is probably not the function you want."
+  [job]
+  (apply merge (job :request_body)
+         (map (fn [dep] {(keyword (:job_type dep)) (:result_body dep)})
+              (job :dependencies))))
+
 
 (defmacro throw-500
   [& body]
