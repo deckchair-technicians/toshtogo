@@ -15,7 +15,7 @@
                  "\nException was:"
                  (.getMessage e)))))))
 
-(defn request-with-dependency-results
+(defn merge-child-jobs
   "Takes a toshtogo job.
 
   Builds a map of the :result_body of each child job in :dependencies, keyed by the
