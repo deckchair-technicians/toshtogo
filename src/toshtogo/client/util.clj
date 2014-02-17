@@ -1,9 +1,10 @@
 (ns toshtogo.client.util
   (:import [toshtogo.client.senders SenderException]
            (java.net UnknownHostException InetAddress))
-  (:require [toshtogo.util.core :refer [retry-until-success exponential-backoff]]))
+  (:require [trptcolin.versioneer.core :as version]
+            [toshtogo.util.core :refer [retry-until-success exponential-backoff]]))
 
-(defn- hostname
+(defn hostname
   []
   (try
     (.getHostName (InetAddress/getLocalHost))
@@ -14,10 +15,6 @@
                  "\nException was:"
                  (.getMessage e)))))))
 
-(defn get-agent-details [system version]
-  {:hostname       (hostname)
-   :system_name    system
-   :system_version version})
 (defn request-with-dependency-results
   "Takes a toshtogo job.
 
@@ -36,6 +33,19 @@
          (map (fn [dep] {(keyword (:job_type dep)) (:result_body dep)})
               (job :dependencies))))
 
+(defn agent-details
+  "Returns a map containing :hostname :system_name :system_version.\n
+  \n
+  Works out hostname itself.\n
+  :system_name will be maven-artifact\n
+  \n
+  :system_version will be pulled from either the pom.properties file in\n
+  META-INF or [maven-artifact].version environment variable set by lein\n
+  in the repl."
+  [maven-group maven-artifact]
+  {:hostname       (hostname)
+   :system_name    maven-artifact
+   :system_version (version/get-version maven-group maven-artifact)})
 
 (defmacro throw-500
   [& body]
