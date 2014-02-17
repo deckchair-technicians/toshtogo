@@ -10,15 +10,13 @@
 
                                                         {:job_type    :child_job_2
                                                          :result_body {:child_field_2 3}}]})
-      => (contains {:request_body     {:parent_field 1}
-                    :combined_request {:parent_field 1
+      => (contains {:request_body     {:parent_field 1
                                        :child_job_1  {:child_field_1 2}
                                        :child_job_2  {:child_field_2 3}}})
 
       ((wrap-merge-child-jobs identity) {:request_body {:parent_field 1}
                                          :dependencies []})
       => {:request_body {:parent_field 1}
-          :combined_request {:parent_field 1}
           :dependencies []})
 
 (fact "Adding missing dependencies"

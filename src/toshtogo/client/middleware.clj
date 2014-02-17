@@ -10,7 +10,7 @@
   directly in the :request_body, or by dependent jobs."
   [handler]
   (fn [job]
-    (handler (assoc job :combined_request (merge-child-jobs job)))))
+    (handler (assoc job :request_body (merge-child-jobs job)))))
 
 (defn check-dependency
   [request missing-jobs [expected-key dep-func]]
