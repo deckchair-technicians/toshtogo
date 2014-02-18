@@ -4,11 +4,11 @@
             [toshtogo.server.util.middleware :refer [sql-deps]]
             [toshtogo.server.core :refer [dev-db]]
             [toshtogo.util.core :refer [uuid uuid-str debug]]
-            [toshtogo.client.util :refer [get-agent-details]]
+            [toshtogo.client.util :as util]
             [toshtogo.server.agents.protocol :refer :all]
             [toshtogo.server.api.protocol :refer :all]))
 
-(def agent-details (get-agent-details "test" "0.0.0"))
+(def agent-details (util/agent-details "savagematt" "toshtogo"))
 
 (fact "Job records are the right shape"
       (job-req ...id... agent-details {:data "value"} :job-type :tags [:tag-one :tag-two])

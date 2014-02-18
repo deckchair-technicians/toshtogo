@@ -5,11 +5,11 @@
             [toshtogo.server.util.middleware :refer [sql-deps]]
             [toshtogo.util.core :refer [uuid uuid-str debug]]
             [toshtogo.server.core :refer [dev-db]]
-            [toshtogo.client.util :refer [get-agent-details]]
+            [toshtogo.client.util :as util]
             [toshtogo.server.agents.protocol :refer :all]
             [toshtogo.server.api.protocol :refer :all]))
 
-(def agent-details (get-agent-details "test" "0.0.0"))
+(def agent-details (util/agent-details "savagematt" "toshtogo"))
 
 (defn given-job-exists [api id job-type & deps]
   (put-job! api (job-req id agent-details {:some-data (uuid)} job-type :dependencies deps)))
