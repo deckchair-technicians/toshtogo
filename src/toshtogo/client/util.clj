@@ -2,6 +2,8 @@
   (:import [toshtogo.client.senders SenderException]
            (java.net UnknownHostException InetAddress))
   (:require [trptcolin.versioneer.core :as version]
+            [swiss.arrows :refer :all]
+            [flatland.useful.map :refer [map-vals]]
             [toshtogo.util.core :refer [retry-until-success exponential-backoff]]))
 
 (defn hostname
@@ -26,12 +28,21 @@
   Useful for making toshtogo agents agnostic to whether dependencies are provided
   directly in the :request_body, or by dependent jobs.
 
-  If there are multiple dependencies of the same type, the last one will win, so this
-  is probably not the function you want."
-  [job]
-  (apply merge (job :request_body)
-         (map (fn [dep] {(keyword (:job_type dep)) (:result_body dep)})
-              (job :dependencies))))
+  If there are multiple dependencies of the same type, the last one will win, unless
+  the :job_type is specified in merge-multiple, which will cause "
+  [job & {:keys [merge-multiple] :or {merge-multiple []}}]
+  (let [dependencies               (job :dependencies)
+        job-type-result-pairs      (map (fn [dep] [(keyword (:job_type dep)) (:result_body dep)]) dependencies)
+        multiple-value-deps        (-<> job-type-result-pairs
+                                       (group-by first <>)
+                                       (select-keys <> merge-multiple)
+                                       (flatland.useful.map/map-vals <> (fn [deps] (map second deps))))
+        single-value-deps          (-<> job-type-result-pairs
+                                       (mapcat identity <>)
+                                       (apply hash-map <>)
+                                       (apply dissoc <> merge-multiple))]
+    (apply merge (job :request_body)
+           (cons multiple-value-deps single-value-deps))))
 
 (defn agent-details
   "Returns a map containing :hostname :system_name :system_version.\n

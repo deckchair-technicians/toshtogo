@@ -4,6 +4,7 @@
 
   :dependencies [[org.clojure/clojure "1.5.1"]
                  [compojure "1.1.6"]
+                 [swiss-arrows "1.0.0"]
                  [org.flatland/useful "0.10.3"]
                  [me.raynes/fs "1.4.5"]
                  [cheshire "5.3.0"]
@@ -35,6 +36,6 @@
         toshtogo.client.senders.SenderException]
 
   :profiles {:dev {:dependencies [[javax.servlet/servlet-api "2.5"]
-                                  [midje "1.5.1"]]
+                                  [midje "1.6.2"]]
                    :plugins [[lein-midje "3.1.0"]]}
 })

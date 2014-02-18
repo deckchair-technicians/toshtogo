@@ -8,9 +8,9 @@
   \n
   Useful for making toshtogo agents agnostic to whether dependencies are provided\n
   directly in the :request_body, or by dependent jobs."
-  [handler]
+  [handler & {:keys [merge-multiple] :or {merge-multiple []}}]
   (fn [job]
-    (handler (assoc job :request_body (merge-child-jobs job)))))
+    (handler (assoc job :request_body (merge-child-jobs job :merge-multiple merge-multiple)))))
 
 (defn check-dependency
   [request missing-jobs [check? dep-func]]
