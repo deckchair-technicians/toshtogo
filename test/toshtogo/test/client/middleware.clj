@@ -4,7 +4,7 @@
             [toshtogo.client.protocol :refer :all]))
 
 (fact "Merging child jobs"
-      ((wrap-merge-child-jobs identity) {:request_body {:parent_field 1}
+      ((wrap-merge-dependency-results identity) {:request_body {:parent_field 1}
                                          :dependencies [{:job_type    :child_job_1
                                                          :result_body {:child_field_1 2}}
 
@@ -14,19 +14,19 @@
                                    :child_job_1  {:child_field_1 2}
                                    :child_job_2  {:child_field_2 3}}})
 
-      ((wrap-merge-child-jobs identity) {:request_body {:parent_field 1}
+      ((wrap-merge-dependency-results identity) {:request_body {:parent_field 1}
                                          :dependencies []})
       => {:request_body {:parent_field 1}
           :dependencies []})
 
 (fact "Merging dependency results with no dependencies"
-      ((wrap-merge-child-jobs identity) {:request_body {:parent_field 1}
+      ((wrap-merge-dependency-results identity) {:request_body {:parent_field 1}
                                          :dependencies []})
       => {:request_body {:parent_field 1}
           :dependencies []})
 
 (fact "Merging multiple dependency results of the same type"
-      ((wrap-merge-child-jobs identity :merge-multiple [:same_job_type])
+      ((wrap-merge-dependency-results identity :merge-multiple [:same_job_type])
        {:request_body {:parent_field 1}
         :dependencies [{:job_type    :same_job_type
                         :result_body {:child_field_1 2}}
