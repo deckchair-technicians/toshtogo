@@ -13,10 +13,10 @@
     (handler (assoc job :request_body (merge-child-jobs job :merge-multiple merge-multiple)))))
 
 (defn check-dependency
-  [request missing-jobs [check? dep-func]]
+  [request missing-dependency-job-reqs [check? job-req-builder]]
   (if (check? request)
-    missing-jobs
-    (conj missing-jobs (dep-func request))))
+    missing-dependency-job-reqs
+    (conj missing-dependency-job-reqs (job-req-builder request))))
 
 (defn missing-dependencies [request dependencies]
   (reduce (partial check-dependency request) nil dependencies))
