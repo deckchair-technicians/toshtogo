@@ -12,7 +12,7 @@
   [client-opts agent-details]
   (case (:type client-opts)
     :http
-    (let [base-path (:base-path client-opts)]
+    (let [base-path (:base-url client-opts)]
       (assert base-path)
       (http-sender agent-details base-path))
     :app
