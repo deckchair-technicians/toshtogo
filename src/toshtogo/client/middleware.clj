@@ -13,8 +13,8 @@
     (handler (assoc job :request_body (merge-child-jobs job)))))
 
 (defn check-dependency
-  [request missing-jobs [expected-key dep-func]]
-  (if (contains? request expected-key)
+  [request missing-jobs [check? dep-func]]
+  (if (check? request)
     missing-jobs
     (conj missing-jobs (dep-func request))))
 
@@ -22,9 +22,9 @@
   (reduce (partial check-dependency request) nil dependencies))
 
 (defn wrap-check-dependencies
-  "Takes a handler and a list of [key dependency-fn] pairs.\n
+  "Takes a handler and a list of [check? dependency-fn] pairs.\n
   \n
-  If job :request_body is missing any of the keys, the middleware\n
+  If job :request_body fails any check?, the middleware\n
   will return an add-dependencies result with a list of job-reqs\n
   built by calling (dependency-fn (job :request_body)"
 
