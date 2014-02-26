@@ -67,9 +67,10 @@
 
 (defn exponential-backoff
   [max-wait-millis retry-count]
-  (min
-    max-wait-millis
-    (* 100 (expt 2 retry-count))))
+  (let [capped-retry (min 20 retry-count)]
+    (min
+      max-wait-millis
+      (* 100 (expt 2 capped-retry)))))
 
 (defn or-exception [func]
   (try

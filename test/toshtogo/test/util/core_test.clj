@@ -69,4 +69,5 @@
       (exponential-backoff 4000 2) => 400
       (exponential-backoff 4000 3) => 800
       (exponential-backoff 4000 4) => 1600
-      (exponential-backoff 1000 4) => 1000)
+      (exponential-backoff 1000 4) => 1000
+      (exponential-backoff 1000 Integer/MAX_VALUE) => 1000)
