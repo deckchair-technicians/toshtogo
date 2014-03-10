@@ -65,7 +65,7 @@
         (let [commitment-id (uuid (body :commitment_id))]
           (check-idempotent!
            :create-commitment commitment-id
-           #(if-let [commitment (request-work! api commitment-id (body :job_type) (body :agent))]
+           #(if-let [commitment (request-work! api commitment-id {:job_type (body :job_type)} (body :agent))]
               (commitment-redirect commitment-id)
               {:status 204})
            #(commitment-redirect commitment-id))))

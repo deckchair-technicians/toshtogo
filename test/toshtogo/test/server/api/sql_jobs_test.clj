@@ -46,7 +46,7 @@
            (get-contract api {:job_id job-id})
            => (contains {:outcome :cancelled})
 
-           (request-work! api (uuid) job-type agent-details)
+           (request-work! api (uuid) {:job_type job-type} agent-details)
            => nil)))
 
 (facts "Should be able to pause a job that has started"
@@ -59,7 +59,7 @@
 
            (put-job! api (job-req job-id agent-details {:some-data 123} job-type))
 
-           (request-work! api commitment-id job-type agent-details) => truthy
+           (request-work! api commitment-id {:job_type job-type} agent-details) => truthy
 
            (pause-job! api job-id agent-details)
 
@@ -81,7 +81,7 @@
 
            (put-job! api (job-req job-id agent-details {:some-data 123} job-type))
 
-           (request-work! api commitment-id job-type agent-details) => truthy
+           (request-work! api commitment-id {:job_type job-type} agent-details) => truthy
            (complete-work! api commitment-id (success {}))
 
            (pause-job! api job-id agent-details)
@@ -110,6 +110,6 @@
            (get-contract api {:job_id job-id-1-2-1})
            => (contains {:outcome :cancelled})
 
-           (request-work! api (uuid) job-type agent-details) => nil)))
+           (request-work! api (uuid) {:job_type job-type} agent-details) => nil)))
 
 (future-fact "Get job returns job tags")

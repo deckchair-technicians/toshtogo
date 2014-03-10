@@ -57,5 +57,6 @@
   (new-contract! [this contract-req])
 
   (request-work!  [this commitment-id job-type agent])
+  (request-work!  [this commitment-id job-filter agent])
   (heartbeat!     [this commitment-id])
   (complete-work! [this commitment-id result]))

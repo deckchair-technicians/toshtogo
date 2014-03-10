@@ -16,7 +16,7 @@
 
 (defn given-job-succeeded [api job-id]
   (let [job      (get-job api job-id)
-        contract (request-work! api (uuid) (job :job_type) agent-details)]
+        contract (request-work! api (uuid) {:job_type (job :job_type)} agent-details)]
     (when (not= (contract :job_id) job-id)
       (throw (RuntimeException. "More than one job exists for tags")))
 
@@ -130,8 +130,8 @@
               (given-job-exists api parent-job-id parent-job-type
                                 (job-req (uuid) agent-details {:child 1} child-job-type)
                                 (job-req (uuid) agent-details {:child 2} child-job-type))
-              [(request-work! api (uuid) child-job-type agent-details)
-               (request-work! api (uuid) child-job-type agent-details)]))]
+              [(request-work! api (uuid) {:job_type child-job-type} agent-details)
+               (request-work! api (uuid) {:job_type child-job-type} agent-details)]))]
 
       (in-parallel-transactions
         dev-db
@@ -149,7 +149,7 @@
         (get-job api parent-job-id)
         => (contains {:dependencies_succeeded 2})
 
-        (request-work! api (uuid) parent-job-type agent-details)
+        (request-work! api (uuid) {:job_type parent-job-type} agent-details)
         => (contains {:job_id parent-job-id})))))
 
 

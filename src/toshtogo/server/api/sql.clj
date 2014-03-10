@@ -104,12 +104,12 @@
             (tsql/insert! cnxn :contracts contract)
             contract))))
 
-    (request-work! [this commitment-id job-type agent-details]
+    (request-work! [this commitment-id job-filter agent-details]
       (when-let [contract  (get-contract
                             this
-                            {:job_type           job-type
-                             :ready_for_work true
-                             :order-by       [:contract_created]})]
+                            (assoc job-filter
+                              :ready_for_work true
+                              :order-by [:contract_created]))]
         (insert-commitment! cnxn agents commitment-id (contract :contract_id) agent-details))
 
       (get-contract this {:commitment_id     commitment-id
