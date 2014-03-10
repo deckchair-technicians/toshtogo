@@ -63,9 +63,9 @@
   (when contract
     (assoc contract :dependencies (get-jobs api {:dependency_of_job_id (contract :job_id)}))))
 
-(defn get-contract [this params]
-              (cond-> (first (get-contracts this params))
-                      (params :with-dependencies) (merge-dependencies this)))
+(defn get-contract [api params]
+              (cond-> (first (get-contracts api params))
+                      (params :with-dependencies) (merge-dependencies api)))
 
 (defn pause-job! [api job-id agent-details]
             (let [job (get-job api job-id)]
