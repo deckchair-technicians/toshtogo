@@ -90,7 +90,9 @@
     (:outcome job)
     (if (:contract_claimed job)
       :running
-      :waiting)))
+      (if (:contract_id job)
+          :waiting
+          :no-contract))))
 
 (defn fix-job-outcome [job]
   (assoc job :outcome (job-outcome job)))
@@ -181,21 +183,3 @@
       commitment-id
       contract-id
       (agent! agents agent-details))))
-
-(defn ensure-contract-id!
-  [api job]
-  (if-let [contract-id (job :contract_id)]
-    contract-id
-    (:contract_id (new-contract! api (contract-req (job :job_id))))))
-
-(defn ensure-commitment-id!
-  "If contract has a :commitment_id, return it.
-
-   Otherwise, create a new commitment and return
-   that commitment id"
-  [api cnxn agents job agent-details]
-  (if-let [commitment-id (job :commitment_id)]
-    commitment-id
-    (let [commitment-id (uuid)]
-      (insert-commitment! cnxn agents commitment-id (ensure-contract-id! api job) agent-details)
-      commitment-id)))

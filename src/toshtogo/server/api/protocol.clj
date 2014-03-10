@@ -1,5 +1,6 @@
 (ns toshtogo.server.api.protocol
-  (:require [toshtogo.util.core :refer [assoc-not-nil]]))
+  (:require [clojure.pprint :refer [pprint]]
+            [toshtogo.util.core :refer [assoc-not-nil uuid]]))
 
 (defn job-req
   [id agent-details body job-type & {:keys [dependencies notes tags]}]
@@ -50,13 +51,23 @@
   (put-job!   [this job])
   (get-job    [this job-id])
   (get-jobs   [this params])
-  (pause-job! [this job-id agent-details])
 
   (get-contracts [this params])
   (get-contract  [this params])
   (new-contract! [this contract-req])
 
-  (request-work!  [this commitment-id job-type agent])
   (request-work!  [this commitment-id job-filter agent])
   (heartbeat!     [this commitment-id])
   (complete-work! [this commitment-id result]))
+
+(defn pause-job! [api job-id agent-details]
+            (let [job (get-job api job-id)]
+              (when (= :waiting (:outcome job))
+                (let [commitment (request-work! api (uuid) {:job_id job-id} agent-details)]
+                  (complete-work! api (:commitment_id commitment) (cancelled))))
+
+              (when (= :running (:outcome job))
+                (complete-work! api (:commitment_id job) (cancelled))))
+
+            (doseq [dependency  (get-jobs api {:dependency_of_job_id job-id})]
+              (pause-job! api (dependency :job_id) agent-details)))

@@ -64,16 +64,6 @@
 
     (get-job [this job-id]
       (doall (recursively-add-dependencies this (first (get-jobs this {:job_id job-id})))))
-
-    (pause-job! [this job-id agent-details]
-      (let [job (get-job this job-id)]
-        (when (#{:waiting :running} (:outcome job))
-          (let [commitment-id (ensure-commitment-id! this cnxn agents job agent-details)]
-            (complete-work! this commitment-id (cancelled)))))
-
-      (doseq [dependency  (get-jobs this {:dependency_of_job_id job-id})]
-        (pause-job! this (dependency :job_id) agent-details)))
-
     (get-contracts [this params]
       (map
        normalise-record
@@ -126,6 +116,7 @@
           {:instruction :continue})))
 
     (complete-work! [this commitment-id result]
+      (assert commitment-id "no commitment-id")
       (if-let [contract (get-contract this {:commitment_id commitment-id})]
         (let [outcome       (result :outcome)
               job-id        (contract :job_id)
