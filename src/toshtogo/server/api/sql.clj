@@ -74,10 +74,6 @@
                contracts-sql
                params))))
 
-    (get-contract [this params]
-      (cond-> (first (get-contracts this params))
-              (params :with-dependencies) (merge-dependencies this)))
-
     (new-contract! [this contract-req]
       (let [job-id                (contract-req :job_id)
             contract-due          (:contract_due contract-req (minus (now) (seconds 5)))

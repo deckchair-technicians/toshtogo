@@ -106,8 +106,3 @@
       (update :outcome #(or (keyword %) :waiting))
       (update :request_body #(json/parse-string % keyword))))
 
-
-(defn merge-dependencies [contract api]
-  (when contract
-    (assoc contract :dependencies (get-jobs api {:dependency_of_job_id (contract :job_id)}))))
-

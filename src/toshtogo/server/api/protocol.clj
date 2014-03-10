@@ -53,12 +53,19 @@
   (get-jobs   [this params])
 
   (get-contracts [this params])
-  (get-contract  [this params])
   (new-contract! [this contract-req])
 
   (request-work!  [this commitment-id job-filter agent])
   (heartbeat!     [this commitment-id])
   (complete-work! [this commitment-id result]))
+
+(defn merge-dependencies [contract api]
+  (when contract
+    (assoc contract :dependencies (get-jobs api {:dependency_of_job_id (contract :job_id)}))))
+
+(defn get-contract [this params]
+              (cond-> (first (get-contracts this params))
+                      (params :with-dependencies) (merge-dependencies this)))
 
 (defn pause-job! [api job-id agent-details]
             (let [job (get-job api job-id)]
