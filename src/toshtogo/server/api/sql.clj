@@ -25,13 +25,6 @@
     (put-job! api dependency)
     (tsql/insert! cnxn :job_dependencies (dependency-record job-id dependency))))
 
-(defn- recursively-add-dependencies
-  "This should really be a postgres recursive CTE- this is terribly inefficient"
-  [api job]
-  (when job
-    (assoc job :dependencies (doall (map (partial recursively-add-dependencies api)
-                                         (get-jobs api {:dependency_of_job_id (job :job_id)}))))))
-
 (defn SqlApi [cnxn on-new-job! on-contract-completed! agents]
   (reify Toshtogo
     (put-job! [this job]
@@ -62,8 +55,6 @@
               cnxn
               (tsql/qualify jobs-where-fn (job-sql (assoc params :get-tags true)) params))))))
 
-    (get-job [this job-id]
-      (doall (recursively-add-dependencies this (first (get-jobs this {:job_id job-id})))))
     (get-contracts [this params]
       (map
        normalise-record

@@ -49,7 +49,6 @@
 
 (defprotocol Toshtogo
   (put-job!   [this job])
-  (get-job    [this job-id])
   (get-jobs   [this params])
 
   (get-contracts [this params])
@@ -58,6 +57,15 @@
   (request-work!  [this commitment-id job-filter agent])
   (heartbeat!     [this commitment-id])
   (complete-work! [this commitment-id result]))
+
+(defn recursively-add-dependencies
+  "This is terribly inefficient"
+  [api job]
+  (when job
+    (assoc job :dependencies (doall (map (partial recursively-add-dependencies api)
+                                         (get-jobs api {:dependency_of_job_id (job :job_id)}))))))
+(defn get-job [api job-id]
+  (doall (recursively-add-dependencies api (first (get-jobs api {:job_id job-id})))))
 
 (defn merge-dependencies [contract api]
   (when contract
