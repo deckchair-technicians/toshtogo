@@ -4,6 +4,7 @@
             [midje.sweet :refer :all]
             [ring.adapter.jetty :refer [run-jetty]]
             [clojure.java.jdbc :as sql]
+            [clojure.pprint :refer [pprint]]
             [toshtogo.server.core :refer [dev-app]]
             [toshtogo.client.protocol :refer :all]
             [toshtogo.client.core :as ttc]
@@ -14,7 +15,7 @@
 
 (def client-config in-process)
 (def client (ttc/client client-config
-                        :error-fn (fn [e] (println (cause-trace e)))
+                        :error-fn (fn [e] (pprint (cause-trace e)))
                         :debug false
                         :timeout 1000
                         :system "client-test"
