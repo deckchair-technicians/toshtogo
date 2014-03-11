@@ -37,27 +37,6 @@
 
           (get-job this job-id))))
 
-    (get-jobs [this params]
-      (let [params (update params :order-by #(concat (as-coll %) [:jobs.job_id]))]
-        (if (:page params)
-          (update
-            (tsql/page cnxn jobs-where-fn job-sql params :count-params (assoc params :get-tags false))
-            :data normalise-job-rows)
-          (normalise-job-rows
-            (tsql/query
-              cnxn
-              (tsql/qualify jobs-where-fn (job-sql (assoc params :get-tags true)) params))))))
-
-    (get-contracts [this params]
-      (map
-       normalise-record
-       (apply tsql/query
-              cnxn
-              (tsql/qualify
-               contracts-where-fn
-               contracts-sql
-               params))))
-
     (insert-contract! [this job-id contract-ordinal contract-due]
       (tsql/insert! cnxn :contracts (contract-record job-id contract-ordinal contract-due)))
 
@@ -74,12 +53,12 @@
           contract-id
           (agent! agents agent-details))))
 
-    (heartbeat! [api commitment-id]
+    (upsert-heartbeat! [this commitment-id]
       (let [heartbeat-time (now)]
         (tsql/update! cnxn :agent_commitments
                       {:last_heartbeat heartbeat-time}
                       ["commitment_id = ?" commitment-id]))
-      (let [contract  (get-contract api {:commitment_id commitment-id})]
+      (let [contract  (get-contract this {:commitment_id commitment-id})]
         (if (= :cancelled (contract :outcome))
           {:instruction :cancel}
           {:instruction :continue})))
@@ -106,7 +85,28 @@
         (#{:more-work :try-later :error :cancelled} (result :outcome))
         nil
 
-        :else (throw (IllegalStateException. (str "Unknown outcome " (result :outcome) " in result " (ppstr result))))))))
+        :else (throw (IllegalStateException. (str "Unknown outcome " (result :outcome) " in result " (ppstr result))))))
+
+    (get-jobs [this params]
+      (let [params (update params :order-by #(concat (as-coll %) [:jobs.job_id]))]
+        (if (:page params)
+          (update
+            (tsql/page cnxn jobs-where-fn job-sql params :count-params (assoc params :get-tags false))
+            :data normalise-job-rows)
+          (normalise-job-rows
+            (tsql/query
+              cnxn
+              (tsql/qualify jobs-where-fn (job-sql (assoc params :get-tags true)) params))))))
+
+    (get-contracts [this params]
+      (map
+       normalise-record
+       (apply tsql/query
+              cnxn
+              (tsql/qualify
+               contracts-where-fn
+               contracts-sql
+               params))))))
 
 (defn sql-api [cnxn agents]
   (SqlApi

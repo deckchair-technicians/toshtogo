@@ -41,15 +41,15 @@
   {:dependency_of_job_id job-id :order-by :job_created})
 
 (defprotocol Toshtogo
-  (insert-jobs!   [this jobs agent-details])
-  (get-jobs   [this params])
+  (insert-jobs! [this jobs agent-details])
 
-  (insert-contract! [this job-id contract-number contract-due])
+  (insert-contract!   [this job-id contract-number contract-due])
   (insert-commitment! [this commitment-id contract-id agent-details])
-  (get-contracts [this params])
+  (upsert-heartbeat!     [this commitment-id])
+  (insert-result! [this commitment-id result])
 
-  (heartbeat!     [this commitment-id])
-  (insert-result! [this commitment-id result]))
+  (get-jobs     [this params])
+  (get-contracts      [this params]))
 
 (defn recursively-add-dependencies
   "This is terribly inefficient"

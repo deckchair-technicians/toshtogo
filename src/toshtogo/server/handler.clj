@@ -87,7 +87,7 @@
              #(commitment-redirect commitment-id))))
 
         (POST "/heartbeat" []
-          {:body (heartbeat! api (uuid commitment-id))}))
+          {:body (upsert-heartbeat! api (uuid commitment-id))}))
 
       (GET "/:commitment-id" [commitment-id]
         {:body  (get-contract
