@@ -53,25 +53,25 @@
 
 (defn recursively-add-dependencies
   "This is terribly inefficient"
-  [api job]
+  [persistence job]
   (when job
-    (assoc job :dependencies (doall (map (partial recursively-add-dependencies api)
-                                         (get-jobs api {:dependency_of_job_id (job :job_id)}))))))
-(defn get-job [api job-id]
-  (doall (recursively-add-dependencies api (first (get-jobs api {:job_id job-id})))))
+    (assoc job :dependencies (doall (map (partial recursively-add-dependencies persistence)
+                                         (get-jobs persistence {:dependency_of_job_id (job :job_id)}))))))
+(defn get-job [persistence job-id]
+  (doall (recursively-add-dependencies persistence (first (get-jobs persistence {:job_id job-id})))))
 
-(defn merge-dependencies [contract api]
+(defn merge-dependencies [contract persistence]
   (when contract
-    (assoc contract :dependencies (get-jobs api {:dependency_of_job_id (contract :job_id)}))))
+    (assoc contract :dependencies (get-jobs persistence {:dependency_of_job_id (contract :job_id)}))))
 
-(defn get-contract [api params]
-              (cond-> (first (get-contracts api params))
-                      (params :with-dependencies) (merge-dependencies api)))
+(defn get-contract [persistence params]
+              (cond-> (first (get-contracts persistence params))
+                      (params :with-dependencies) (merge-dependencies persistence)))
 
-(defn new-contract! [api contract-req]
+(defn new-contract! [persistence contract-req]
   (let [job-id                (contract-req :job_id)
         contract-due          (:contract_due contract-req (minus (now) (seconds 5)))
-        last-contract         (get-contract api {:job_id job-id :latest_contract true})
+        last-contract         (get-contract persistence {:job_id job-id :latest_contract true})
         new-contract-ordinal   (if last-contract (inc (last-contract :contract_number)) 1)
         last-contract-outcome (:outcome last-contract)]
 
@@ -83,33 +83,33 @@
       (throw (IllegalStateException.
                (str "Job " job-id " has been completed. Can't create further contracts")))
 
-      (insert-contract! api job-id new-contract-ordinal contract-due))))
+      (insert-contract! persistence job-id new-contract-ordinal contract-due))))
 
-(defn new-job! [api agent-details job]
+(defn new-job! [persistence agent-details job]
   (let [jobs           (concat [(dissoc job :dependencies)] (flattened-dependencies job))
         parent-job-ids (set (filter (comp not nil?) (map :parent_job_id jobs)))
         leaf-jobs (filter #(not (parent-job-ids (:job_id %))) jobs)]
 
-    (insert-jobs! api jobs agent-details)
+    (insert-jobs! persistence jobs agent-details)
 
     (doseq [leaf-job leaf-jobs]
-      (new-contract! api (contract-req (leaf-job :job_id))))
+      (new-contract! persistence (contract-req (leaf-job :job_id))))
 
-    (get-job api (job :job_id))))
+    (get-job persistence (job :job_id))))
 
 ; Complete work
 (defn dependency-outcomes
   "This is incredibly inefficient"
-  [api job-id]
+  [persistence job-id]
   (assert (instance? UUID job-id) (str "job-id should be a UUID but was" (ppstr job-id)))
   (reduce (fn [outcomes dependency]
             (cons (dependency :outcome) outcomes))
           #{}
-          (get-jobs api (dependencies-of job-id))))
+          (get-jobs persistence (dependencies-of job-id))))
 
 (defn complete-work!
-  [api commitment-id result]
-  (let [contract (get-contract api {:commitment_id commitment-id})
+  [persistence commitment-id result]
+  (let [contract (get-contract persistence {:commitment_id commitment-id})
         job-id (:job_id contract)
         agent-details (:agent result)]
 
@@ -118,22 +118,22 @@
     (case (contract :outcome)
       :running
       (do
-        (insert-result! api commitment-id result)
+        (insert-result! persistence commitment-id result)
 
         (case (:outcome result)
           :success
-          (doseq [parent-job (get-jobs api (depends-on contract))]
-            (let [dependency-outcomes (dependency-outcomes api (parent-job :job_id))]
+          (doseq [parent-job (get-jobs persistence (depends-on contract))]
+            (let [dependency-outcomes (dependency-outcomes persistence (parent-job :job_id))]
               (when (every? #(= :success %)  dependency-outcomes)
-                (new-contract! api (contract-req (parent-job :job_id))))))
+                (new-contract! persistence (contract-req (parent-job :job_id))))))
 
           :more-work
           (doseq [job (flattened-dependencies {:job_id       job-id
                                                :dependencies (result :dependencies)})]
-            (new-job! api agent-details job))
+            (new-job! persistence agent-details job))
 
           :try-later
-          (new-contract! api (contract-req job-id (result :contract_due)))
+          (new-contract! persistence (contract-req job-id (result :contract_due)))
 
           :error
           nil
@@ -148,28 +148,28 @@
 
     nil))
 
-(defn request-work! [api commitment-id job-filter agent-details]
+(defn request-work! [persistence commitment-id job-filter agent-details]
   (when-let [contract (get-contract
-                        api
+                        persistence
                         (assoc job-filter
                           :ready_for_work true
                           :order-by [:contract_created]))]
-    (insert-commitment! api commitment-id (contract :contract_id) agent-details)
+    (insert-commitment! persistence commitment-id (contract :contract_id) agent-details)
 
-    (get-contract api {:commitment_id     commitment-id
+    (get-contract persistence {:commitment_id     commitment-id
                        :with-dependencies true})))
 
-(defn pause-job! [api job-id agent-details]
-            (let [job (get-job api job-id)]
+(defn pause-job! [persistence job-id agent-details]
+            (let [job (get-job persistence job-id)]
               (when (= :waiting (:outcome job))
-                (let [commitment (request-work! api (uuid) {:job_id job-id} agent-details)]
-                  (complete-work! api (:commitment_id commitment) (cancelled))))
+                (let [commitment (request-work! persistence (uuid) {:job_id job-id} agent-details)]
+                  (complete-work! persistence (:commitment_id commitment) (cancelled))))
 
               (when (= :running (:outcome job))
-                (complete-work! api (:commitment_id job) (cancelled))))
+                (complete-work! persistence (:commitment_id job) (cancelled))))
 
-            (doseq [dependency  (get-jobs api {:dependency_of_job_id job-id})]
-              (pause-job! api (dependency :job_id) agent-details)))
+            (doseq [dependency  (get-jobs persistence {:dependency_of_job_id job-id})]
+              (pause-job! persistence (dependency :job_id) agent-details)))
 
 
 
