@@ -10,11 +10,6 @@
             [toshtogo.util.sql :as tsql])
   (:import [toshtogo.util OptimisticLockingException]))
 
-(defn dependency-record [parent-job-id child-job]
-  {:dependency_id (uuid)
-   :parent_job_id parent-job-id
-   :child_job_id (child-job :job_id)})
-
 (defn job-record [id job-type agent-id body notes]
   {:job_id            id
    :job_type          job-type
@@ -65,25 +60,12 @@
      from job_dependencies
      where parent_job_id = :dependency_of_job_id)")
 
-(defn dependency-outcomes
-  "This is incredibly inefficient"
-  [api job]
-  (reduce (fn [outcomes dependency]
-            (cons (dependency :outcome) outcomes))
-          #{}
-          (get-jobs api (dependencies-of job))))
-
 
 (defn collect-tags [job row]
   (if job
     (-> job
         (update :tags #(conj % (row :tag) )))
     (assoc row :tags #{(row :tag)})))
-
-(defn expand-dependency [job-agent job]
-  (-> job
-      (assoc :job_id (:job_id job (uuid)))
-      (assoc :agent job-agent)))
 
 (defn job-outcome [job]
   (if (:outcome job)
@@ -137,33 +119,24 @@
    [{} []]
    params))
 
-(defn get-succeeded-dependency-count [cnxn job-id]
-  (:dependencies_succeeded (tsql/query-single
-                                          cnxn
-                                          "select dependencies_succeeded from jobs where job_id = :job_id"
-                                          {:job_id job-id})))
+(defn incremement-succeeded-dependency-count!
+  "This is sufficient to implement optimistic locking when using Postgres.
 
-(defn incremement-succeeded-dependency-count! [cnxn job-id]
-  (let [prev-count  (get-succeeded-dependency-count cnxn job-id)]
+  We need to revisit if we ever support another database"
+  [cnxn job-id]
+  (let [prev-count  (:dependencies_succeeded (tsql/query-single
+                                               cnxn
+                                               "select dependencies_succeeded from jobs where job_id = :job_id"
+                                               {:job_id job-id}))]
     (when-not (= 1 (first (tsql/update! cnxn :jobs
                                         {:dependencies_succeeded (inc prev-count)}
                                                  ["dependencies_succeeded = ? and job_id = ?"
                                                   prev-count  job-id])))
+      ; In fact this never happens thanks to Postgres's minimum isolation level
+      ; locking the job row on update
       (throw (OptimisticLockingException.
               (str "dependencies_succeeded updated in another transaction for job "
                    job-id))))))
-
-(defn handle-contract-completion! [cnxn api contract]
-  (when (= :success (contract :outcome))
-    (doseq [parent-job (get-jobs api (depends-on contract))]
-      (incremement-succeeded-dependency-count! cnxn  (parent-job :job_id))
-      (let [dependency-outcomes (dependency-outcomes api parent-job)]
-        (when (every? #(= :success %)  dependency-outcomes)
-          (new-contract! api (contract-req (parent-job :job_id))))))))
-
-(defn handle-new-job! [api job]
-  (when-not (job :dependencies)
-    (new-contract! api (contract-req (job :job_id)))))
 
 (defn commitment-record [commitment-id contract-id agent]
   {:commitment_id       commitment-id

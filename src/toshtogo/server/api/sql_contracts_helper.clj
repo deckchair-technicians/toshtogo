@@ -15,8 +15,8 @@
    :contract_created (now)
    :contract_due     contract-due})
 
-(defn outcome-record [contract result]
-  {:job_id      (contract :job_id)
+(defn outcome-record [job-id result]
+  {:job_id      job-id
    :result_body (json/generate-string (result :result))})
 
 (def contracts-sql
@@ -100,9 +100,19 @@
    [{} []]
    (expand-shortcut-params params)))
 
+(defn contract-outcome [contract]
+  (if (:outcome contract)
+    (:outcome contract)
+    (if (:contract_claimed contract)
+      :running
+      :waiting)))
+
+(defn fix-contract-outcome [contract]
+  (assoc contract :outcome (contract-outcome contract)))
 
 (defn normalise-record [contract]
   (-> contract
-      (update :outcome #(or (keyword %) :waiting))
+      (update :outcome keyword)
+      fix-contract-outcome
       (update :request_body #(json/parse-string % keyword))))
 

@@ -1,10 +1,11 @@
 (ns toshtogo.server.api.sql
   (:require [clojure.java.jdbc :as sql]
+            [clojure.pprint :refer [pprint]]
             [clj-time.core :refer [now minus seconds]]
             [clj-time.format :refer [parse]]
             [cheshire.core :as json]
             [flatland.useful.map :refer [update update-each]]
-            [toshtogo.util.core :refer [uuid debug as-coll]]
+            [toshtogo.util.core :refer [uuid debug as-coll ppstr]]
             [toshtogo.server.api.protocol :refer :all]
             [toshtogo.server.api.sql-jobs-helper :refer :all]
             [toshtogo.server.api.sql-contracts-helper :refer :all]
@@ -19,30 +20,30 @@
   (IllegalStateException.
    (str "Job " job-id " has been completed. Can't create further contracts")))
 
-(defn- put-dependencies! [api cnxn job-id dependencies agent]
-  (doseq [dependency (map (partial expand-dependency agent)
-                          dependencies)]
-    (put-job! api dependency)
-    (tsql/insert! cnxn :job_dependencies (dependency-record job-id dependency))))
+(defn insert-dependency! [cnxn parent-job-id child-job-id]
+  (tsql/insert! cnxn :job_dependencies {:dependency_id (uuid)
+                                        :parent_job_id parent-job-id
+                                        :child_job_id  child-job-id}))
 
-(defn SqlApi [cnxn on-new-job! on-contract-completed! agents]
+(defn SqlApi [cnxn agents]
   (reify Toshtogo
-    (put-job! [this job]
-      (let [job-id          (job :job_id)
-            job-tag-records (map (fn [tag] {:job_id job-id :tag tag}) (job :tags))
-            job-agent       (agent! agents (job :agent))
-            job-row         (job-record job-id (job :job_type) (job-agent :agent_id) (job :request_body) (job :notes))
-            dependencies    (job :dependencies)]
+    (insert-jobs! [this jobs agent-details]
+      (doseq [job jobs]
+        (let [job-id (job :job_id)
+              job-tag-records (map (fn [tag] {:job_id job-id :tag tag}) (job :tags))
+              job-agent (agent! agents agent-details)
+              job-row (job-record job-id (job :job_type) (job-agent :agent_id) (job :request_body) (job :notes))
+              parent-job-id (job :parent_job_id)]
 
-        (tsql/insert! cnxn :jobs job-row)
-        (when (not (empty? job-tag-records))
-          (apply tsql/insert! cnxn :job_tags job-tag-records))
+          (tsql/insert! cnxn :jobs job-row)
 
-        (put-dependencies! this cnxn job-id dependencies job-agent)
+          (when (not (empty? job-tag-records))
+            (apply tsql/insert! cnxn :job_tags job-tag-records))
 
-        (on-new-job! this job)
+          (when parent-job-id
+            (insert-dependency! cnxn parent-job-id job-id))
 
-        (get-job this job-id)))
+          (get-job this job-id))))
 
     (get-jobs [this params]
       (let [params (update params :order-by #(concat (as-coll %) [:jobs.job_id]))]
@@ -102,45 +103,31 @@
           {:instruction :cancel}
           {:instruction :continue})))
 
-    (complete-work! [this commitment-id result]
+    (insert-result! [this commitment-id result]
       (assert commitment-id "no commitment-id")
-      (if-let [contract (get-contract this {:commitment_id commitment-id})]
-        (let [outcome       (result :outcome)
-              job-id        (contract :job_id)
-              agent-details (result :agent)]
-          (when (not= :cancelled (contract :outcome))
-            (tsql/insert! cnxn
-                          :commitment_outcomes
-                          {:outcome_id        commitment-id
-                           :error             (result :error)
-                           :contract_finished (now)
-                           :outcome           outcome})
+      (tsql/insert! cnxn
+                    :commitment_outcomes
+                    {:outcome_id        commitment-id
+                     :error             (result :error)
+                     :contract_finished (now)
+                     :outcome           (result :outcome)})
 
-            (case outcome
-              :success
-              (tsql/insert! cnxn
-                            :job_results
-                            (outcome-record contract result))
-              :more-work
-              (put-dependencies! this cnxn job-id (result :dependencies) agent-details)
+      (cond
+        (= :success (result :outcome))
+        (let [contract (get-contract this {:commitment_id commitment-id})]
+          (tsql/insert! cnxn
+                        :job_results
+                        (outcome-record (:job_id contract) result))
 
-              :try-later
-              (new-contract! this (contract-req job-id (result :contract_due)))
+          (doseq [parent-job (get-jobs this (depends-on contract))]
+            (incremement-succeeded-dependency-count! cnxn (parent-job :job_id))))
 
-              :error
-              nil
+        (#{:more-work :try-later :error :cancelled} (result :outcome))
+        nil
 
-              :cancelled
-              nil))
-
-          (on-contract-completed! this (get-contract this {:commitment_id commitment-id}))
-          nil)
-
-        (throw (NullPointerException. (str "Could not find commitment '" commitment-id "'")))))))
+        :else (throw (IllegalStateException. (str "Unknown outcome " (result :outcome) " in result " (ppstr result))))))))
 
 (defn sql-api [cnxn agents]
   (SqlApi
    cnxn
-   handle-new-job!
-   (partial handle-contract-completion! cnxn)
    agents))

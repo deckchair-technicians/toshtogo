@@ -40,8 +40,12 @@
           (let [job-id (uuid job-id)]
             (check-idempotent!
              :create-job job-id
-             #(let [job (put-job! api (assoc body :job_id job-id))]
-                (job-redirect job-id))
+             #(let [job (new-job! api
+                                  (body :agent)
+                                  (-> body
+                                      (assoc :job_id job-id)
+                                      (dissoc :agent)))]
+               (job-redirect job-id))
              #(job-redirect job-id))))
 
         (GET "/" []

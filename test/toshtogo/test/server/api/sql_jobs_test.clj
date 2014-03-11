@@ -1,6 +1,7 @@
 (ns toshtogo.test.server.api.sql-jobs-test
   (:require [midje.sweet :refer :all]
             [clojure.java.jdbc :as sql]
+            [toshtogo.test.server.api.util :refer [job-req]]
             [toshtogo.server.util.middleware :refer [sql-deps]]
             [toshtogo.server.core :refer [dev-db]]
             [toshtogo.util.core :refer [uuid uuid-str debug]]
@@ -11,9 +12,8 @@
 (def agent-details (util/agent-details "savagematt" "toshtogo"))
 
 (fact "Job records are the right shape"
-      (job-req ...id... agent-details {:data "value"} :job-type :tags [:tag-one :tag-two])
+      (job-req ...id... {:data "value"} :job-type :tags [:tag-one :tag-two])
       => {:job_id       ...id...
-          :agent        agent-details
           :job_type         :job-type
           :tags         [:tag-one :tag-two]
           :request_body {:data "value"}})
@@ -27,8 +27,8 @@
               job-type-two (uuid-str)
               {:keys [agents api]} (sql-deps cnxn)]
 
-          (put-job! api (job-req id-one agent-details {:some-data 123} job-type-one))
-          (put-job! api (job-req id-two agent-details {:some-data 456} job-type-two))
+          (new-job! api agent-details (job-req id-one {:some-data 123} job-type-one))
+          (new-job! api agent-details (job-req id-two {:some-data 456} job-type-two))
 
           (get-contracts api {:state :waiting :job_type job-type-one})
           => (contains (contains {:job_id id-one})))))
@@ -40,7 +40,7 @@
                job-type (uuid-str)
                {:keys [agents api]} (sql-deps cnxn)]
 
-           (put-job! api (job-req job-id agent-details {:some-data 123} job-type))
+           (new-job! api agent-details (job-req job-id {:some-data 123} job-type))
            (pause-job! api job-id agent-details)
 
            (get-contract api {:job_id job-id})
@@ -57,7 +57,7 @@
                commitment-id (uuid)
                {:keys [agents api]} (sql-deps cnxn)]
 
-           (put-job! api (job-req job-id agent-details {:some-data 123} job-type))
+           (new-job! api agent-details (job-req job-id {:some-data 123} job-type))
 
            (request-work! api commitment-id {:job_type job-type} agent-details) => truthy
 
@@ -79,7 +79,7 @@
                commitment-id (uuid)
                {:keys [agents api]} (sql-deps cnxn)]
 
-           (put-job! api (job-req job-id agent-details {:some-data 123} job-type))
+           (new-job! api agent-details (job-req job-id {:some-data 123} job-type))
 
            (request-work! api commitment-id {:job_type job-type} agent-details) => truthy
            (complete-work! api commitment-id (success {}))
@@ -100,11 +100,13 @@
                commitment-id (uuid)
                {:keys [agents api]} (sql-deps cnxn)]
 
-           (put-job! api (job-req job-id-1 agent-details {} job-type
-                                  :dependencies
-                                  [ (job-req job-id-1-1 agent-details {} job-type)
-                                    (job-req job-id-1-2 agent-details {} job-type
-                                             :dependencies [(job-req job-id-1-2-1 agent-details {} job-type)])]))
+           (new-job! api
+                     agent-details
+                     (job-req job-id-1 {} job-type
+                              :dependencies
+                              [(job-req job-id-1-1 {} job-type)
+                               (job-req job-id-1-2 {} job-type
+                                        :dependencies [(job-req job-id-1-2-1 {} job-type)])]))
            (pause-job! api job-id-1 agent-details)
 
            (get-contract api {:job_id job-id-1-2-1})

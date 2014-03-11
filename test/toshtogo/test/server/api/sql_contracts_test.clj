@@ -4,6 +4,7 @@
             [clojure.string :as str]
             [toshtogo.server.util.middleware :refer [sql-deps]]
             [toshtogo.util.core :refer [uuid uuid-str debug]]
+            [toshtogo.test.server.api.util :refer [job-req]]
             [toshtogo.server.core :refer [dev-db]]
             [toshtogo.client.util :as util]
             [toshtogo.server.agents.protocol :refer :all]
@@ -12,7 +13,7 @@
 (def agent-details (util/agent-details "savagematt" "toshtogo"))
 
 (defn given-job-exists [api id job-type & deps]
-  (put-job! api (job-req id agent-details {:some-data (uuid)} job-type :dependencies deps)))
+  (new-job! api agent-details (job-req id {:some-data (uuid)} job-type :dependencies deps)))
 
 (defn given-job-succeeded [api job-id]
   (let [job      (get-job api job-id)
@@ -128,8 +129,8 @@
             [cnxn dev-db]
             (let [api ((sql-deps cnxn) :api)]
               (given-job-exists api parent-job-id parent-job-type
-                                (job-req (uuid) agent-details {:child 1} child-job-type)
-                                (job-req (uuid) agent-details {:child 2} child-job-type))
+                                (job-req (uuid) {:child 1} child-job-type)
+                                (job-req (uuid) {:child 2} child-job-type))
               [(request-work! api (uuid) {:job_type child-job-type} agent-details)
                (request-work! api (uuid) {:job_type child-job-type} agent-details)]))]
 
