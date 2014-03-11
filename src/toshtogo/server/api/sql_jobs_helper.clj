@@ -143,16 +143,3 @@
    :commitment_contract contract-id
    :commitment_agent    (agent :agent_id)
    :contract_claimed    (now)})
-
-(defn insert-commitment!
-  [cnxn agents commitment-id contract-id agent-details]
-  (assert contract-id "no contract-id")
-  (assert commitment-id "no commitment-id")
-
-  (tsql/insert!
-    cnxn
-    :agent_commitments
-    (commitment-record
-      commitment-id
-      contract-id
-      (agent! agents agent-details))))

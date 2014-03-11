@@ -1,8 +1,8 @@
 (ns toshtogo.server.api.sql
   (:require [clojure.java.jdbc :as sql]
             [clojure.pprint :refer [pprint]]
-            [clj-time.core :refer [now minus seconds]]
             [clj-time.format :refer [parse]]
+            [clj-time.core :refer [now]]
             [cheshire.core :as json]
             [flatland.useful.map :refer [update update-each]]
             [toshtogo.util.core :refer [uuid debug as-coll ppstr]]
@@ -11,14 +11,6 @@
             [toshtogo.server.api.sql-contracts-helper :refer :all]
             [toshtogo.server.agents.protocol :refer [agent!]]
             [toshtogo.util.sql :as tsql]))
-
-(defn unfinished-contract [job-id]
-  (IllegalStateException.
-   (str "Job " job-id " has an unfinished contract. Can't create a new one.")))
-
-(defn job-finished [job-id]
-  (IllegalStateException.
-   (str "Job " job-id " has been completed. Can't create further contracts")))
 
 (defn insert-dependency! [cnxn parent-job-id child-job-id]
   (tsql/insert! cnxn :job_dependencies {:dependency_id (uuid)
@@ -66,39 +58,28 @@
                contracts-sql
                params))))
 
-    (new-contract! [this contract-req]
-      (let [job-id                (contract-req :job_id)
-            contract-due          (:contract_due contract-req (minus (now) (seconds 5)))
-            last-contract         (get-contract this {:job_id job-id :latest_contract true})
-            new-contract-number   (if last-contract (inc (last-contract :contract_number)) 1)
-            last-contract-outcome (:outcome last-contract)]
+    (insert-contract! [this job-id contract-ordinal contract-due]
+      (tsql/insert! cnxn :contracts (contract-record job-id contract-ordinal contract-due)))
 
-        (case last-contract-outcome
-          :waiting
-          (throw (unfinished-contract job-id))
-          :success
-          (throw (job-finished job-id))
-          (let [contract (contract-record job-id new-contract-number contract-due)]
-            (tsql/insert! cnxn :contracts contract)
-            contract))))
+    (insert-commitment!
+      [this commitment-id contract-id agent-details]
+      (assert contract-id "no contract-id")
+      (assert commitment-id "no commitment-id")
 
-    (request-work! [this commitment-id job-filter agent-details]
-      (when-let [contract  (get-contract
-                            this
-                            (assoc job-filter
-                              :ready_for_work true
-                              :order-by [:contract_created]))]
-        (insert-commitment! cnxn agents commitment-id (contract :contract_id) agent-details))
+      (tsql/insert!
+        cnxn
+        :agent_commitments
+        (commitment-record
+          commitment-id
+          contract-id
+          (agent! agents agent-details))))
 
-      (get-contract this {:commitment_id     commitment-id
-                          :with-dependencies true}))
-
-    (heartbeat! [this commitment-id]
+    (heartbeat! [api commitment-id]
       (let [heartbeat-time (now)]
         (tsql/update! cnxn :agent_commitments
                       {:last_heartbeat heartbeat-time}
                       ["commitment_id = ?" commitment-id]))
-      (let [contract  (get-contract this {:commitment_id commitment-id})]
+      (let [contract  (get-contract api {:commitment_id commitment-id})]
         (if (= :cancelled (contract :outcome))
           {:instruction :cancel}
           {:instruction :continue})))

@@ -1,6 +1,7 @@
 (ns toshtogo.server.api.protocol
   (:import (java.util UUID))
   (:require [clojure.pprint :refer [pprint]]
+            [clj-time.core :refer [now minus seconds]]
             [toshtogo.util.core :refer [assoc-not-nil uuid ppstr debug]]
             [toshtogo.server.util.job-requests :refer [flattened-dependencies]]))
 
@@ -43,10 +44,10 @@
   (insert-jobs!   [this jobs agent-details])
   (get-jobs   [this params])
 
+  (insert-contract! [this job-id contract-number contract-due])
+  (insert-commitment! [this commitment-id contract-id agent-details])
   (get-contracts [this params])
-  (new-contract! [this contract-req])
 
-  (request-work!  [this commitment-id job-filter agent])
   (heartbeat!     [this commitment-id])
   (insert-result! [this commitment-id result]))
 
@@ -67,6 +68,29 @@
               (cond-> (first (get-contracts api params))
                       (params :with-dependencies) (merge-dependencies api)))
 
+; New contract
+(defn unfinished-contract [job-id]
+  (IllegalStateException.
+    (str "Job " job-id " has an unfinished contract. Can't create a new one.")))
+
+(defn job-finished [job-id]
+  (IllegalStateException.
+    (str "Job " job-id " has been completed. Can't create further contracts")))
+
+(defn new-contract! [api contract-req]
+  (let [job-id                (contract-req :job_id)
+        contract-due          (:contract_due contract-req (minus (now) (seconds 5)))
+        last-contract         (get-contract api {:job_id job-id :latest_contract true})
+        new-contract-ordinal   (if last-contract (inc (last-contract :contract_number)) 1)
+        last-contract-outcome (:outcome last-contract)]
+
+    (case last-contract-outcome
+      :waiting
+      (throw (unfinished-contract job-id))
+      :success
+      (throw (job-finished job-id))
+      (insert-contract! api job-id new-contract-ordinal contract-due))))
+
 (defn new-job! [api agent-details job]
   (let [jobs           (concat [(dissoc job :dependencies)] (flattened-dependencies job))
         parent-job-ids (set (filter (comp not nil?) (map :parent_job_id jobs)))
@@ -79,6 +103,7 @@
 
     (get-job api (job :job_id))))
 
+; Complete work
 (defn dependency-outcomes
   "This is incredibly inefficient"
   [api job-id]
@@ -129,6 +154,16 @@
 
     nil))
 
+(defn request-work! [api commitment-id job-filter agent-details]
+  (when-let [contract (get-contract
+                        api
+                        (assoc job-filter
+                          :ready_for_work true
+                          :order-by [:contract_created]))]
+    (insert-commitment! api commitment-id (contract :contract_id) agent-details)
+
+    (get-contract api {:commitment_id     commitment-id
+                       :with-dependencies true})))
 
 (defn pause-job! [api job-id agent-details]
             (let [job (get-job api job-id)]
@@ -141,3 +176,7 @@
 
             (doseq [dependency  (get-jobs api {:dependency_of_job_id job-id})]
               (pause-job! api (dependency :job_id) agent-details)))
+
+
+
+
