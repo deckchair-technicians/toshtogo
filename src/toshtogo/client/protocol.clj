@@ -1,6 +1,6 @@
 (ns toshtogo.client.protocol
   (:require [toshtogo.util.core :refer [debug uuid cause-trace assoc-not-nil]]
-            [toshtogo.server.api.protocol :as server-protocol]))
+            [toshtogo.server.persistence.protocol :as server-protocol]))
 
 (defn job-req
   ([body job-type & {:keys [dependencies notes tags]}]

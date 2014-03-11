@@ -7,7 +7,7 @@
             [toshtogo.util.core :refer [uuid uuid-str debug]]
             [toshtogo.client.util :as util]
             [toshtogo.server.agents.protocol :refer :all]
-            [toshtogo.server.api.protocol :refer :all]))
+            [toshtogo.server.persistence.protocol :refer :all]))
 
 (def agent-details (util/agent-details "savagematt" "toshtogo"))
 

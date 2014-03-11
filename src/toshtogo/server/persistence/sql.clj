@@ -1,4 +1,4 @@
-(ns toshtogo.server.api.sql
+(ns toshtogo.server.persistence.sql
   (:require [clojure.java.jdbc :as sql]
             [clojure.pprint :refer [pprint]]
             [clj-time.format :refer [parse]]
@@ -6,9 +6,9 @@
             [cheshire.core :as json]
             [flatland.useful.map :refer [update update-each]]
             [toshtogo.util.core :refer [uuid debug as-coll ppstr]]
-            [toshtogo.server.api.protocol :refer :all]
-            [toshtogo.server.api.sql-jobs-helper :refer :all]
-            [toshtogo.server.api.sql-contracts-helper :refer :all]
+            [toshtogo.server.persistence.protocol :refer :all]
+            [toshtogo.server.persistence.sql-jobs-helper :refer :all]
+            [toshtogo.server.persistence.sql-contracts-helper :refer :all]
             [toshtogo.server.agents.protocol :refer [agent!]]
             [toshtogo.util.sql :as tsql]))
 

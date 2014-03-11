@@ -17,7 +17,7 @@
                                              wrap-json-exception
                                              wrap-json-body
                                              wrap-if]]
-            [toshtogo.server.api.protocol :refer :all]
+            [toshtogo.server.persistence.protocol :refer :all]
             [toshtogo.util.core :refer [uuid ppstr debug parse-datetime]])
   (:import [toshtogo.server.util IdempotentPutException]
            [java.io InputStream]))

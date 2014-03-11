@@ -1,4 +1,4 @@
-(ns toshtogo.server.api.protocol
+(ns toshtogo.server.persistence.protocol
   (:import (java.util UUID))
   (:require [clojure.pprint :refer [pprint]]
             [clj-time.core :refer [now minus seconds]]
@@ -68,15 +68,6 @@
               (cond-> (first (get-contracts api params))
                       (params :with-dependencies) (merge-dependencies api)))
 
-; New contract
-(defn unfinished-contract [job-id]
-  (IllegalStateException.
-    (str "Job " job-id " has an unfinished contract. Can't create a new one.")))
-
-(defn job-finished [job-id]
-  (IllegalStateException.
-    (str "Job " job-id " has been completed. Can't create further contracts")))
-
 (defn new-contract! [api contract-req]
   (let [job-id                (contract-req :job_id)
         contract-due          (:contract_due contract-req (minus (now) (seconds 5)))
@@ -86,9 +77,12 @@
 
     (case last-contract-outcome
       :waiting
-      (throw (unfinished-contract job-id))
+      (throw (IllegalStateException.
+               (str "Job " job-id " has an unfinished contract. Can't create a new one.")))
       :success
-      (throw (job-finished job-id))
+      (throw (IllegalStateException.
+               (str "Job " job-id " has been completed. Can't create further contracts")))
+
       (insert-contract! api job-id new-contract-ordinal contract-due))))
 
 (defn new-job! [api agent-details job]

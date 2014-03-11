@@ -1,9 +1,9 @@
-(ns toshtogo.server.api.sql-contracts-helper
+(ns toshtogo.server.persistence.sql-contracts-helper
   (:require [flatland.useful.map :refer [map-vals-with-keys update]]
             [cheshire.core :as json]
             [clj-time.core :refer [now]]
             [clojure.string :as str]
-            [toshtogo.server.api.protocol :refer :all]
+            [toshtogo.server.persistence.protocol :refer :all]
             [toshtogo.server.agents.protocol :refer [agent!]]
             [toshtogo.util.sql :as tsql]
             [toshtogo.util.core :refer [uuid debug]]))
