@@ -40,7 +40,7 @@
 (defn dependencies-of [job-id]
   {:dependency_of_job_id job-id :order-by :job_created})
 
-(defprotocol Toshtogo
+(defprotocol Persistence
   (insert-jobs! [this jobs agent-details])
 
   (insert-contract!   [this job-id contract-number contract-due])

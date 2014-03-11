@@ -18,7 +18,7 @@
                                         :child_job_id  child-job-id}))
 
 (defn SqlApi [cnxn agents]
-  (reify Toshtogo
+  (reify Persistence
     (insert-jobs! [this jobs agent-details]
       (doseq [job jobs]
         (let [job-id (job :job_id)
