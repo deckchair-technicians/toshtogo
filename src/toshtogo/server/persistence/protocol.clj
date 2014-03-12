@@ -42,8 +42,8 @@
 
   (insert-contract!   [this job-id contract-number contract-due])
   (insert-commitment! [this commitment-id contract-id agent-details])
-  (upsert-heartbeat!     [this commitment-id])
-  (insert-result! [this commitment-id result])
+  (upsert-heartbeat!  [this commitment-id])
+  (insert-result!     [this commitment-id result])
 
-  (get-jobs     [this params])
-  (get-contracts      [this params]))
+  (get-jobs      [this params])
+  (get-contracts [this params]))
