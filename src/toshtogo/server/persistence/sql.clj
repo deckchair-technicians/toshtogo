@@ -13,11 +13,6 @@
             [toshtogo.server.agents.protocol :refer [agent!]]
             [toshtogo.util.sql :as tsql]))
 
-(defn insert-dependency! [cnxn parent-job-id child-job-id]
-  (tsql/insert! cnxn :job_dependencies {:dependency_id (uuid)
-                                        :parent_job_id parent-job-id
-                                        :child_job_id  child-job-id}))
-
 (defn SqlApi [cnxn agents]
   (reify Persistence
     (insert-jobs! [this jobs agent-details]
@@ -34,7 +29,9 @@
             (apply tsql/insert! cnxn :job_tags job-tag-records))
 
           (when parent-job-id
-            (insert-dependency! cnxn parent-job-id job-id))
+            (tsql/insert! cnxn :job_dependencies {:dependency_id (uuid)
+                                                  :parent_job_id parent-job-id
+                                                  :child_job_id  job-id}))
 
           (get-job this job-id))))
 
