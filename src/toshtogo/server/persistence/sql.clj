@@ -7,6 +7,7 @@
             [flatland.useful.map :refer [update update-each]]
             [toshtogo.util.core :refer [uuid debug as-coll ppstr]]
             [toshtogo.server.persistence.protocol :refer :all]
+            [toshtogo.server.api :refer [get-job get-contract]]
             [toshtogo.server.persistence.sql-jobs-helper :refer :all]
             [toshtogo.server.persistence.sql-contracts-helper :refer :all]
             [toshtogo.server.agents.protocol :refer [agent!]]

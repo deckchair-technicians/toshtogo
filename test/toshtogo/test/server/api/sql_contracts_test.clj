@@ -8,7 +8,8 @@
             [toshtogo.server.core :refer [dev-db]]
             [toshtogo.client.util :as util]
             [toshtogo.server.agents.protocol :refer :all]
-            [toshtogo.server.persistence.protocol :refer :all]))
+            [toshtogo.server.persistence.protocol :refer :all]
+            [toshtogo.server.api :refer :all]))
 
 (def agent-details (util/agent-details "savagematt" "toshtogo"))
 
