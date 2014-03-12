@@ -13,7 +13,7 @@
             [toshtogo.server.agents.protocol :refer [agent!]]
             [toshtogo.util.sql :as tsql]))
 
-(defn sql-api [cnxn agents]
+(defn sql-persistence [cnxn agents]
   (reify Persistence
     (insert-jobs! [this jobs agent-details]
       (doseq [job jobs]

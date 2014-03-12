@@ -26,12 +26,12 @@
               id-two (uuid)
               job-type-one (uuid-str) ;so we can run against a dirty database
               job-type-two (uuid-str)
-              {:keys [agents api]} (sql-deps cnxn)]
+              {:keys [agents persistence]} (sql-deps cnxn)]
 
-          (new-job! api agent-details (job-req id-one {:some-data 123} job-type-one))
-          (new-job! api agent-details (job-req id-two {:some-data 456} job-type-two))
+          (new-job! persistence agent-details (job-req id-one {:some-data 123} job-type-one))
+          (new-job! persistence agent-details (job-req id-two {:some-data 456} job-type-two))
 
-          (get-contracts api {:state :waiting :job_type job-type-one})
+          (get-contracts persistence {:state :waiting :job_type job-type-one})
           => (contains (contains {:job_id id-one})))))
 
 (facts "Should be able to pause a job that hasn't started"
@@ -39,15 +39,15 @@
          [cnxn dev-db]
          (let [job-id (uuid)
                job-type (uuid-str)
-               {:keys [agents api]} (sql-deps cnxn)]
+               {:keys [agents persistence]} (sql-deps cnxn)]
 
-           (new-job! api agent-details (job-req job-id {:some-data 123} job-type))
-           (pause-job! api job-id agent-details)
+           (new-job! persistence agent-details (job-req job-id {:some-data 123} job-type))
+           (pause-job! persistence job-id agent-details)
 
-           (get-contract api {:job_id job-id})
+           (get-contract persistence {:job_id job-id})
            => (contains {:outcome :cancelled})
 
-           (request-work! api (uuid) {:job_type job-type} agent-details)
+           (request-work! persistence (uuid) {:job_type job-type} agent-details)
            => nil)))
 
 (facts "Should be able to pause a job that has started"
@@ -56,20 +56,20 @@
          (let [job-id (uuid)
                job-type (uuid-str)
                commitment-id (uuid)
-               {:keys [agents api]} (sql-deps cnxn)]
+               {:keys [agents persistence]} (sql-deps cnxn)]
 
-           (new-job! api agent-details (job-req job-id {:some-data 123} job-type))
+           (new-job! persistence agent-details (job-req job-id {:some-data 123} job-type))
 
-           (request-work! api commitment-id {:job_type job-type} agent-details) => truthy
+           (request-work! persistence commitment-id {:job_type job-type} agent-details) => truthy
 
-           (pause-job! api job-id agent-details)
+           (pause-job! persistence job-id agent-details)
 
-           (get-contract api {:job_id job-id})
+           (get-contract persistence {:job_id job-id})
            => (contains {:outcome :cancelled})
 
-           (complete-work! api commitment-id (success {}))
+           (complete-work! persistence commitment-id (success {}))
 
-           (get-contract api {:job_id job-id})
+           (get-contract persistence {:job_id job-id})
            => (contains {:outcome :cancelled}))))
 
 (facts "Should be able to pause a job that has finished"
@@ -78,16 +78,16 @@
          (let [job-id (uuid)
                job-type (uuid-str)
                commitment-id (uuid)
-               {:keys [agents api]} (sql-deps cnxn)]
+               {:keys [agents persistence]} (sql-deps cnxn)]
 
-           (new-job! api agent-details (job-req job-id {:some-data 123} job-type))
+           (new-job! persistence agent-details (job-req job-id {:some-data 123} job-type))
 
-           (request-work! api commitment-id {:job_type job-type} agent-details) => truthy
-           (complete-work! api commitment-id (success {}))
+           (request-work! persistence commitment-id {:job_type job-type} agent-details) => truthy
+           (complete-work! persistence commitment-id (success {}))
 
-           (pause-job! api job-id agent-details)
+           (pause-job! persistence job-id agent-details)
 
-           (get-contract api {:job_id job-id})
+           (get-contract persistence {:job_id job-id})
            => (contains {:outcome :success}))))
 
 (facts "Should be able to pause a job with dependencies"
@@ -99,20 +99,20 @@
                job-id-1-2-1 (uuid)
                job-type (uuid-str)
                commitment-id (uuid)
-               {:keys [agents api]} (sql-deps cnxn)]
+               {:keys [agents persistence]} (sql-deps cnxn)]
 
-           (new-job! api
+           (new-job! persistence
                      agent-details
                      (job-req job-id-1 {} job-type
                               :dependencies
                               [(job-req job-id-1-1 {} job-type)
                                (job-req job-id-1-2 {} job-type
                                         :dependencies [(job-req job-id-1-2-1 {} job-type)])]))
-           (pause-job! api job-id-1 agent-details)
+           (pause-job! persistence job-id-1 agent-details)
 
-           (get-contract api {:job_id job-id-1-2-1})
+           (get-contract persistence {:job_id job-id-1-2-1})
            => (contains {:outcome :cancelled})
 
-           (request-work! api (uuid) {:job_type job-type} agent-details) => nil)))
+           (request-work! persistence (uuid) {:job_type job-type} agent-details) => nil)))
 
 (future-fact "Get job returns job tags")

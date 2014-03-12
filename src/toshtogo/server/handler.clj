@@ -31,9 +31,9 @@
 
 (defroutes api-routes
   (context "/api" []
-    (context "/jobs" {:keys [api body check-idempotent!]}
+    (context "/jobs" {:keys [persistence body check-idempotent!]}
              (GET "/" {params :params}
-                  {:body (get-jobs api {:page     (Integer/parseInt (:page (debug "PARAMS" params) "1"))
+                  {:body (get-jobs persistence {:page     (Integer/parseInt (:page (debug "PARAMS" params) "1"))
                                         :order-by [:contract_finished :contract_claimed :contract_created :job_created]})})
       (context "/:job-id" [job-id]
 
@@ -41,7 +41,7 @@
           (let [job-id (uuid job-id)]
             (check-idempotent!
              :create-job job-id
-             #(let [job (new-job! api
+             #(let [job (new-job! persistence
                                   (body :agent)
                                   (-> body
                                       (assoc :job_id job-id)
@@ -51,7 +51,7 @@
 
         (GET "/" []
           (let [job-id (uuid job-id)
-                job (get-job api job-id)]
+                job (get-job persistence job-id)]
             (if job
               {:body job}
               (route/not-found "Unknown job id"))))
@@ -60,17 +60,17 @@
               (let [job-id (uuid job-id)]
                 (case action
                   "pause"
-                  {:body (pause-job! api job-id (body :agent))}
+                  {:body (pause-job! persistence job-id (body :agent))}
                   "retry"
-                  {:body (new-contract! api (contract-req job-id))}
+                  {:body (new-contract! persistence (contract-req job-id))}
                   )))))
 
-    (context "/commitments" {:keys [api body check-idempotent!]}
+    (context "/commitments" {:keys [persistence body check-idempotent!]}
       (PUT "/" []
         (let [commitment-id (uuid (body :commitment_id))]
           (check-idempotent!
            :create-commitment commitment-id
-           #(if-let [commitment (request-work! api commitment-id {:job_type (body :job_type)} (body :agent))]
+           #(if-let [commitment (request-work! persistence commitment-id {:job_type (body :job_type)} (body :agent))]
               (commitment-redirect commitment-id)
               {:status 204})
            #(commitment-redirect commitment-id))))
@@ -80,7 +80,7 @@
           (let [commitment-id (uuid commitment-id)]
             (check-idempotent!
              :complete-commitment commitment-id
-             #(do (complete-work! api commitment-id
+             #(do (complete-work! persistence commitment-id
                                   (-> body
                                       (update :outcome keyword)
                                       (update :contract_due parse-datetime)))
@@ -88,11 +88,11 @@
              #(commitment-redirect commitment-id))))
 
         (POST "/heartbeat" []
-          {:body (upsert-heartbeat! api (uuid commitment-id))}))
+          {:body (upsert-heartbeat! persistence (uuid commitment-id))}))
 
       (GET "/:commitment-id" [commitment-id]
         {:body  (get-contract
-                 api
+                  persistence
                  {:commitment_id (uuid commitment-id)
                   :with-dependencies true})}))))
 

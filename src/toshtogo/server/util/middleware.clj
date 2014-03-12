@@ -7,7 +7,7 @@
             [flatland.useful.map :refer [update]]
             [toshtogo.server.util.idempotentput :refer [check-idempotent!]]
             [toshtogo.server.agents.sql :refer [sql-agents]]
-            [toshtogo.server.persistence.sql :refer [sql-api]]
+            [toshtogo.server.persistence.sql :refer [sql-persistence]]
             [toshtogo.util.core :refer [debug ppstr cause-trace]]
             [toshtogo.util.json :as json]
             [toshtogo.util.hashing :refer [murmur!]]
@@ -16,11 +16,11 @@
 
 
 (defn sql-deps [cnxn]
-  (let [agents (sql-agents cnxn)
-        api (sql-api cnxn agents)]
+  (let [agents      (sql-agents cnxn)
+        persistence (sql-persistence cnxn agents)]
 
-    {:agents agents
-     :api    api}))
+    {:agents      agents
+     :persistence persistence}))
 
 (defn wrap-body-hash
   [handler]
