@@ -90,16 +90,16 @@
       (let [params (update params :order-by #(concat (as-coll %) [:jobs.job_id]))]
         (if (:page params)
           (update
-            (tsql/page cnxn jobs-where-fn job-sql params :count-params (assoc params :get-tags false))
+            (hsql/page cnxn (job-query params) (job-query (dissoc params :get_tags)))
             :data normalise-job-rows)
           (normalise-job-rows
-            (tsql/query
+            (hsql/query
               cnxn
-              (tsql/qualify jobs-where-fn (job-sql (assoc params :get-tags true)) params))))))
+              (job-query params))))))
 
     (get-contracts [this params]
       (map
        normalise-record
        (hsql/query
               cnxn
-              (contract-query params))))))
+              (contract-query (assoc params :has_contract true)))))))

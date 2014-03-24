@@ -126,18 +126,3 @@
   ([cnxn sql params]
    (first (query cnxn sql params))))
 
-(defn page
-  [cnxn where-clauses-fn sql params & {:keys [count-params]}]
-  (assert (:order-by params) "Paging only makes sense with deterministic ordering")
-  (let [page          (:page params 1)
-        page-size     (:page-size params 20)
-        count-params  (assoc (or count-params params) :get-count true :order-by nil)
-        record-count  (:cnt (query-single
-                              cnxn
-                              (qualify where-clauses-fn sql count-params))
-                       0)
-        page-count    (ceil (/ record-count page-size))]
-    {
-      :paging {:page page :pages page-count}
-      :data   (query cnxn (qualify where-clauses-fn sql params))})
-  )

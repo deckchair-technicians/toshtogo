@@ -29,7 +29,8 @@
                  [:= :contracts.contract_id :commitments.commitment_contract])
       (merge-left-join :commitment_outcomes
                  [:= :commitments.commitment_id :commitment_outcomes.outcome_id])
-      (where [:not= :contracts.contract_id nil])))
+      (merge-left-join :job_results
+                 [:= :jobs.job_id :job_results.job_id])))
 
 (defn expand-shortcut-params [params]
   (cond-> params
@@ -38,6 +39,10 @@
           (params :ready_for_work) (dissoc :ready_for_work)
           (params :with-dependencies) (dissoc :with-dependencies)
           ))
+
+(def job-max-contract-number (-> (select :%max.contract_number)
+                      (from [:contracts :c])
+                      (where [:= :c.job_id :contracts.job_id])))
 
 (defn contract-query [params]
   (reduce
@@ -48,6 +53,11 @@
          (merge-where query [:and [:= :outcome nil]
                              [:= :commitment_id nil]])
          (merge-where query [:= :outcome v]))
+
+       :has_contract
+       (if v
+         (merge-where query [:not= :contracts.contract_id nil])
+         (merge-where query [:=    :contracts.contract_id nil]))
 
        :job_type
        (merge-where query [:= :job_type v])
@@ -63,22 +73,41 @@
        (merge-where query [:= :commitment_id v])
 
        :job_id
-       (merge-where query [:= :contracts.job_id v])
+       (merge-where query [:= :jobs.job_id v])
 
        :max_due_time
        (merge-where query [:<= :contracts.contract_due v])
 
        :latest_contract
        (if v
-         (merge-where query [:= :contract_number (-> (select :%max.contract_number)
-                                                     (from [:contracts :c])
-                                                     (where [:= :c.job_id :contracts.job_id]))])
-         query)
+         (merge-where query [:or [:= :contract_id nil]
+                             [:= :contract_number job-max-contract-number]])
+         (merge-where query [:or [:contract_id nil]
+                             [:not= :contract_number job-max-contract-number]]))
+
+       :depends_on_job_id
+       (merge-where query [:in :jobs.job_id (-> (select :parent_job_id)
+                                                (from :job_dependencies)
+                                                (where [:= :child_job_id v]))])
+       :dependency_of_job_id
+       (merge-where query [:in :jobs.job_id (-> (select :child_job_id)
+                                                (from :job_dependencies)
+                                                (where [:= :parent_job_id v]))])
+
+       :get_tags
+       (merge-left-join query :job_tags
+                        [:= :jobs.job_id :job_tags.job_id])
 
        :order-by
        (order-by query v)))
    base-query
    (expand-shortcut-params params)))
+
+(defn job-query [params]
+  (-> params
+      (assoc :get_tags true)
+      (assoc :latest_contract true)
+      contract-query))
 
 (defn contract-outcome [contract]
   (if (:outcome contract)
