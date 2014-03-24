@@ -47,6 +47,17 @@
           (request-work! client job-type)
           (request-work! client job-type) => nil))
 
+  (fact "Work is returned in order"
+        (let [job-id-1 (uuid)
+              job-id-2 (uuid)
+              job-type (uuid-str)]
+
+          (put-job! client job-id-1 (job-req {} job-type))
+          (Thread/sleep 1)
+          (put-job! client job-id-2 (job-req {} job-type))
+
+          (request-work! client job-type) => (contains {:job_id job-id-1})))
+
   (fact "Agents can request work and then complete it"
         (let [job-id (uuid)
               job-type (uuid-str)]
