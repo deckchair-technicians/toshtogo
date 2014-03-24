@@ -11,7 +11,8 @@
             [toshtogo.server.persistence.sql-jobs-helper :refer :all]
             [toshtogo.server.persistence.sql-contracts-helper :refer :all]
             [toshtogo.server.agents.protocol :refer [agent!]]
-            [toshtogo.util.sql :as tsql]))
+            [toshtogo.util.sql :as tsql]
+            [toshtogo.util.hsql :as hsql]))
 
 (defn sql-persistence [cnxn agents]
   (reify Persistence
@@ -99,9 +100,6 @@
     (get-contracts [this params]
       (map
        normalise-record
-       (apply tsql/query
+       (hsql/query
               cnxn
-              (tsql/qualify
-               contracts-where-fn
-               contracts-sql
-               params))))))
+              (contract-query params))))))

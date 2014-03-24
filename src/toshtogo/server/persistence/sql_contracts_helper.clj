@@ -1,11 +1,12 @@
 (ns toshtogo.server.persistence.sql-contracts-helper
-  (:require [flatland.useful.map :refer [map-vals-with-keys update]]
+  (:require [flatland.useful.map :as mp]
             [cheshire.core :as json]
             [clj-time.core :refer [now]]
             [clojure.string :as str]
             [toshtogo.server.persistence.protocol :refer :all]
             [toshtogo.server.agents.protocol :refer [agent!]]
-            [toshtogo.util.sql :as tsql]
+            [honeysql.helpers :refer :all]
+            [toshtogo.util.hsql :as hsql]
             [toshtogo.util.core :refer [uuid debug]]))
 
 (defn contract-record [job-id contract-number contract-due]
@@ -19,85 +20,64 @@
   {:job_id      job-id
    :result_body (json/generate-string (result :result))})
 
-(def contracts-sql
-  "select
-     *
-
-   from
-     contracts
-
-   left join
-     agent_commitments commitments
-     on contracts.contract_id = commitments.commitment_contract
-
-   left join
-     commitment_outcomes
-     on commitments.commitment_id = commitment_outcomes.outcome_id
-
-   left join
-     jobs
-     on contracts.job_id = jobs.job_id")
-
-(def latest-contract-sql
-  "contract_number = (
-     select max(contract_number)
-     from contracts c
-     where c.job_id = contracts.job_id)")
-
-(def tag-sql
-  "     contracts.job_id in (
-          select
-            distinct (jobs.job_id)
-          from
-            jobs
-          join job_tags
-            on jobs.job_id = job_tags.job_id
-          where tag in (:tags))")
+(def base-query
+  (-> (select :*)
+      (from :jobs)
+      (merge-left-join :contracts
+                 [:= :jobs.job_id :contracts.job_id])
+      (merge-left-join [:agent_commitments :commitments]
+                 [:= :contracts.contract_id :commitments.commitment_contract])
+      (merge-left-join :commitment_outcomes
+                 [:= :commitments.commitment_id :commitment_outcomes.outcome_id])
+      (where [:not= :contracts.contract_id nil])))
 
 (defn expand-shortcut-params [params]
   (cond-> params
           (params :ready_for_work) (assoc :outcome :waiting)
-          (params :ready_for_work) (assoc :min_due_time (now))))
+          (params :ready_for_work) (assoc :max_due_time (now))
+          (params :ready_for_work) (dissoc :ready_for_work)
+          (params :with-dependencies) (dissoc :with-dependencies)
+          ))
 
-(defn contracts-where-fn [params]
+(defn contract-query [params]
   (reduce
-   (fn [[out-params clauses] [k v]]
+   (fn [query [k v]]
      (case k
        :outcome
        (if (= :waiting v)
-         [out-params
-          (cons "outcome is null and commitment_id is null" clauses)]
-         [(assoc out-params k v)
-          (cons "outcome = :outcome" clauses)])
+         (merge-where query [:and [:= :outcome nil]
+                             [:= :commitment_id nil]])
+         (merge-where query [:= :outcome v]))
 
        :job_type
-       [(assoc out-params k v)
-        (cons "job_type = :job_type" clauses)]
+       (merge-where query [:= :job_type v])
 
        :tags
-       [(assoc out-params k (map name v))
-        (cons tag-sql clauses)]
+       (merge-where query [:in :contracts.job_id (-> (select :job_id)
+                                                     (modifiers :distinct)
+                                                     (from :jobs)
+                                                     (join :job_tags [:jobs.job_id = :job_tags.job_id])
+                                                     (where [:in :job_tags.tag v]))])
 
        :commitment_id
-       [(assoc out-params k v)
-        (cons "commitment_id = :commitment_id" clauses)]
+       (merge-where query [:= :commitment_id v])
 
        :job_id
-       [(assoc out-params k v)
-        (cons "contracts.job_id = :job_id" clauses)]
+       (merge-where query [:= :contracts.job_id v])
 
-       :min_due_time
-       [(assoc out-params k v)
-        (cons "contracts.contract_due <= :min_due_time" clauses)]
+       :max_due_time
+       (merge-where query [:<= :contracts.contract_due v])
 
        :latest_contract
        (if v
-         [out-params
-          (cons latest-contract-sql clauses)]
-         [out-params clauses])
+         (merge-where query [:= :contract_number (-> (select :%max.contract_number)
+                                                     (from [:contracts :c])
+                                                     (where [:= :c.job_id :contracts.job_id]))])
+         query)
 
-       [(assoc out-params k v) clauses]))
-   [{} []]
+       :order-by
+       (order-by query v)))
+   base-query
    (expand-shortcut-params params)))
 
 (defn contract-outcome [contract]
@@ -112,7 +92,7 @@
 
 (defn normalise-record [contract]
   (-> contract
-      (update :outcome keyword)
+      (mp/update :outcome keyword)
       fix-contract-outcome
-      (update :request_body #(json/parse-string % keyword))))
+      (mp/update :request_body #(json/parse-string % keyword))))
 

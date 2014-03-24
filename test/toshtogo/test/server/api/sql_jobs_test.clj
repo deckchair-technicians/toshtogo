@@ -31,7 +31,7 @@
           (new-job! persistence agent-details (job-req id-one {:some-data 123} job-type-one))
           (new-job! persistence agent-details (job-req id-two {:some-data 456} job-type-two))
 
-          (get-contracts persistence {:state :waiting :job_type job-type-one})
+          (get-contracts persistence {:outcome :waiting :job_type job-type-one})
           => (contains (contains {:job_id id-one})))))
 
 (facts "Should be able to pause a job that hasn't started"
