@@ -116,6 +116,7 @@
 
 (defn pause-job! [persistence job-id agent-details]
   (let [job (get-job persistence job-id)]
+    (assert job (str "no job " job-id))
     (when (= :waiting (:outcome job))
       (let [commitment (request-work! persistence (uuid) {:job_id job-id} agent-details)]
         (complete-work! persistence (:commitment_id commitment) (cancelled))))
