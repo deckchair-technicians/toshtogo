@@ -46,12 +46,12 @@
       [cnxn sql-map & {:keys [count-sql-map page page-size] :or {page 1 page-size 20}}]
   (let [record-count  (:cnt (single cnxn (-> (or count-sql-map sql-map)
                                              (select :%count.*)
-                                             (dissoc :order-by)
-                                             (hsc/build :offset (* page-size (- page 1))
-                                                        :limit page-size)))
+                                             (dissoc :order-by)))
                        0)
         page-count    (ceil (/ record-count page-size))]
     {
       :paging {:page page :pages page-count}
-      :data   (query cnxn sql-map)})
+      :data   (query cnxn (-> sql-map
+                              (hsc/build :offset (* page-size (- page 1))
+                                         :limit page-size)))})
   )
