@@ -5,7 +5,7 @@
             [clj-time.core :refer [now]]
             [cheshire.core :as json]
             [flatland.useful.map :refer [update update-each]]
-            [toshtogo.util.core :refer [uuid debug as-coll ppstr]]
+            [toshtogo.util.core :refer [uuid debug ensure-seq ppstr]]
             [toshtogo.server.persistence.protocol :refer :all]
             [toshtogo.server.api :refer [get-job get-contract]]
             [toshtogo.server.persistence.sql-jobs-helper :refer :all]
@@ -87,10 +87,13 @@
         :else (throw (IllegalStateException. (str "Unknown outcome " (result :outcome) " in result " (ppstr result))))))
 
     (get-jobs [this params]
-      (let [params (update params :order-by #(concat (as-coll %) [:jobs.job_id]))]
+      (let [params (update params :order-by #(concat (ensure-seq %) [:jobs.job_id]))]
         (if (:page params)
           (update
-            (hsql/page cnxn (job-query params) (job-query (dissoc params :get_tags)))
+            (hsql/page cnxn (job-query params)
+                       :count-sql-map (job-query (dissoc params :get_tags))
+                       :page          (:page params 1)
+                       :page-size     (:page-size params))
             :data normalise-job-rows)
           (normalise-job-rows
             (hsql/query

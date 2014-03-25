@@ -2,8 +2,10 @@
   (:require [compojure.core :refer :all]
             [compojure.handler :as handler]
             [compojure.route :as route]
+            [clojure.string :as s]
             [cheshire.generate :as json-gen]
             [ring.util.response :as resp]
+            [clojure.pprint :refer [pprint]]
             [flatland.useful.map :refer [update]]
 
 
@@ -19,7 +21,7 @@
                                              wrap-if]]
             [toshtogo.server.persistence.protocol :refer :all]
             [toshtogo.server.api :refer :all]
-            [toshtogo.util.core :refer [uuid ppstr debug parse-datetime]])
+            [toshtogo.util.core :refer [uuid ppstr debug parse-datetime ensure-seq]])
   (:import [toshtogo.server.util IdempotentPutException]
            [java.io InputStream]))
 
@@ -29,12 +31,30 @@
 (defn commitment-redirect [commitment-id]
   (resp/redirect-after-post (str "/api/commitments/" commitment-id)))
 
+(defn parse-order-by-expression [order-by]
+  (let [[name direction]   (-> order-by
+                               s/trim
+                               (s/split #"\s+"))]
+    [(keyword name) (or (keyword direction) :asc)]))
+
+(defn parse-order-by [order-by]
+  (->> order-by
+       ensure-seq
+       (map parse-order-by-expression)
+       (filter (comp not empty?))))
+
+(defn normalise-search-params [params]
+  (-> params
+      (update :page (fn [page] (Integer/parseInt (or page "1"))))
+      (update :order-by (fn [x] (or (parse-order-by x) [:job_created :desc])))
+      (update :job_type keyword)
+      ))
+
 (defroutes api-routes
   (context "/api" []
     (context "/jobs" {:keys [persistence body check-idempotent!]}
-             (GET "/" {params :params}
-                  {:body (get-jobs persistence {:page     (Integer/parseInt (:page (debug "PARAMS" params) "1"))
-                                        :order-by [:contract_finished :contract_claimed :contract_created :job_created]})})
+       (GET "/" {params :params}
+            (resp/response (get-jobs persistence (normalise-search-params params))))
       (context "/:job-id" [job-id]
 
         (PUT  "/" []

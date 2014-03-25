@@ -1,9 +1,22 @@
 (ns toshtogo.client.clients.sender-client
   (:require [clj-time.format :as tf]
+            [ring.util.codec :refer [form-encode]]
+            [clojure.string :as s]
+            [swiss.arrows :refer :all]
             [flatland.useful.map :refer [update]]
             [toshtogo.util.core :refer [uuid]]
             [toshtogo.client.protocol :refer :all]
             [toshtogo.client.senders.protocol :refer :all]))
+
+(defn to-query-string [query]
+  (-> query
+      (update :order-by #(map (fn [order-by]
+                               (if (sequential? order-by)
+                                 (s/join " " (map name order-by))
+                                 (name order-by)))
+                             %))
+      (update :job_type #(if (keyword? %) (name %) %))
+      form-encode))
 
 (defn sender-client [sender]
   (reify
@@ -15,6 +28,9 @@
 
     (get-job [this job-id]
       (GET sender (str "/api/jobs/" job-id)))
+
+    (get-jobs [this query]
+      (GET sender (str "/api/jobs?" (to-query-string query))))
 
     (pause-job! [this job-id]
       (POST! sender

@@ -25,6 +25,10 @@
     (get-job [this job-id]
       (convert-job (get-job decorated job-id)))
 
+    (get-jobs [this query]
+      (-> (get-jobs decorated query)
+          (update :data #(map convert-job %))))
+
     (pause-job! [this job-id]
       (pause-job! decorated job-id))
 

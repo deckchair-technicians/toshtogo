@@ -11,10 +11,13 @@
             )
   (:import [java.sql Timestamp BatchUpdateException]
            (org.joda.time DateTime)
-           (org.postgresql.util PSQLException)))
+           (org.postgresql.util PSQLException)
+           (clojure.lang Keyword)))
+
 
 (defmulti fix-type-> class)
 (defmethod fix-type-> DateTime [v] (to-timestamp v))
+(defmethod fix-type-> Keyword [v] (name v))
 (defmethod fix-type-> :default [v] v)
 
 (defmulti fix-type<- class)
@@ -26,32 +29,36 @@
        (map #(map (fn [column] (column %)) columns))
        (map #(map fix-type-> %))))
 
+(defn- query* [cnxn sql-params]
+  (try
+    (sql/query cnxn sql-params)
+    (catch Throwable e
+      (throw (Exception. (str "Could not execute" (ppstr sql-params)) e)))))
+
 (defn query
       "sql-map is a honey-sql query map"
-  [cnxn sql-map]
-  (let [sql-params (map fix-type-> (hsf/format sql-map))]
-    (->> (try
-           (sql/query cnxn sql-params)
-           (catch PSQLException e
-             (throw (RuntimeException. (str "Could not execute" (ppstr sql-params)) e))))
-
+  [cnxn sql-map & {:keys [params]}]
+  (let [sql-params (map fix-type-> (hsf/format sql-map :params params))]
+    (->> (query* cnxn sql-params)
          (map (fn [record] (mp/map-vals record fix-type<-))))))
 
 (defn single
       "sql-map is a honey-sql query map"
-  [cnxn sql-map]
-  (first (query cnxn sql-map)))
+  [cnxn sql-map & {:keys [params]}]
+  (first (query cnxn sql-map :params params)))
 
 (defn page
-      [cnxn sql-map & {:keys [count-sql-map page page-size] :or {page 1 page-size 20}}]
-  (let [record-count  (:cnt (single cnxn (-> (or count-sql-map sql-map)
-                                             (select :%count.*)
-                                             (dissoc :order-by)))
+      [cnxn sql-map & {:keys [page page-size count-sql-map params count-params]}]
+  (let [page (or page 1)
+        page-size (or page-size 25)
+        record-count  (:cnt (single cnxn (-> (or count-sql-map sql-map)
+                                             (select [:%count.* :cnt])
+                                             (dissoc :order-by))
+                                    :params (or count-params params))
                        0)
         page-count    (ceil (/ record-count page-size))]
-    {
-      :paging {:page page :pages page-count}
+    {:paging {:page page :pages page-count}
       :data   (query cnxn (-> sql-map
                               (hsc/build :offset (* page-size (- page 1))
-                                         :limit page-size)))})
-  )
+                                         :limit page-size))
+                     :params params)}))

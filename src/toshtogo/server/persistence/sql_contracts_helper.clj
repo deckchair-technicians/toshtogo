@@ -7,7 +7,7 @@
             [toshtogo.server.agents.protocol :refer [agent!]]
             [honeysql.helpers :refer :all]
             [toshtogo.util.hsql :as hsql]
-            [toshtogo.util.core :refer [uuid debug]]))
+            [toshtogo.util.core :refer [uuid debug ensure-seq]]))
 
 (defn contract-record [job-id contract-number contract-due]
   {:contract_id      (uuid)
@@ -60,7 +60,7 @@
          (merge-where query [:=    :contracts.contract_id nil]))
 
        :job_type
-       (merge-where query [:= :job_type v])
+       (merge-where query [:= :job_type (name v)])
 
        :tags
        (merge-where query [:in :contracts.job_id (-> (select :job_id)
@@ -102,6 +102,12 @@
        (if v
          (apply order-by query (ensure-seq v))
          query)
+
+       :page
+       query
+
+       :page-size
+       query))
    base-query
    (expand-shortcut-params params)))
 

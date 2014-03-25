@@ -8,6 +8,7 @@
             [toshtogo.server.core :refer [dev-app]]
             [toshtogo.client.protocol :refer :all]
             [toshtogo.client.core :as ttc]
+            [toshtogo.client.clients.sender-client :refer [to-query-string]]
             [toshtogo.util.core :refer [uuid uuid-str debug cause-trace]]))
 
 (def in-process {:type :app :app (dev-app :debug false)})
@@ -27,10 +28,15 @@
 
 (defn return-success [job] (success {:result 1}))
 
+(defn ids-and-created-dates [client query]
+  (->> (get-jobs client query)
+       (:data)
+       (map #(select-keys % [:job_created :job_id :job_type]))))
+
 (with-redefs
   [toshtogo.client.protocol/heartbeat-time 1]
   (fact "Work can be requested"
-        (let [job-id (uuid)
+        (let [job-id   (uuid)
               job-type (uuid-str)]
 
           (put-job! client job-id (job-req {:a-field "field value"} job-type))
@@ -237,7 +243,26 @@
            @(do-work! client job-type (fn [job] (Thread/sleep 1) (success "Oh yeah")))
 
            (let [{:keys [last_heartbeat]} (get-job client job-id)]
-             (after? last_heartbeat start-time-ish) => truthy))))
+             (after? last_heartbeat start-time-ish) => truthy)))
+
+  (facts "Can specify order when getting jobs"
+        (let [job-id-1 (uuid)
+              job-id-2 (uuid)
+              job-type (uuid-str)]
+
+          (put-job! client job-id-1 (job-req {} job-type))
+          (Thread/sleep 1)
+          (put-job! client job-id-2 (job-req {} job-type))
+
+          (fact "Order by ascending job created time works"
+                (ids-and-created-dates client {:order-by [:job_created] :job_type job-type})
+                => (contains [(contains {:job_id job-id-1})
+                              (contains {:job_id job-id-2})]))
+
+          (fact "Order by descending job created time works"
+                (ids-and-created-dates client {:order-by [[:job_created :desc]] :job_type job-type})
+                => (contains [(contains {:job_id job-id-2})
+                              (contains {:job_id job-id-1})])))))
 
 (with-redefs
   [toshtogo.client.protocol/heartbeat-time 1]

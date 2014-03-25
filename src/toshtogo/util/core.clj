@@ -19,19 +19,19 @@
        (recur ret (first kvs) (second kvs) (nnext kvs))
        ret))))
 
+(defn ensure-seq
+  "Ensures a thing is sequential"
+  [s]
+  (if (sequential? s)
+        s
+        (if (nil? s) [] [s])))
+
 (defn ppstr [x]
   (with-out-str (pprint x)))
 
 (defn any-pred [& preds]
   (fn [x]
     (some #(% x) preds)))
-
-(defn as-coll [x]
-  (if ((any-pred list? seq? vector?) x)
-    x
-    (if (nil? x)
-      []
-      [x])))
 
 (defn no-debug
   ([msg x] x)
