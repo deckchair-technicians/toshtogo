@@ -53,16 +53,16 @@
           (let [job-id (uuid job-id)
                 job (get-job persistence job-id)]
             (if job
-              {:body job}
+              (resp/response job)
               (route/not-found "Unknown job id"))))
 
         (POST "/" [action]
               (let [job-id (uuid job-id)]
                 (case action
                   "pause"
-                  {:body (pause-job! persistence job-id (body :agent))}
+                  (resp/response (pause-job! persistence job-id (body :agent)))
                   "retry"
-                  {:body (new-contract! persistence (contract-req job-id))}
+                  (resp/response (new-contract! persistence (contract-req job-id)))
                   )))))
 
     (context "/commitments" {:keys [persistence body check-idempotent!]}
