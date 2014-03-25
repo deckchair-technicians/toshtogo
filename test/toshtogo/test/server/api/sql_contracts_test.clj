@@ -36,7 +36,7 @@
      (given-job-exists persistence id-two job-type-two)
      (given-job-exists persistence id-one job-type-one)
 
-     (get-contracts persistence {:outcome :waiting :job_type [job-type-one]})
+     (get-contracts persistence {:outcome :waiting :job_type job-type-one})
      => (contains (contains {:job_id id-one})))))
 
 (facts "New contracts check for the state of old contracts"

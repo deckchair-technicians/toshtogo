@@ -200,7 +200,7 @@
 
              (fact (str "Parent job is released when dependencies are complete, "
                         "with dependency responses merged into its request")
-                   (let [contract (request-work! client [parent-job-type])]
+                   (let [contract (request-work! client parent-job-type)]
                      contract
                      => (contains {:request_body {:parent-job "parent job"}})
 
