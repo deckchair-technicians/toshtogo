@@ -99,7 +99,9 @@
                         [:= :jobs.job_id :job_tags.job_id])
 
        :order-by
-       (order-by query v)))
+       (if v
+         (apply order-by query (ensure-seq v))
+         query)
    base-query
    (expand-shortcut-params params)))
 
