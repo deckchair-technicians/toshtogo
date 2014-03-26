@@ -182,39 +182,6 @@
                                    (contains {:result_body {:second-dep "second dep"}})]
                                   :in-any-order))))))
 
-
-  (facts "Requesting more work"
-         (let [job-id (uuid)
-               parent-job-type (uuid-str)
-               child-job-type (uuid-str)]
-
-           (put-job! client job-id (job-req {:parent-job "parent job"} parent-job-type))
-
-           (let [add-deps (fn [job]
-                            (add-dependencies
-                              (job-req {:first-dep "first dep"} child-job-type)
-                              (job-req {:second-dep "second dep"} child-job-type)))
-                 complete-child (fn [job] (success (job :request_body)))]
-
-             @(do-work! client parent-job-type add-deps) => truthy
-
-             (fact "Parent job is not ready until new dependencies complete"
-                   (request-work! client parent-job-type) => nil)
-
-             @(do-work! client child-job-type complete-child) => truthy
-             @(do-work! client child-job-type complete-child) => truthy
-
-             (fact (str "Parent job is released when dependencies are complete, "
-                        "with dependency responses merged into its request")
-                   (let [contract (request-work! client parent-job-type)]
-                     contract
-                     => (contains {:request_body {:parent-job "parent job"}})
-
-                     (contract :dependencies)
-                     => (contains [(contains {:result_body {:first-dep "first dep"}})
-                                   (contains {:result_body {:second-dep "second dep"}})]
-                                  :in-any-order))))))
-
   (facts "Try again later"
          (when (= :app (:type client-config))
            (let [job-id (uuid)
