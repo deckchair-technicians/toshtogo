@@ -1,4 +1,4 @@
-(ns toshtogo.test.client.clients.sender-client-test
+(ns toshtogo.test.client.clients.functional-test
   (:import (java.util UUID))
   (:require [midje.sweet :refer :all]
             [clj-time.core :refer [now minutes seconds millis plus minus after? interval within?]]
