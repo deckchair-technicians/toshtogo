@@ -33,6 +33,17 @@
        (:data)
        (map #(select-keys % [:job_created :job_id :job_type]))))
 
+(defn isinstance [c]
+  (fn [x] (instance? c x)))
+
+(defn close-to
+      ([expected]
+       (close-to expected timestamp-tolerance))
+  ([expected tolerance-period]
+   (let [acceptable-interval (interval (minus expected tolerance-period)
+                                       (plus expected tolerance-period))]
+     (fn [x] (within? acceptable-interval expected)))))
+
 (with-redefs
   [toshtogo.client.protocol/heartbeat-time 1]
   (fact "Work can be requested"
@@ -285,17 +296,6 @@
 
           (get-job client job-id)
           => (contains {:outcome :success}))))
-
-(defn isinstance [c]
-  (fn [x] (instance? c x)))
-
-(defn close-to
-  ([expected]
-   (close-to expected timestamp-tolerance))
-  ([expected tolerance-period]
-   (let [acceptable-interval (interval (minus expected tolerance-period)
-                                       (plus expected tolerance-period))]
-     (fn [x] (within? acceptable-interval expected)))))
 
 (fact "Current job state is serialised between server and client as expected"
       (let [job-id (uuid)
