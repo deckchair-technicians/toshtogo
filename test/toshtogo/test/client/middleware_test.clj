@@ -1,4 +1,4 @@
-(ns toshtogo.test.client.middleware
+(ns toshtogo.test.client.middleware-test
   (:require [midje.sweet :refer :all]
             [toshtogo.client.middleware :refer :all]
             [toshtogo.client.protocol :refer :all]))
