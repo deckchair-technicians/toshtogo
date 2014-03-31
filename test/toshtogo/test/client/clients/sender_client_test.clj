@@ -229,10 +229,8 @@
           (fact "Order by descending job created time works"
                 (ids-and-created-dates client {:order-by [[:job_created :desc]] :job_type job-type})
                 => (contains [(contains {:job_id job-id-2})
-                              (contains {:job_id job-id-1})])))))
+                              (contains {:job_id job-id-1})]))))
 
-(with-redefs
-  [toshtogo.client.protocol/heartbeat-time 1]
   (facts "Agents receive a cancellation signal in the heartbeat response when jobs are paused"
          (let [job-id (uuid)
                job-type (uuid-str)
@@ -242,9 +240,9 @@
            (put-job! client job-id (job-req {} job-type))
 
            (let [commitment (do-work! client job-type (fn [job]
-                                                         (deliver commitment-id (job :commitment_id))
-                                                         (Thread/sleep 10000)
-                                                         (error "Should never return")))]
+                                                        (deliver commitment-id (job :commitment_id))
+                                                        (Thread/sleep 10000)
+                                                        (error "Should never return")))]
              (future-done? commitment) => falsey
 
              (heartbeat! client @commitment-id)
@@ -267,27 +265,26 @@
              (future-cancel commitment))))
 
   (fact "Paused jobs can be retried"
-         (let [job-id (uuid)
-               job-type (uuid-str)]
+        (let [job-id (uuid)
+              job-type (uuid-str)]
 
-           (put-job! client job-id (job-req {} job-type))
+          (put-job! client job-id (job-req {} job-type))
 
-           (pause-job! client job-id)
+          (pause-job! client job-id)
 
-           (get-job client job-id)
-           => (contains {:outcome :cancelled})
+          (get-job client job-id)
+          => (contains {:outcome :cancelled})
 
-           (retry-job! client job-id)
+          (retry-job! client job-id)
 
-           (get-job client job-id)
-           => (contains {:outcome :waiting})
+          (get-job client job-id)
+          => (contains {:outcome :waiting})
 
-           @(do-work! client job-type (constantly (success {:some-field "some value"})))
-           => truthy
+          @(do-work! client job-type (constantly (success {:some-field "some value"})))
+          => truthy
 
-           (get-job client job-id)
-           => (contains {:outcome :success}))))
-
+          (get-job client job-id)
+          => (contains {:outcome :success}))))
 
 (defn isinstance [c]
   (fn [x] (instance? c x)))
