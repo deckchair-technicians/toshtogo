@@ -57,7 +57,10 @@
   ([]
    (UUID/randomUUID))
   ([s]
-   (when s (UUID/fromString s))))
+   (when s
+     (if (instance? UUID s)
+       s
+       (UUID/fromString s)))))
 
 (defn uuid-str [] (str (uuid)))
 

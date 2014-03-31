@@ -5,8 +5,9 @@
             [clojure.string :as s]
             [cheshire.generate :as json-gen]
             [ring.util.response :as resp]
+            [swiss.arrows :refer :all]
             [clojure.pprint :refer [pprint]]
-            [flatland.useful.map :refer [update]]
+            [flatland.useful.map :refer [update update-each]]
 
 
             [toshtogo.server.util.middleware :refer [wrap-body-hash
@@ -43,12 +44,32 @@
        (map parse-order-by-expression)
        (filter (comp not empty?))))
 
+(defn parse-boolean-param [s]
+  (and s (not= "false" (s/trim (s/lower-case s)))))
+
+(defn keywords-param [s]
+  (when s
+    (->> s
+         ensure-seq
+         (map keyword))))
+
 (defn normalise-search-params [params]
   (-> params
-      (update :page (fn [page] (Integer/parseInt (or page "1"))))
       (update :order-by (fn [x] (or (parse-order-by x) [:job_created :desc])))
+      (update :page (fn [s] (Integer/parseInt (or s "1"))))
+      (update :page-size (fn [s] (Integer/parseInt (or s "25"))))
+      (update-each [:latest_contract :has_contract] parse-boolean-param)
+      (update-each [:commitment_id :job_id :depends_on_job_id :dependency_of_job_id] uuid)
+      (update-each [:job_type :outcome] keyword)
+      (update :tags keywords-param)
+      (update :max_due_time parse-datetime)))
+
+(defn normalise-job-req [req]
+  (-> req
+      (update :job_id uuid)
       (update :job_type keyword)
-      ))
+      (update :tags #(map keyword %))
+      (update :dependencies #(map normalise-job-req %))))
 
 (defroutes api-routes
   (context "/api" []
@@ -65,7 +86,8 @@
                                   (body :agent)
                                   (-> body
                                       (assoc :job_id job-id)
-                                      (dissoc :agent)))]
+                                      (dissoc :agent)
+                                      normalise-job-req))]
                (job-redirect job-id))
              #(job-redirect job-id))))
 

@@ -3,7 +3,7 @@
             [ring.util.codec :refer [form-encode]]
             [clojure.string :as s]
             [swiss.arrows :refer :all]
-            [flatland.useful.map :refer [update]]
+            [flatland.useful.map :refer [update update-each]]
             [toshtogo.util.core :refer [uuid]]
             [toshtogo.client.protocol :refer :all]
             [toshtogo.client.senders.protocol :refer :all]))
@@ -15,7 +15,7 @@
                                  (s/join " " (map name order-by))
                                  (name order-by)))
                              %))
-      (update :job_type #(if (keyword? %) (name %) %))
+      (update-each [:job_type :outcome] #(if (keyword? %) (name %) %))
       form-encode))
 
 (defn sender-client [sender]

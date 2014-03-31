@@ -49,10 +49,15 @@
    (fn [query [k v]]
      (case k
        :outcome
-       (if (= :waiting v)
+       (case v
+         :waiting
          (merge-where query [:and [:= :outcome nil]
                              [:= :commitment_id nil]])
-         (merge-where query [:= :outcome v]))
+         :running
+         (merge-where query [:and [:= :outcome nil]
+                             [:not= :commitment_id nil]])
+
+         (merge-where query [:= :outcome (name v)]))
 
        :has_contract
        (if v
@@ -67,7 +72,7 @@
                                                      (modifiers :distinct)
                                                      (from :jobs)
                                                      (join :job_tags [:jobs.job_id = :job_tags.job_id])
-                                                     (where [:in :job_tags.tag v]))])
+                                                     (where [:in :job_tags.tag (map name v)]))])
 
        :commitment_id
        (merge-where query [:= :commitment_id v])
