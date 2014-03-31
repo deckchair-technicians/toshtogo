@@ -80,13 +80,13 @@
 
          (fact "Filter by one tag"
                (get-and-select client {:tags [tag-1] :job_type job-type} :job_id :tags)
-               => (contains [{:job_id job-id-1 :tags [tag-1]}
-                             {:job_id job-id-2 :tags [tag-1 tag-2]}]
+               => (contains [(contains {:job_id job-id-1})
+                             (contains {:job_id job-id-2})]
                             :in-any-order))
 
          (fact "Filter by both tags"
                (get-and-select client {:tags [tag-1 tag-2] :job_type job-type} :job_id :tags)
-               => (contains [{:job_id job-id-2 :tags [tag-1 tag-2]}]))
+               => (contains [(contains {:job_id job-id-2})]))
 
          (fact "No job with matching tags"
                (get-and-select client {:tags [(keyword (uuid-str))] :job_type job-type} :job_id :tags)
