@@ -105,4 +105,7 @@
        normalise-record
        (hsql/query
               cnxn
-              (contract-query (assoc params :has_contract true)))))))
+              (contract-query (assoc params :has_contract true)))))
+
+    (get-job-types [this]
+      (map :job_type (hsql/query cnxn job-types-query)))))

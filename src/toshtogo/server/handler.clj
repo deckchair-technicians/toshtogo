@@ -72,8 +72,8 @@
       (update :dependencies #(map normalise-job-req %))))
 
 (defroutes api-routes
-  (context "/api" []
-    (context "/jobs" {:keys [persistence body check-idempotent!]}
+  (context "/api" {:keys [persistence body check-idempotent!]}
+    (context "/jobs" []
        (GET "/" {params :params}
             (resp/response (get-jobs persistence (normalise-search-params params))))
       (context "/:job-id" [job-id]
@@ -107,7 +107,7 @@
                   (resp/response (new-contract! persistence (contract-req job-id)))
                   )))))
 
-    (context "/commitments" {:keys [persistence body check-idempotent!]}
+    (context "/commitments" []
       (PUT "/" []
         (let [commitment-id (uuid (body :commitment_id))]
           (check-idempotent!
@@ -129,14 +129,18 @@
                   (commitment-redirect commitment-id))
              #(commitment-redirect commitment-id))))
 
-        (POST "/heartbeat" []
-          {:body (upsert-heartbeat! persistence (uuid commitment-id))}))
+        (GET "/" []
+             {:body  (get-contract
+                       persistence
+                       {:commitment_id (uuid commitment-id)
+                        :with-dependencies true})})
 
-      (GET "/:commitment-id" [commitment-id]
-        {:body  (get-contract
-                  persistence
-                 {:commitment_id (uuid commitment-id)
-                  :with-dependencies true})}))))
+        (POST "/heartbeat" []
+          {:body (upsert-heartbeat! persistence (uuid commitment-id))})))
+
+    (context "/metadata" []
+             (GET "/job_types" {:keys [persistence]}
+                  (get-job-types persistence)))))
 
   (route/not-found {:status "I'm sorry :("})
 

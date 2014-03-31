@@ -138,3 +138,7 @@
       fix-contract-outcome
       (mp/update :request_body #(json/parse-string % keyword))))
 
+(def job-types-query (-> (select :job_type)
+                         (modifiers :distinct)
+                         (from :jobs)
+                         (order-by :job_type)))

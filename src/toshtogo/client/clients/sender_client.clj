@@ -33,6 +33,9 @@
     (get-jobs [this query]
       (GET sender (str "/api/jobs?" (to-query-string query))))
 
+    (get-job-types [this]
+      (GET sender "/api/metadata/job_types"))
+
     (pause-job! [this job-id]
       (POST! sender
              (str "/api/jobs/" job-id "?action=pause")

@@ -46,4 +46,6 @@
   (insert-result!     [this commitment-id result])
 
   (get-jobs      [this params])
-  (get-contracts [this params]))
+  (get-contracts [this params])
+
+  (get-job-types [this]))

@@ -30,6 +30,9 @@
       (-> (get-jobs decorated query)
           (update :data #(map convert-job %))))
 
+    (get-job-types [this]
+      (map keyword (get-job-types decorated)))
+
     (pause-job! [this job-id]
       (pause-job! decorated job-id))
 
