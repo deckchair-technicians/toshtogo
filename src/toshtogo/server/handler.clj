@@ -58,7 +58,7 @@
       (update :order-by (fn [x] (or (parse-order-by x) [:job_created :desc])))
       (update :page (fn [s] (Integer/parseInt (or s "1"))))
       (update :page-size (fn [s] (Integer/parseInt (or s "25"))))
-      (update-each [:latest_contract :has_contract] parse-boolean-param)
+      ;(update-each [:latest_contract :has_contract] parse-boolean-param)
       (update-each [:commitment_id :job_id :depends_on_job_id :dependency_of_job_id] uuid)
       (update-each [:job_type :outcome] keyword)
       (update :tags keywords-param)

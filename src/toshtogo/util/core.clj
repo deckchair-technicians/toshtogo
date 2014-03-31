@@ -129,3 +129,9 @@
   "opts "
   [opts & body]
   `(apply retry-until-success* (fn [] ~@body) (flatten (seq ~opts))))
+
+(defn safe-name [x]
+  (when x
+    (if (keyword? x)
+      (name x)
+      x)))

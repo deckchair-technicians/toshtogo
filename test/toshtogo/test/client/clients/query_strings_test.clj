@@ -30,3 +30,7 @@
 (fact "Converting order-by into query string works"
       (to-query-string-and-back {:job_type :abc})
       => (contains {:job_type :abc}))
+
+(fact "Converting order-by into query string works"
+      (to-query-string-and-back {:tags [:abc :def]})
+      => (contains {:tags [:abc :def]}))

@@ -1,51 +1,14 @@
 (ns toshtogo.test.client.clients.sender-client-test
   (:import (java.util UUID))
-  (:require [clj-time.core :refer [now minutes seconds millis plus minus after? interval within?]]
-            [midje.sweet :refer :all]
+  (:require [midje.sweet :refer :all]
+            [clj-time.core :refer [now minutes seconds millis plus minus after? interval within?]]
             [ring.adapter.jetty :refer [run-jetty]]
             [clojure.java.jdbc :as sql]
-            [clojure.pprint :refer [pprint]]
-            [toshtogo.server.core :refer [dev-app]]
             [toshtogo.client.protocol :refer :all]
-            [toshtogo.client.core :as ttc]
             [toshtogo.client.clients.sender-client :refer [to-query-string]]
-            [toshtogo.util.core :refer [uuid uuid-str debug cause-trace]]))
-
-(def in-process {:type :app :app (dev-app :debug false)})
-(def localhost {:type :http :base-path "http://localhost:3000"})
-
-(def client-config in-process)
-(def client (ttc/client client-config
-                        :error-fn (fn [e] (pprint (cause-trace e)))
-                        :debug false
-                        :timeout 1000
-                        :system "client-test"
-                        :version "0.0"))
-
-(def timestamp-tolerance (case (client-config :type)
-                           :app (millis 1)
-                           :http (seconds 5)))
-
-(defn return-success [job] (success {:result 1}))
-
-(defn get-and-select [client query & keys]
-  (->> (get-jobs client query)
-       (:data)
-       (map #(select-keys % keys))))
-
-(defn ids-and-created-dates [client query]
-  (get-and-select client query :job_id  :job_created :job_type))
-
-(defn isinstance [c]
-  (fn [x] (instance? c x)))
-
-(defn close-to
-      ([expected]
-       (close-to expected timestamp-tolerance))
-  ([expected tolerance-period]
-   (let [acceptable-interval (interval (minus expected tolerance-period)
-                                       (plus expected tolerance-period))]
-     (fn [x] (within? acceptable-interval expected)))))
+            [toshtogo.util.core :refer [uuid uuid-str debug]]
+            [toshtogo.test.functional.test-support :refer :all]
+            ))
 
 (with-redefs
   [toshtogo.client.protocol/heartbeat-time 1]
@@ -226,96 +189,6 @@
            (let [{:keys [last_heartbeat]} (get-job client job-id)]
              (after? last_heartbeat start-time-ish) => truthy)))
 
-  (facts "Can specify order when getting jobs"
-         (let [job-id-1 (uuid)
-               job-id-2 (uuid)
-               job-type (uuid-str)]
-
-           (put-job! client job-id-1 (job-req {} job-type))
-           (Thread/sleep 1)
-           (put-job! client job-id-2 (job-req {} job-type))
-
-           (fact "Order by ascending job created time works"
-                 (ids-and-created-dates client {:order-by [:job_created] :job_type job-type})
-                 => (contains [(contains {:job_id job-id-1})
-                               (contains {:job_id job-id-2})]))
-
-           (fact "Order by descending job created time works"
-                 (ids-and-created-dates client {:order-by [[:job_created :desc]] :job_type job-type})
-                 => (contains [(contains {:job_id job-id-2})
-                               (contains {:job_id job-id-1})]))))
-
-  (facts "Can specify paging when getting jobs"
-         (let [job-id-1 (uuid)
-               job-id-2 (uuid)
-               job-id-3 (uuid)
-               job-type (uuid-str)]
-
-           (put-job! client job-id-1 (job-req {} job-type))
-           (Thread/sleep 1)
-           (put-job! client job-id-2 (job-req {} job-type))
-           (Thread/sleep 1)
-           (put-job! client job-id-3 (job-req {} job-type))
-
-           (fact "Getting first page"
-                 (ids-and-created-dates client {:order-by [:job_created] :job_type job-type :page 1 :page-size 2})
-                 => (contains [(contains {:job_id job-id-1})
-                               (contains {:job_id job-id-2})]))
-
-           (fact "Getting second page"
-                 (ids-and-created-dates client {:order-by [:job_created] :job_type job-type :page 2 :page-size 2})
-                 => (contains [(contains {:job_id job-id-3})]))))
-
-  (facts "Can filter by depends_on_job_id and dependency_of_job_id"
-         (let [job-id-1 (uuid)
-               job-id-2 (uuid)
-               job-type (uuid-str)]
-
-           (put-job! client job-id-1 (job-req {:job "1"} job-type
-                                              :dependencies
-                                              [(assoc (job-req {:job "1.1"} job-type) :job_id job-id-2)]))
-
-           (fact "Searching by depends_on_job_id"
-                 (ids-and-created-dates client {:depends_on_job_id job-id-2 :job_type job-type})
-                 => (contains [(contains {:job_id job-id-1})])
-
-                 (ids-and-created-dates client {:depends_on_job_id job-id-1 :job_type job-type})
-                 => empty?)
-
-           (fact "Searching by dependency_of_job_id"
-                 (ids-and-created-dates client {:dependency_of_job_id job-id-1 :job_type job-type})
-                 => (contains [(contains {:job_id job-id-2})])
-
-                 (ids-and-created-dates client {:dependency_of_job_id job-id-2 :job_type job-type})
-                 => empty?)))
-
-  (facts "Can filter by outcome"
-         (let [job-id-1 (uuid)
-               job-id-2 (uuid)
-               job-id-3 (uuid)
-               job-type (uuid-str)]
-
-           (put-job! client job-id-1 (job-req {:job "success"} job-type))
-           @(do-work! client job-type return-success) => truthy
-
-           (put-job! client job-id-2 (job-req {:job "running"} job-type))
-           (request-work! client job-type) => truthy
-
-           (put-job! client job-id-3 (job-req {:job "waiting"} job-type))
-
-
-           (fact "Can get waiting jobs"
-                 (get-and-select client {:outcome :waiting :job_type job-type} :outcome :job_id)
-                 => (contains [(contains {:job_id job-id-3 :outcome :waiting})]))
-
-           (fact "Can get running jobs"
-                 (get-and-select client {:outcome :running :job_type job-type} :outcome :job_id)
-                 => (contains [(contains {:job_id job-id-2 :outcome :running})]))
-
-           (fact "Can get succeeded jobs"
-                 (get-and-select client {:outcome :success :job_type job-type} :outcome :job_id)
-                 => (contains [(contains {:job_id job-id-1 :outcome :success})]))))
-
   (facts "Agents receive a cancellation signal in the heartbeat response when jobs are paused"
          (let [job-id (uuid)
                job-type (uuid-str)
@@ -375,7 +248,7 @@
       (let [job-id (uuid)
             commitment-id (atom "not set")
             job-type (uuid-str)
-            tags (set [(uuid-str) (uuid-str)])
+            tags (set [(keyword (uuid-str)) (keyword (uuid-str))])
             created-time (now)
             claimed-time (plus created-time (millis 5))
             finished-time (plus claimed-time (millis 5))
