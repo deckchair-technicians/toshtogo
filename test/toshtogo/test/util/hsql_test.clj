@@ -1,11 +1,11 @@
-(ns toshtogo.test.util.sql-test
+(ns toshtogo.test.util.hsql-test
   (:require [midje.sweet :refer :all]
             [clojure.pprint :refer [pprint]]
             [honeysql.helpers :refer :all]
-            [toshtogo.util.sql :refer :all]))
+            [toshtogo.util.hsql :refer :all]))
 
 (fact "prefix-alias-tables can take a HoneySql query and alias all references to tables with a prefix"
-      (->> (-> (select :*)
+      (-> (-> (select :*)
               (from :jobs)
               (merge-left-join :contracts
                                [:= :jobs.job_id :contracts.job_id])

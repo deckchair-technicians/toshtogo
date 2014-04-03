@@ -4,7 +4,6 @@
             [clojure.math.numeric-tower :refer [ceil]]
             [flatland.useful.map :refer [map-vals filter-vals update update-each map-keys]]
             [clojure.set :refer [difference]]
-            [clojure.walk :refer [postwalk]]
             [clojure.string :as str]
             [clojure.pprint :refer [pprint]]
             [toshtogo.util.core :refer :all])
@@ -126,33 +125,3 @@
    (query-single cnxn (first sql-params) (second sql-params)))
   ([cnxn sql params]
    (first (query cnxn sql params))))
-
-(defmulti prefix-alias-columns (fn [table-aliases x] (class x)))
-(defmethod prefix-alias-columns Keyword [table-aliases x]
-  (let [[_ table-name rest] (re-find #"(.*)(\..*)" (name x))
-        table-keyword     (keyword table-name)
-        table-alias       (table-aliases table-keyword)]
-    (if (and table-alias)
-      (keyword (str (name table-alias) rest))
-      x)))
-
-(defmethod prefix-alias-columns :default [table-aliases x] (identity x))
-
-(defn table-alias-pair [table-aliases table-keyword]
-  [table-keyword (or (table-aliases table-keyword) table-keyword)])
-
-(defn prefix-alias-tables [prefix q]
-  (let [table-aliases (->> (:left-join q)
-                         (apply hash-map)
-                         keys
-                         (concat (:from q))
-                         (mapcat (fn [table-name] [table-name (keyword (str prefix (name table-name)))]))
-                         (apply hash-map))]
-    (-> (postwalk (partial prefix-alias-columns table-aliases) q)
-        (update :left-join #(partition 2 %))
-        (update :left-join #(map (fn [[table-keyword join-expression]]
-                                        [(table-alias-pair table-aliases table-keyword)
-                                         join-expression])
-                                 %))
-        (update :left-join #(mapcat identity %))
-        (update :from #(map (partial table-alias-pair table-aliases) %)))))
