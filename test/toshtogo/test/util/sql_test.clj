@@ -15,14 +15,14 @@
                                [:= :agent_commitments.commitment_id :commitment_outcomes.outcome_id])
               (merge-left-join :job_results
                                [:= :jobs.job_id :job_results.job_id]))
-          (prefix-alias-tables "abc_"))
+          (prefix-alias-tables "ALIAS_"))
       => (-> (select :*)
-             (from [:jobs :abc_jobs])
-             (merge-left-join [:contracts :abc_contracts]
-                              [:= :abc_jobs.job_id :abc_contracts.job_id])
-             (merge-left-join [:agent_commitments :abc_agent_commitments]
-                              [:= :abc_contracts.contract_id :abc_agent_commitments.commitment_contract])
-             (merge-left-join [:commitment_outcomes :abc_commitment_outcomes]
-                              [:= :abc_agent_commitments.commitment_id :abc_commitment_outcomes.outcome_id])
-             (merge-left-join [:job_results :abc_job_results]
-                              [:= :abc_jobs.job_id :abc_job_results.job_id])))
+             (from [:jobs :ALIAS_jobs])
+             (merge-left-join [:contracts :ALIAS_contracts]
+                              [:= :ALIAS_jobs.job_id :ALIAS_contracts.job_id])
+             (merge-left-join [:agent_commitments :ALIAS_agent_commitments]
+                              [:= :ALIAS_contracts.contract_id :ALIAS_agent_commitments.commitment_contract])
+             (merge-left-join [:commitment_outcomes :ALIAS_commitment_outcomes]
+                              [:= :ALIAS_agent_commitments.commitment_id :ALIAS_commitment_outcomes.outcome_id])
+             (merge-left-join [:job_results :ALIAS_job_results]
+                              [:= :ALIAS_jobs.job_id :ALIAS_job_results.job_id])))
