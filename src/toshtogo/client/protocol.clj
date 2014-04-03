@@ -10,6 +10,9 @@
                       :notes notes
                       :tags tags))))
 
+(defn or-existing-job [job-req]
+  (assoc job-req :or_existing_job true))
+
 (def success server-protocol/success)
 (def error server-protocol/error)
 (def cancelled server-protocol/cancelled)

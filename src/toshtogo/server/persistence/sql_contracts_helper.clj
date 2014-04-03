@@ -7,6 +7,7 @@
             [toshtogo.server.agents.protocol :refer [agent!]]
             [honeysql.helpers :refer :all]
             [toshtogo.util.hsql :as hsql]
+            [toshtogo.util.hashing :refer [murmur-uuid!]]
             [toshtogo.util.core :refer [uuid debug ensure-seq safe-name]]))
 
 (defn contract-record [job-id contract-number contract-due]
@@ -98,6 +99,9 @@
        (merge-where query [:in :jobs.job_id (-> (select :child_job_id)
                                                 (from :job_dependencies)
                                                 (where [:= :parent_job_id v]))])
+
+       :request_body
+       (merge-where query [:= :request_hash (murmur-uuid! v)])
 
        :get_tags
        (merge-left-join query :job_tags

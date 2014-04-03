@@ -85,7 +85,12 @@
           :more-work
           (doseq [job (flattened-dependencies {:job_id       job-id
                                                :dependencies (result :dependencies)})]
-            (new-job! persistence agent-details job))
+            (if-let [matching-job (and (:or_existing_job job)
+                                       (first (get-jobs persistence {:job_type     (:job_type job)
+                                                                     :request_body (:request_body job)
+                                                                     :order-by     [[:job_created :desc]]})))]
+              (insert-dependency! persistence job-id (:job_id matching-job))
+              (new-job! persistence agent-details job)))
 
           :try-later
           (new-contract! persistence (contract-req job-id (result :contract_due)))

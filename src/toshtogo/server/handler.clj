@@ -68,6 +68,7 @@
   (-> req
       (update :job_id uuid)
       (update :job_type keyword)
+      (update :or_existing_job #(= "true" %))
       (update :tags #(map keyword %))
       (update :dependencies #(map normalise-job-req %))))
 

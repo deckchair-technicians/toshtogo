@@ -16,13 +16,17 @@
 
 (defn sql-persistence [cnxn agents]
   (reify Persistence
+    (insert-dependency! [this parent-job-id child-job-id]
+      (tsql/insert! cnxn :job_dependencies {:dependency_id (uuid)
+                                            :parent_job_id parent-job-id
+                                            :child_job_id  child-job-id}))
     (insert-jobs! [this jobs agent-details]
       (doseq [job jobs]
-        (let [job-id (job :job_id)
+        (let [job-id          (job :job_id)
               job-tag-records (map (fn [tag] {:job_id job-id :tag tag}) (job :tags))
-              job-agent (agent! agents agent-details)
-              job-row (job-record job-id (job :job_type) (job-agent :agent_id) (job :request_body) (job :notes))
-              parent-job-id (job :parent_job_id)]
+              job-agent       (agent! agents agent-details)
+              job-row         (job-record job-id (job :job_type) (job-agent :agent_id) (job :request_body) (job :notes))
+              parent-job-id   (job :parent_job_id)]
 
           (tsql/insert! cnxn :jobs job-row)
 
@@ -30,9 +34,7 @@
             (apply tsql/insert! cnxn :job_tags job-tag-records))
 
           (when parent-job-id
-            (tsql/insert! cnxn :job_dependencies {:dependency_id (uuid)
-                                                  :parent_job_id parent-job-id
-                                                  :child_job_id  job-id}))
+            (insert-dependency! this parent-job-id job-id))
 
           (get-job this job-id))))
 
