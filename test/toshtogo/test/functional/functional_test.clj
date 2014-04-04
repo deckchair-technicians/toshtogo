@@ -150,12 +150,12 @@
              @(do-work! client child-job-type complete-child) => truthy
 
              (fact (str "Parent job is released when dependencies are complete, "
-                        "with dependency responses with the job")
+                        "with dependency responses included in the job")
                    (let [contract (request-work! client parent-job-type)]
                      contract
                      => (contains {:request_body {:parent-job "parent job"}})
 
-                     (contract :dependencies)
+                     (:dependencies contract)
                      => (contains [(contains {:result_body {:first-dep "first dep"}})
                                    (contains {:result_body {:second-dep "second dep"}})]
                                   :in-any-order))))))
@@ -192,7 +192,7 @@
                      (contract :dependencies)
                      => (contains [(contains {:result_body child-job-request})]))))))
 
-  (future-fact "If we specify :or_existing_job, jobs which have been completed will also be matched"
+  (facts "If we specify :or_existing_job, jobs which have been completed will also be matched"
          (let [job-id            (uuid)
                child-job-id      (uuid)
                parent-job-type   (uuid-str)

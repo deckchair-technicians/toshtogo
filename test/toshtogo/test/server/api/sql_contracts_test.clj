@@ -22,7 +22,7 @@
     (when (not= (contract :job_id) job-id)
       (throw (RuntimeException. "More than one job exists for tags")))
 
-    (complete-work! persistence (contract :commitment_id) (success {:response "success"}))))
+    (complete-work! persistence (contract :commitment_id) (success {:response "success"}) agent-details)))
 
 (fact "Gets contracts by filters "
   (sql/with-db-transaction
@@ -140,11 +140,13 @@
                             (fn [persistence]
                               (complete-work! persistence
                                               (first-commitment :commitment_id)
-                                              (success [])))
+                                              (success [])
+                                              agent-details))
                             (fn [persistence]
                               (complete-work! persistence
                                               (second-commitment :commitment_id)
-                                              (success [])))))
+                                              (success [])
+                                              agent-details))))
     (sql/with-db-transaction
       [cnxn dev-db]
       (let [persistence ((sql-deps cnxn) :persistence)]

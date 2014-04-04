@@ -126,7 +126,8 @@
              #(do (complete-work! persistence commitment-id
                                   (-> body
                                       (update :outcome keyword)
-                                      (update :contract_due parse-datetime)))
+                                      (update :contract_due parse-datetime))
+                                  (body :agent))
                   (commitment-redirect commitment-id))
              #(commitment-redirect commitment-id))))
 

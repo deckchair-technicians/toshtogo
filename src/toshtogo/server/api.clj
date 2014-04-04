@@ -49,24 +49,21 @@
 
       (insert-contract! persistence job-id new-contract-ordinal contract-due))))
 
-(defn new-job! [persistence agent-details job]
-  (let [jobs           (concat [(dissoc job :dependencies)] (flattened-dependencies job))
-        parent-job-ids (set (filter (comp not nil?) (map :parent_job_id jobs)))
-        leaf-jobs (filter #(not (parent-job-ids (:job_id %))) jobs)]
+(defn new-job! [persistence agent-details root-job]
+  (let [root-and-dependencies (concat [(dissoc root-job :dependencies)] (flattened-dependencies root-job))]
 
-    (insert-jobs! persistence jobs agent-details)
+    (insert-jobs! persistence root-and-dependencies agent-details)
 
-    (doseq [leaf-job leaf-jobs]
-      (new-contract! persistence (contract-req (leaf-job :job_id))))
+    (doseq [job root-and-dependencies]
+      (new-contract! persistence (contract-req (job :job_id))))
 
-    (get-job persistence (job :job_id))))
+    (get-job persistence (root-job :job_id))))
 
 
 (defn complete-work!
-  [persistence commitment-id result]
+  [persistence commitment-id result agent-details]
   (let [contract (get-contract persistence {:commitment_id commitment-id})
-        job-id (:job_id contract)
-        agent-details (:agent result)]
+        job-id (:job_id contract)]
 
     (assert contract (str "Could not find commitment '" commitment-id "'"))
 
@@ -77,20 +74,20 @@
 
         (case (:outcome result)
           :success
-          (doseq [parent-job (get-jobs persistence (depends-on contract))]
-            (let [dependency-outcomes (dependency-outcomes persistence (parent-job :job_id))]
-              (when (every? #(= :success %)  dependency-outcomes)
-                (new-contract! persistence (contract-req (parent-job :job_id))))))
+          nil
 
           :more-work
-          (doseq [job (flattened-dependencies {:job_id       job-id
-                                               :dependencies (result :dependencies)})]
-            (if-let [matching-job (and (:or_existing_job job)
-                                       (first (get-jobs persistence {:job_type     (:job_type job)
-                                                                     :request_body (:request_body job)
-                                                                     :order-by     [[:job_created :desc]]})))]
-              (insert-dependency! persistence job-id (:job_id matching-job))
-              (new-job! persistence agent-details job)))
+          (do
+            (new-contract! persistence (contract-req job-id))
+
+            (doseq [dependency (flattened-dependencies {:job_id       job-id
+                                                        :dependencies (result :dependencies)})]
+              (if-let [existing-job (and (:or_existing_job dependency)
+                                         (first (get-jobs persistence {:job_type     (:job_type dependency)
+                                                                       :request_body (:request_body dependency)
+                                                                       :order-by     [[:job_created :desc]]})))]
+                (insert-dependency! persistence job-id (:job_id existing-job))
+                (new-job! persistence agent-details dependency))))
 
           :try-later
           (new-contract! persistence (contract-req job-id (result :contract_due)))
@@ -122,12 +119,14 @@
 (defn pause-job! [persistence job-id agent-details]
   (let [job (get-job persistence job-id)]
     (assert job (str "no job " job-id))
+
     (when (= :waiting (:outcome job))
-      (let [commitment (request-work! persistence (uuid) {:job_id job-id} agent-details)]
-        (complete-work! persistence (:commitment_id commitment) (cancelled))))
+      (let [commitment-id (uuid)]
+        (insert-commitment! persistence commitment-id (job :contract_id) agent-details)
+        (complete-work! persistence commitment-id (cancelled) agent-details)))
 
     (when (= :running (:outcome job))
-      (complete-work! persistence (:commitment_id job) (cancelled))))
+      (complete-work! persistence (:commitment_id job) (cancelled) agent-details)))
 
   (doseq [dependency  (get-jobs persistence {:dependency_of_job_id job-id})]
     (pause-job! persistence (dependency :job_id) agent-details)))

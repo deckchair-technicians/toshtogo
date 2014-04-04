@@ -26,34 +26,49 @@
       (from :jobs)
       (merge-left-join :contracts
                  [:= :jobs.job_id :contracts.job_id])
-      (merge-left-join [:agent_commitments :commitments]
-                 [:= :contracts.contract_id :commitments.commitment_contract])
+      (merge-left-join :agent_commitments
+                 [:= :contracts.contract_id :agent_commitments.commitment_contract])
       (merge-left-join :commitment_outcomes
-                 [:= :commitments.commitment_id :commitment_outcomes.outcome_id])
+                 [:= :agent_commitments.commitment_id :commitment_outcomes.outcome_id])
       (merge-left-join :job_results
                  [:= :jobs.job_id :job_results.job_id])))
-
-(defn expand-shortcut-params [params]
-  (cond-> params
-          (params :ready_for_work) (assoc :outcome :waiting)
-          (params :ready_for_work) (assoc :max_due_time (now))
-          (params :ready_for_work) (dissoc :ready_for_work)
-          (params :with-dependencies) (dissoc :with-dependencies)
-          ))
 
 (def job-max-contract-number (-> (select :%max.contract_number)
                       (from [:contracts :c])
                       (where [:= :c.job_id :contracts.job_id])))
 
+(def unfinished-dependency-count
+  (-> (select :%count.*)
+      (from [:job_dependencies :U_job_dependencies])
+      (merge-left-join [:job_results :U_job_results]
+                       [:= :U_job_dependencies.child_job_id :U_job_results.job_id])
+      (merge-where [:= :jobs.job_id :U_job_dependencies.parent_job_id])
+      (merge-where [:= nil :U_job_results.job_id])))
+
+(defn is-waiting [query]
+  (merge-where query [:and
+                      [:= :outcome nil]
+                      [:= :commitment_id nil]]))
+
+(defn max-due-time [query v]
+  (merge-where query [:<= :contracts.contract_due v]))
+
 (defn contract-query [params]
   (reduce
    (fn [query [k v]]
      (case k
+       :ready_for_work
+       (if v
+         (-> query
+             (merge-where [:= 0 unfinished-dependency-count])
+             (is-waiting)
+             (max-due-time (now)))
+         (throw (UnsupportedOperationException. ":ready_for_work can only be true")))
+
        :outcome
        (case v
          :waiting
-         (merge-where query [:and [:= :outcome nil]
-                             [:= :commitment_id nil]])
+         (is-waiting query)
          :running
          (merge-where query [:and [:= :outcome nil]
                              [:not= :commitment_id nil]])
@@ -76,13 +91,13 @@
                                                 (where [:in :t.tag (vec (map safe-name v))]))])
 
        :commitment_id
-       (merge-where query [:= :commitment_id v])
+       (merge-where query [:= :agent_commitments.commitment_id v])
 
        :job_id
        (merge-where query [:= :jobs.job_id v])
 
        :max_due_time
-       (merge-where query [:<= :contracts.contract_due v])
+       (max-due-time query v)
 
        :latest_contract
        (if v
@@ -118,7 +133,7 @@
        :page-size
        query))
    base-query
-   (expand-shortcut-params params)))
+   (dissoc params :with-dependencies)))
 
 (defn job-query [params]
   (-> params
