@@ -159,5 +159,3 @@
            => (contains {:outcome :cancelled})
 
            (request-work! persistence (uuid) {:job_type job-type} agent-details) => nil)))
-
-(future-fact "Get job returns job tags")
