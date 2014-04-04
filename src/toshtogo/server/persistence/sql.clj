@@ -75,13 +75,9 @@
 
       (cond
         (= :success (result :outcome))
-        (let [contract (get-contract this {:commitment_id commitment-id})]
-          (tsql/insert! cnxn
-                        :job_results
-                        (outcome-record (:job_id contract) result))
-
-          (doseq [parent-job (get-jobs this (depends-on contract))]
-            (incremement-succeeded-dependency-count! cnxn (parent-job :job_id))))
+        (tsql/insert! cnxn
+                      :job_results
+                      (outcome-record (:job_id (get-contract this {:commitment_id commitment-id})) result))
 
         (#{:more-work :try-later :error :cancelled} (result :outcome))
         nil

@@ -1,0 +1,1 @@
+alter table jobs drop column dependencies_succeeded;

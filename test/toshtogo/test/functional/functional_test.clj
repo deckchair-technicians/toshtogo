@@ -112,10 +112,9 @@
 
              (fact "Parent job is not ready until all dependencies complete"
                    (request-work! client parent-job-type) => nil
-                   (get-job client job-id) => (contains {:dependencies_succeeded 1}))
+                   (get-job client job-id) => (contains {:outcome :waiting}))
 
              @(do-work! client child-job-type func)
-             (get-job client job-id) => (contains {:dependencies_succeeded 2})
 
              (fact (str "Parent job is released when dependencies are complete, "
                         "with dependency responses merged into its request")
@@ -328,7 +327,6 @@
                   :contract_finished   nil
                   :contract_id         (isinstance UUID)
                   :contract_number     1
-                  :dependencies_succeeded 0
                   :dependencies        []
                   :notes               "Some description of the job"
                   :error               nil

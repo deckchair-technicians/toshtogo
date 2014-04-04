@@ -57,26 +57,6 @@
   (map (comp normalise-job fold-in-tags)
        (partition-by :job_id job-rows)))
 
-
-(defn incremement-succeeded-dependency-count!
-  "This is sufficient to implement optimistic locking when using Postgres.
-
-  We need to revisit if we ever support another database"
-  [cnxn job-id]
-  (let [prev-count  (:dependencies_succeeded (tsql/query-single
-                                               cnxn
-                                               "select dependencies_succeeded from jobs where job_id = :job_id"
-                                               {:job_id job-id}))]
-    (when-not (= 1 (first (tsql/update! cnxn :jobs
-                                        {:dependencies_succeeded (inc prev-count)}
-                                                 ["dependencies_succeeded = ? and job_id = ?"
-                                                  prev-count  job-id])))
-      ; In fact this never happens thanks to Postgres's minimum isolation level
-      ; locking the job row on update
-      (throw (OptimisticLockingException.
-              (str "dependencies_succeeded updated in another transaction for job "
-                   job-id))))))
-
 (defn commitment-record [commitment-id contract-id agent]
   {:commitment_id       commitment-id
    :commitment_contract contract-id

@@ -15,7 +15,6 @@
 
 (defn complete-job! [persistence job-id response]
   (let [commitment-id (uuid)]
-    (println "AD" agent-details)
     (request-work! persistence commitment-id {:job_id job-id} agent-details)
     => truthy
     (complete-work! persistence commitment-id response agent-details)))
