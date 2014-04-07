@@ -16,6 +16,11 @@
                         :timeout 1000
                         :system "client-test"
                         :version "0.0"))
+(def no-retry-client (ttc/client client-config
+                        :should-retry false
+                        :debug false
+                        :system "client-test"
+                        :version "0.0"))
 
 (def timestamp-tolerance (case (client-config :type)
                            :app (millis 1)

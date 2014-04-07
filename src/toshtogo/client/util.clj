@@ -71,9 +71,3 @@
      (if (= 404 (:status result#))
        nil
        result#)))
-
-(defmacro until-successful-response
-  "Calls body repeatedly until it gets a non-500 response"
-  [opts & body]
-  (assert (not (empty? body)))
-  `(retry-until-success ~opts (throw-500 ~@body)))

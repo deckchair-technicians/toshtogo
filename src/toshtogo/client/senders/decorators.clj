@@ -1,8 +1,8 @@
 (ns toshtogo.client.senders.decorators
   (:import (toshtogo.client.senders SenderException))
-  (:require [toshtogo.util.core :refer [debug exponential-backoff]]
+  (:require [toshtogo.util.core :refer [debug exponential-backoff retry-until-success]]
             [toshtogo.util.json :as json]
-            [toshtogo.client.util :refer [until-successful-response nil-on-404]]
+            [toshtogo.client.util :refer [nil-on-404 throw-500]]
             [toshtogo.client.senders.protocol :refer :all]))
 
 (defn following-sender
@@ -36,7 +36,7 @@
     (GET [this location]
       (json/decode (:body (GET decorated location))))))
 
-(defn debug-sender [should-debug decorated]
+(defn debug-sender [decorated should-debug]
   (if should-debug
     (reify Sender
       (POST! [this location message]
@@ -57,11 +57,11 @@
                     :timeout     timeout}]
     (reify Sender
       (POST! [this location message]
-        (until-successful-response retry-opts (POST! decorated location message)))
+        (retry-until-success retry-opts (POST! decorated location message)))
       (PUT! [this location message]
-        (until-successful-response retry-opts (PUT! decorated location message)))
+        (retry-until-success retry-opts (PUT! decorated location message)))
       (GET [this location]
-        (until-successful-response retry-opts (GET decorated location))))))
+        (retry-until-success retry-opts (GET decorated location))))))
 
 (defn nil-404
   [decorated]
@@ -73,10 +73,26 @@
     (GET [this location]
       (nil-on-404 (GET decorated location)))))
 
-(defn default-decoration [sender & {:keys [error-fn timeout debug] :or {debug false} :as opts}]
-  (debug-sender
-    debug
-    (json-sender
-      (nil-404
-        (following-sender
-          (apply retry-sender sender (flatten (seq (select-keys opts [:error-fn :timeout])))))))))
+(defn wrap-throw-500
+  [decorated]
+  (reify Sender
+    (POST! [this location message]
+      (throw-500 (POST! decorated location message)))
+    (PUT! [this location message]
+      (throw-500 (PUT! decorated location message)))
+    (GET [this location]
+      (throw-500 (GET decorated location)))))
+
+(defn wrap-retry-sender [sender opts]
+  (if (= false (:should-retry opts))
+    sender
+    (apply retry-sender sender (flatten (seq (select-keys opts [:error-fn :timeout]))))))
+
+(defn default-decoration [sender & {:keys [should-retry error-fn timeout debug] :or {debug false} :as opts}]
+  (-> sender
+      wrap-throw-500
+      (wrap-retry-sender opts)
+      following-sender
+      nil-404
+      json-sender
+      (debug-sender debug)))

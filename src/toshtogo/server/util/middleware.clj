@@ -119,9 +119,9 @@
   (fn [request]
     (try (handler request)
          (catch Throwable e
-           (json-response {:body   (cause-trace e)
-                           :status 500
-                           })))))
+           (json-response {:body   (json/encode {:stacktrace (cause-trace e)
+                                                 :class      (.getName (class e))})
+                           :status 500})))))
 
 (defn wrap-if [handler pred middleware & args]
   (if pred

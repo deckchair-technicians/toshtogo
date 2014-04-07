@@ -41,12 +41,12 @@ opts are:\n
   :timeout integer milliseconds after which the client will give up trying to send a message to the server and re-throw the error\n
   \n
   :debug boolean set this to true to send requests and responses to stdout"
-  [client-opts & {:keys [agent-details error-fn timeout debug]
+  [client-opts & {:keys [agent-details error-fn timeout debug should-retry]
                   :or {agent-details {:hostname (hostname) :system_name "unknown" :system_version "unknown"}}
                   :as opts}]
 
   (let [sender          (sender client-opts agent-details)
-        decoration-opts (select-keys opts [:error-fn :timeout :debug])]
+        decoration-opts (select-keys opts [:error-fn :timeout :debug :should-retry])]
     (json-converting-client
       (sender-client (apply default-decoration
                             sender

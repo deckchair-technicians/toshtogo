@@ -1,5 +1,6 @@
 (ns toshtogo.test.functional.functional-test
-  (:import (java.util UUID))
+  (:import (java.util UUID)
+           (toshtogo.client.senders SenderException))
   (:require [midje.sweet :refer :all]
             [clj-time.core :refer [now minutes seconds millis plus minus after? interval within?]]
             [ring.adapter.jetty :refer [run-jetty]]
@@ -21,6 +22,16 @@
 
           (request-work! client job-type) => (contains {:job_id       job-id
                                                         :request_body {:a-field "field value"}})))
+
+  (fact "Work requests are idempotent"
+        (let [job-id   (uuid)
+              job-type (uuid-str)]
+
+          (put-job! no-retry-client job-id (job-req {:a-field "same content"} job-type))
+          (put-job! no-retry-client job-id (job-req {:a-field "same content"} job-type))
+
+          (put-job! no-retry-client job-id (job-req {:a-field "DIFFERENT CONTENT"} job-type))
+          => (throws SenderException)))
 
   (fact "Work can only be requested once"
         (let [job-id (uuid)
