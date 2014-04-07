@@ -4,10 +4,12 @@
     <title>Jobs</title>
     <link href='/style/style.css' rel='stylesheet' type='text/css'>
     <link rel="stylesheet" href="/style/jquery.jsonview.css"/>
+    <link rel="stylesheet" href="/chosen/chosen.min.css"/>
     <script type="text/javascript" src="/js/jquery-2.1.0.min.js"></script>
     <script type="text/javascript" src="/js/jquery.jsonview.js"></script>
     <script type="text/javascript" src="/js/moment-2.5.1.min.js"></script>
     <script type="text/javascript" src="/js/jquery.url-024fe048d4.js"></script>
+    <script type="text/javascript" src="/chosen/chosen.jquery.min.js"></script>
 </head>
 <body>
 
@@ -17,7 +19,7 @@
 
 <div class="content">
     <h1>Jobs</h1>
-    <table id="jobs-table" class="hidden">
+    <table id="jobs-table">
         <thead>
         <tr>
             <th></th>
@@ -27,8 +29,22 @@
             <th>Finished</th>
             <th>Status</th>
         </tr>
+            <th></th>
+            <th></th>
+            <th></th>
+            <th></th>
+            <th></th>
+            <th><select id="job-status-select" data-placeholder="Filter by status..." class="chosen-select" style="width:300px;" multiple>
+                <option selected value="Cancelled">Cancelled</option>
+                <option selected value="Error">Error</option>
+                <option selected value="Running">Running</option>
+                <option value="Success">Success</option>
+                <option selected value="Waiting">Waiting</option">
+            </select></th>
+        <tr>
+        </tr>
         </thead>
-        <tbody id="jobs-table-body">
+        <tbody id="jobs-table-body" class="hidden">
         </tbody>
     </table>
 </div>
@@ -46,5 +62,8 @@
 </table>
 
 <script type="text/javascript" src="jobs.js"></script>
+<script type="text/javascript">
+$(".chosen-select").chosen();
+</script>
 </body>
 </html>

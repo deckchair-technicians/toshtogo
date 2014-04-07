@@ -22,7 +22,12 @@ $(document).ready(function () {
                 el.find('.status').text(job.outcome);
                 el.addClass(job.outcome)
             });
-            jobs_table.show();
-        })
+            jobs_table_body.show();
+
+            var status_select = $('#job-status-select');
+            status_select.chosen().change(function(event) {
+                alert(event);
+            });
+        });
     }
 );
