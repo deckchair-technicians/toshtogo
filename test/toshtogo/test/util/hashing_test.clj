@@ -32,3 +32,9 @@
       (murmur! "1234") => (murmur! "1234")
       (murmur! "1234") => #(not= (murmur! "12345") %)
       )
+
+(fact "Maps and sets have the same hash regardless of key order"
+      (murmur! {:a "1234" :b #{5 6 7 8}}) => truthy
+      (murmur! {:a "1234" :b  #{5 6 7 8}}) => (murmur! {:b  #{8 7 6 5} :a "1234"})
+      (murmur! {:a "1234" :b  [5 6 7 8]}) => #(not= (murmur! {:a "1234"}) %)
+      )
