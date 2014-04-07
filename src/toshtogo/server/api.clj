@@ -89,10 +89,9 @@
             (doseq [dependency (flattened-dependencies {:job_id       job-id
                                                         :dependencies (result :dependencies)})]
               (if (:fungibility_group dependency)
-                (if-let [existing-job (first (get-jobs persistence {:job_type          (:job_type dependency)
+                (if-let [existing-job (first (get-job persistence {:job_type          (:job_type dependency)
                                                                     :request_body      (:request_body dependency)
-                                                                    :fungibility_group (:fungibility_group dependency)
-                                                                    :order-by          [[:job_created :desc]]}))]
+                                                                    :fungibility_group (:fungibility_group dependency)}))]
                   (insert-dependency! persistence job-id (:job_id existing-job))
                   (new-job! persistence agent-details dependency))
 
