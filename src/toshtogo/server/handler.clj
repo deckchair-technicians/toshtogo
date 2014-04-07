@@ -60,7 +60,7 @@
       (update :page-size (fn [s] (Integer/parseInt (or s "25"))))
       ;(update-each [:latest_contract :has_contract] parse-boolean-param)
       (update-each [:commitment_id :job_id :depends_on_job_id :dependency_of_job_id :fungibility_group] uuid)
-      (update-each [:job_type :outcome] keyword)
+      (update-each [:job_type :outcome] #(when % (map keyword (ensure-seq %))))
       (update :tags keywords-param)
       (update :max_due_time parse-datetime)))
 

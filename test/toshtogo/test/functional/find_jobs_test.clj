@@ -118,3 +118,23 @@
          (fact "Can get succeeded jobs"
                (get-and-select client {:outcome :success :job_type job-type} :outcome :job_id)
                => (contains [(contains {:job_id job-id-1 :outcome :success})]))))
+
+(facts "Can filter by multiple outcomes"
+       (let [job-id-1 (uuid)
+             job-id-2 (uuid)
+             job-id-3 (uuid)
+             job-type (uuid-str)]
+
+         (put-job! client job-id-1 (job-req {:job "success"} job-type))
+         @(do-work! client job-type return-success) => truthy
+
+         (put-job! client job-id-2 (job-req {:job "running"} job-type))
+         (request-work! client job-type) => truthy
+
+         (put-job! client job-id-3 (job-req {:job "waiting"} job-type))
+
+
+         (fact "Can get jobs of different types"
+               (get-and-select client {:outcome [:waiting :running] :job_type job-type} :outcome :job_id)
+               => (contains [(contains {:job_id job-id-3 :outcome :waiting}
+                                       {:job_id job-id-2 :outcome :running})]))))

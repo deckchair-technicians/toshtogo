@@ -4,9 +4,12 @@
             [clojure.string :as s]
             [swiss.arrows :refer :all]
             [flatland.useful.map :refer [update update-each]]
-            [toshtogo.util.core :refer [uuid safe-name]]
+            [toshtogo.util.core :refer [uuid safe-name ensure-seq]]
             [toshtogo.client.protocol :refer :all]
             [toshtogo.client.senders.protocol :refer :all]))
+
+(defn names [xs]
+  (when xs (map name (ensure-seq xs))))
 
 (defn to-query-string [query]
   (-> query
@@ -15,8 +18,7 @@
                                  (s/join " " (map safe-name order-by))
                                  (safe-name order-by)))
                              %))
-      (update-each [:job_type :outcome] safe-name)
-      (update :tags #(map safe-name %))
+      (update-each [:job_type :outcome :tags] names)
       form-encode))
 
 (defn sender-client [sender]
