@@ -64,6 +64,37 @@
     (get-job persistence (root-job :job_id))))
 
 
+(defn process-result! [persistence job-id commitment-id result agent-details]
+  (case (:outcome result)
+    :success
+    nil
+
+    :more-work
+    (do
+      ;Create new contract for parent job, which will be
+      ;ready for work when dependencies complete
+      (new-contract! persistence (contract-req job-id))
+
+      (doseq [dependency (flattened-dependencies {:job_id       job-id
+                                                  :dependencies (result :dependencies)})]
+        (if (:fungibility_group dependency)
+          (if-let [existing-job (first (get-jobs persistence {:job_type          (:job_type dependency)
+                                                              :request_body      (:request_body dependency)
+                                                              :fungibility_group (:fungibility_group dependency)}))]
+            (insert-dependency! persistence job-id (:job_id existing-job))
+            (new-job! persistence agent-details dependency))
+
+          (new-job! persistence agent-details dependency))))
+
+    :try-later
+    (new-contract! persistence (contract-req job-id (result :contract_due)))
+
+    :error
+    nil
+
+    :cancelled
+    nil))
+
 (defn complete-work!
   [persistence commitment-id result agent-details]
   (let [contract (get-contract persistence {:commitment_id commitment-id})
@@ -75,36 +106,7 @@
       :running
       (do
         (insert-result! persistence commitment-id result)
-
-        (case (:outcome result)
-          :success
-          nil
-
-          :more-work
-          (do
-            ;Create new contract for parent job, which will be
-            ;ready for work when dependencies complete
-            (new-contract! persistence (contract-req job-id))
-
-            (doseq [dependency (flattened-dependencies {:job_id       job-id
-                                                        :dependencies (result :dependencies)})]
-              (if (:fungibility_group dependency)
-                (if-let [existing-job (first (get-jobs persistence {:job_type          (:job_type dependency)
-                                                                    :request_body      (:request_body dependency)
-                                                                    :fungibility_group (:fungibility_group dependency)}))]
-                  (insert-dependency! persistence job-id (:job_id existing-job))
-                  (new-job! persistence agent-details dependency))
-
-                (new-job! persistence agent-details dependency))))
-
-          :try-later
-          (new-contract! persistence (contract-req job-id (result :contract_due)))
-
-          :error
-          nil
-
-          :cancelled
-          nil))
+        (process-result! persistence job-id commitment-id result agent-details))
 
       :cancelled
       nil
