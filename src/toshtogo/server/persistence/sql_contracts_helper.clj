@@ -45,10 +45,17 @@
       (merge-where [:= :jobs.job_id :U_job_dependencies.parent_job_id])
       (merge-where [:= nil :U_job_results.job_id])))
 
-(defn is-waiting [query]
-  (merge-where query [:and
-                      [:= :outcome nil]
-                      [:= :commitment_id nil]]))
+(def is-waiting
+  [:and
+   [:= :outcome nil]
+   [:= :commitment_id nil]])
+
+(defn outcome-expression [outcome]
+  (case outcome
+    :waiting is-waiting
+    :running [:and [:= :outcome nil]
+              [:not= :commitment_id nil]]
+    [:= :outcome (name outcome)]))
 
 (defn max-due-time [query v]
   (merge-where query [:<= :contracts.contract_due v]))
@@ -61,19 +68,12 @@
        (if v
          (-> query
              (merge-where [:= 0 unfinished-dependency-count])
-             (is-waiting)
+             (merge-where is-waiting)
              (max-due-time (now)))
          (throw (UnsupportedOperationException. ":ready_for_work can only be true")))
 
        :outcome
-       (case v
-         :waiting
-         (is-waiting query)
-         :running
-         (merge-where query [:and [:= :outcome nil]
-                             [:not= :commitment_id nil]])
-
-         (merge-where query [:= :outcome (name v)]))
+       (merge-where query (concat [:or] (map outcome-expression (ensure-seq v))))
 
        :has_contract
        (if v
@@ -81,7 +81,7 @@
          (merge-where query [:=    :contracts.contract_id nil]))
 
        :job_type
-       (merge-where query [:= :job_type (name v)])
+       (merge-where query [:in :job_type (mapv name (ensure-seq v))])
 
        :tags
        (merge-where query [:in :jobs.job_id (-> (select :j.job_id)

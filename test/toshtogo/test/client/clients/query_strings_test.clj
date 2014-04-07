@@ -27,10 +27,10 @@
       (to-query-string-and-back {:order-by [[:abc :desc] :def]})
       => (contains {:order-by [[:abc :desc] [:def :asc]]}))
 
-(fact "Converting order-by into query string works"
+(fact "Converting job_type into query string works"
       (to-query-string-and-back {:job_type :abc})
-      => (contains {:job_type :abc}))
+      => (contains {:job_type [:abc]}))
 
-(fact "Converting order-by into query string works"
+(fact "Converting tags into query string works"
       (to-query-string-and-back {:tags [:abc :def]})
       => (contains {:tags [:abc :def]}))
