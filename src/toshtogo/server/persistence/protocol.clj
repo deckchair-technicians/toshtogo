@@ -40,6 +40,7 @@
 (defprotocol Persistence
   (insert-jobs! [this jobs agent-details])
   (insert-dependency! [this parent-job-id child-job-id])
+  (insert-fungibility-group-entry! [this entry])
 
   (insert-contract!   [this job-id contract-number contract-due])
   (insert-commitment! [this commitment-id contract-id agent-details])

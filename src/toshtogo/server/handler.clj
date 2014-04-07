@@ -59,16 +59,15 @@
       (update :page (fn [s] (Integer/parseInt (or s "1"))))
       (update :page-size (fn [s] (Integer/parseInt (or s "25"))))
       ;(update-each [:latest_contract :has_contract] parse-boolean-param)
-      (update-each [:commitment_id :job_id :depends_on_job_id :dependency_of_job_id] uuid)
+      (update-each [:commitment_id :job_id :depends_on_job_id :dependency_of_job_id :fungibility_group] uuid)
       (update-each [:job_type :outcome] keyword)
       (update :tags keywords-param)
       (update :max_due_time parse-datetime)))
 
 (defn normalise-job-req [req]
   (-> req
-      (update :job_id uuid)
+      (update-each [:job_id :fungibility_group] uuid)
       (update :job_type keyword)
-      (update :or_existing_job #(= "true" %))
       (update :tags #(map keyword %))
       (update :dependencies #(map normalise-job-req %))))
 
@@ -126,7 +125,8 @@
              #(do (complete-work! persistence commitment-id
                                   (-> body
                                       (update :outcome keyword)
-                                      (update :contract_due parse-datetime))
+                                      (update :contract_due parse-datetime)
+                                      (update :dependencies (fn [deps] (map normalise-job-req deps))))
                                   (body :agent))
                   (commitment-redirect commitment-id))
              #(commitment-redirect commitment-id))))

@@ -12,6 +12,7 @@
             [toshtogo.server.persistence.sql-contracts-helper :refer :all]
             [toshtogo.server.agents.protocol :refer [agent!]]
             [toshtogo.util.sql :as tsql]
+            [toshtogo.util.hashing :refer [murmur-uuid!]]
             [toshtogo.util.hsql :as hsql]))
 
 (defn sql-persistence [cnxn agents]
@@ -20,6 +21,12 @@
       (tsql/insert! cnxn :job_dependencies {:dependency_id (uuid)
                                             :parent_job_id parent-job-id
                                             :child_job_id  child-job-id}))
+
+    (insert-fungibility-group-entry! [this entry]
+      (tsql/insert! cnxn :fungibility_groups {:f_group_id           (:fungibility_group entry)
+                                              :f_group_request_hash (murmur-uuid! (:request_body entry))
+                                              :f_group_job_id       (:job_id entry)}))
+
     (insert-jobs! [this jobs agent-details]
       (doseq [job jobs]
         (let [job-id          (job :job_id)

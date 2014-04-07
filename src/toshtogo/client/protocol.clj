@@ -10,8 +10,8 @@
                       :notes notes
                       :tags tags))))
 
-(defn or-existing-job [job-req]
-  (assoc job-req :or_existing_job true))
+(defn fungibility-group [job-req group-id]
+  (assoc job-req :fungibility_group group-id))
 
 (def success server-protocol/success)
 (def error server-protocol/error)

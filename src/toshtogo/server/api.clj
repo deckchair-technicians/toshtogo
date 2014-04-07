@@ -57,6 +57,10 @@
     (doseq [job root-and-dependencies]
       (new-contract! persistence (contract-req (job :job_id))))
 
+    (doseq [job root-and-dependencies]
+      (when (:fungibility_group job)
+        (insert-fungibility-group-entry! persistence job)))
+
     (get-job persistence (root-job :job_id))))
 
 
@@ -78,15 +82,20 @@
 
           :more-work
           (do
+            ;Create new contract for parent job, which will be
+            ;ready for work when dependencies complete
             (new-contract! persistence (contract-req job-id))
 
             (doseq [dependency (flattened-dependencies {:job_id       job-id
                                                         :dependencies (result :dependencies)})]
-              (if-let [existing-job (and (:or_existing_job dependency)
-                                         (first (get-jobs persistence {:job_type     (:job_type dependency)
-                                                                       :request_body (:request_body dependency)
-                                                                       :order-by     [[:job_created :desc]]})))]
-                (insert-dependency! persistence job-id (:job_id existing-job))
+              (if (:fungibility_group dependency)
+                (if-let [existing-job (first (get-jobs persistence {:job_type          (:job_type dependency)
+                                                                    :request_body      (:request_body dependency)
+                                                                    :fungibility_group (:fungibility_group dependency)
+                                                                    :order-by          [[:job_created :desc]]}))]
+                  (insert-dependency! persistence job-id (:job_id existing-job))
+                  (new-job! persistence agent-details dependency))
+
                 (new-job! persistence agent-details dependency))))
 
           :try-later
