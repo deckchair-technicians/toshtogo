@@ -19,39 +19,45 @@
 
 <div class="content">
     <h1>Jobs</h1>
-    <table id="jobs-table">
-        <thead>
-        <tr>
+
+    <form method="get" action="/api/jobs">
+        <table id="jobs-table">
+            <thead>
+            <tr>
+                <th></th>
+                <th>Day</th>
+                <th>Created</th>
+                <th>Started</th>
+                <th>Finished</th>
+                <th>Status</th>
+            </tr>
             <th></th>
-            <th>Day</th>
-            <th>Created</th>
-            <th>Started</th>
-            <th>Finished</th>
-            <th>Status</th>
-        </tr>
             <th></th>
             <th></th>
             <th></th>
             <th></th>
-            <th></th>
-            <th><select id="job-status-select" data-placeholder="Filter by status..." class="chosen-select" style="width:300px;" multiple>
+            <th><select name='outcome' id="job-status-select" data-placeholder="Filter by status..."
+                        class="chosen-select"
+                        style="width:300px;" multiple>
                 <option selected value="Cancelled">Cancelled</option>
                 <option selected value="Error">Error</option>
                 <option selected value="Running">Running</option>
                 <option value="Success">Success</option>
-                <option selected value="Waiting">Waiting</option">
+                <option selected value="Waiting">Waiting</option>
             </select></th>
-        <tr>
-        </tr>
-        </thead>
-        <tbody id="jobs-table-body" class="hidden">
-        </tbody>
-    </table>
+            <tr>
+            </tr>
+            </thead>
+            <tbody id="jobs-table-body" class="hidden">
+            </tbody>
+        </table>
+    </form>
 </div>
 
 <table class="template">
     <tr class="job-row-template template">
         <td><p><a href="job.html" class="link">some-job-type</a></p>
+
             <p class="notes light">This is a description of the job</p></td>
         <td class="created-date">Sun Feb 9th</td>
         <td class="created-time number">11:32:45</td>
@@ -63,7 +69,7 @@
 
 <script type="text/javascript" src="jobs.js"></script>
 <script type="text/javascript">
-$(".chosen-select").chosen();
+    $(".chosen-select").chosen();
 </script>
 </body>
 </html>
