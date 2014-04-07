@@ -18,10 +18,7 @@
 
 (defn given-job-succeeded [persistence job-id]
   (let [job      (get-job persistence job-id)
-        contract (request-work! persistence (uuid) {:job_type (job :job_type)} agent-details)]
-    (when (not= (contract :job_id) job-id)
-      (throw (RuntimeException. "More than one job exists for tags")))
-
+        contract (request-work! persistence (uuid) {:job_id job-id} agent-details)]
     (complete-work! persistence (contract :commitment_id) (success {:response "success"}) agent-details)))
 
 (fact "Gets contracts by filters "

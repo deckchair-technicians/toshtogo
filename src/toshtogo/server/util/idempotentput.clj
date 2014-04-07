@@ -1,5 +1,7 @@
 (ns toshtogo.server.util.idempotentput
-  (:require [toshtogo.util.sql :as tsql])
+  (:require [honeysql.helpers :refer :all]
+            [toshtogo.util.hsql :as hsql]
+            [toshtogo.util.sql :as sql])
   (:import [toshtogo.server.util IdempotentPutException]))
 
 (defn put-is-identical?
@@ -11,15 +13,17 @@
   [cnxn body-hash operation-type id on-first-attempt on-second-attempt]
   (let [[hash-1 hash-2] body-hash
         operation-type  (name operation-type)
-        previous-put    (first (tsql/query
+        previous-put    (first (hsql/query
                                 cnxn
-                                (str "select * from put_hashes where "
-                                     "id = :id and operation_type = :operation_type")
-                                {:id id :operation_type operation-type}))]
+                                (-> (select :*)
+                                    (from :put_hashes)
+                                    (where [:and
+                                            [:= :id id]
+                                            [:= :operation_type operation-type]]))))]
 
     (if (not previous-put)
 
-      (do (tsql/insert! cnxn
+      (do (sql/insert! cnxn
                         :put_hashes
                         {:id id :operation_type operation-type :hash_1 hash-1 :hash_2 hash-2})
           (on-first-attempt))
