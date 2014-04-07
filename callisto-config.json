@@ -1,0 +1,42 @@
+{
+    "environment" : "development",
+    "aws_creds": {
+        "access-key": "***REMOVED***",
+        "secret-key": "***REMOVED***",
+        "endpoint": "eu-west-1"
+    },
+    "toshtogo_url": "http://localhost:3001",
+    "s3_bucket": "callisto-dev",
+    "catport": {
+        "target_volatility": 0.05
+    },
+    "qad": {
+        "db": {
+            "classname": "oracle.jdbc.driver.OracleDriver",
+            "subprotocol": "oracle",
+            "subname": "thin:@127.0.0.1:1523:***REMOVED***",
+            "user": "***REMOVED***",
+            "password": "***REMOVED***"
+        }
+    },
+    "solomon": {
+        "port": 3001,
+        "db": {
+            "classname": "org.postgresql.Driver",
+            "subprotocol": "postgresql",
+            "subname": "//localhost:5432/toshtogo",
+            "user": "postgres",
+            "password": "postgres"
+        }
+    },
+    "haiku": {
+        "port": 3002,
+        "db": {
+            "classname": "org.postgresql.Driver",
+            "subprotocol": "postgresql",
+            "subname": "//localhost:5432/haiku",
+            "user": "postgres",
+            "password": "postgres"
+        }
+    }
+}
