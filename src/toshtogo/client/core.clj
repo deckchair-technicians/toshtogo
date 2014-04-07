@@ -48,6 +48,6 @@ opts are:\n
   (let [sender          (sender client-opts agent-details)
         decoration-opts (select-keys opts [:error-fn :timeout :debug :should-retry])]
     (json-converting-client
-      (sender-client (apply default-decoration
+      (sender-client (apply wrap-decoration
                             sender
                             (flatten (seq decoration-opts)))))))
