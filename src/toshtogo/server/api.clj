@@ -42,7 +42,12 @@
     (case last-contract-outcome
       :waiting
       (throw (IllegalStateException.
-               (str "Job " job-id " has an unfinished contract. Can't create a new one.")))
+               (str "Job " job-id " has a waiting contract. Can't create a new one.")))
+
+      :running
+      (throw (IllegalStateException.
+               (str "Job " job-id " has a running contract. Can't create a new one.")))
+
       :success
       (throw (IllegalStateException.
                (str "Job " job-id " has been completed. Can't create further contracts")))

@@ -44,17 +44,26 @@
    [cnxn dev-db]
    (let [job-id    (uuid)
          job-type   (uuid-str)        ;so we can run against a dirty database
+         commitment-id (uuid)
          {:keys [agents persistence]} (sql-deps cnxn)]
 
      (given-job-exists persistence job-id job-type)
 
-     (fact "Can't create contract when job is in progress"
+     (fact "Can't create contract when job is waiting"
        (new-contract! persistence (contract-req job-id))
        => (throws IllegalStateException
-                  (str "Job " job-id " has an unfinished contract. Can't create a new one.")))
+                  (str "Job " job-id " has a waiting contract. Can't create a new one.")))
+
+     (fact "Can't create contract when job is running"
+       (request-work! persistence commitment-id {:job_id job-id} agent-details )
+       => truthy
+
+       (new-contract! persistence (contract-req job-id))
+       => (throws IllegalStateException
+                  (str "Job " job-id " has a running contract. Can't create a new one.")))
 
      (fact "Can't create contract when job has succeeded"
-       (given-job-succeeded persistence job-id)
+        (complete-work! persistence commitment-id (success {:response "success"}) agent-details)
 
        (new-contract! persistence (contract-req job-id))
        => (throws IllegalStateException
