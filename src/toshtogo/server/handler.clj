@@ -5,6 +5,7 @@
             [clojure.string :as s]
             [cheshire.generate :as json-gen]
             [ring.util.response :as resp]
+            [ring.util.codec :as codec]
             [swiss.arrows :refer :all]
             [clojure.pprint :refer [pprint]]
             [flatland.useful.map :refer [update update-each map-keys]]
@@ -72,11 +73,24 @@
       (update :tags #(map keyword %))
       (update :dependencies #(map normalise-job-req %))))
 
+(defn update-query-param [query-string param-name new-value]
+  (codec/form-encode (assoc (codec/form-decode query-string) (name param-name) new-value)))
+
+(defn page-url [uri query-string page-number]
+  (str uri "?" (update-query-param query-string :page page-number)))
+
+(defn paginate [{pages :paging :as jobs} {query :query-string uri :uri :as query}]
+  (update jobs :paging (fn [paging] (update paging :pages
+                                           (fn [page-count]
+                                             (for [page (range 1 (inc page-count))]
+                                               (page-url uri query page)))))))
+
 (defroutes api-routes
   (context "/api" {:keys [persistence body check-idempotent!]}
     (context "/jobs" []
-       (GET "/" {params :query-params}
-            (resp/response (get-jobs persistence (normalise-search-params params))))
+       (GET "/" {params :query-params :as request}
+            (let [normalised-params (normalise-search-params params)]
+              (resp/response (paginate (get-jobs persistence normalised-params) request))))
       (context "/:job-id" [job-id]
 
         (PUT  "/" []
