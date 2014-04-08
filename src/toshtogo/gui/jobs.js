@@ -1,15 +1,14 @@
 function filterForm() {
   return $('#jobs-form');
 }
-function submit_form() {
-  var jobs_form = filterForm();
-  var url = jobs_form.attr('action');
-  submit(url, jobs_form.serialize());
+
+function submitForm(pageNum) {
+  submit(filterForm().attr('action'), serializeForm() + "page=" + pageNum)
 }
 
 function submit(url, queryString) {
   $.getJSON(url + '?' + queryString, function (json) {
-    handle_jobs(json);
+    handleJobs(json);
   });
 }
 
@@ -24,7 +23,7 @@ function mapJobOutcome(outcome) {
 
   return map[outcome] || outcome;
 }
-function handle_jobs(jobs) {
+function handleJobs(jobs) {
   var jobs_table_body = $('#jobs-table-body');
   jobs_table_body.empty();
 
@@ -49,6 +48,11 @@ function handle_jobs(jobs) {
   jobs_table_body.show();
 }
 
+function serializeForm() {
+  var serialized = filterForm().serialize();
+  return serialized ? serialized + "&" : "";
+}
+
 function paginate(jobs) {
   var pagination_control = $('#page-control');
   pagination_control.empty();
@@ -65,20 +69,22 @@ function paginate(jobs) {
     }
     anchor.attr('href', '#');
     anchor.text(pageNumber);
-    anchor.click(function(event) {
-      submit(filterForm().attr('action'), filterForm().serialize() + "&page="+anchor.text());
+    anchor.click(function () {
+      submitForm(pageNumber);
       return false;
     })
   });
 }
 
 $(document).ready(function () {
-    $.getJSON("/api/jobs?page=" + (purl().param('page') || 1), handle_jobs);
+    submitForm((purl().param('page') || 1));
 
     $(".chosen-select").chosen();
 
     var status_select = $('#job-status-select');
 
-    status_select.chosen().change(submit_form);
+    status_select.chosen().change(function () {
+      submitForm(1)
+    });
   }
 );

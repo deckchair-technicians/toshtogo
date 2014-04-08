@@ -32,7 +32,6 @@ div.content {
     /* give it dimensions */
     min-width: 980px;
     width: 75%;
-    overflow-y:scroll;
     overflow-x:hidden;
 }
 div.code {
