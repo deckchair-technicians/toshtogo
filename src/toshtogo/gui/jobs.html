@@ -20,7 +20,7 @@
 <div class="content">
     <h1>Jobs</h1>
 
-    <form method="get" action="/api/jobs">
+    <form method="get" action="/api/jobs" id="jobs-form">
         <table id="jobs-table">
             <thead>
             <tr>
@@ -39,11 +39,11 @@
             <th><select name='outcome' id="job-status-select" data-placeholder="Filter by status..."
                         class="chosen-select"
                         style="width:300px;" multiple>
-                <option selected value="Cancelled">Cancelled</option>
-                <option selected value="Error">Error</option>
-                <option selected value="Running">Running</option>
-                <option value="Success">Success</option>
-                <option selected value="Waiting">Waiting</option>
+                <option selected value="cancelled">Cancelled</option>
+                <option selected value="error">Error</option>
+                <option selected value="running">Running</option>
+                <option value="success">Success</option>
+                <option selected value="waiting">Waiting</option>
             </select></th>
             <tr>
             </tr>
@@ -68,8 +68,5 @@
 </table>
 
 <script type="text/javascript" src="jobs.js"></script>
-<script type="text/javascript">
-    $(".chosen-select").chosen();
-</script>
 </body>
 </html>
