@@ -7,7 +7,7 @@
             [ring.util.response :as resp]
             [swiss.arrows :refer :all]
             [clojure.pprint :refer [pprint]]
-            [flatland.useful.map :refer [update update-each]]
+            [flatland.useful.map :refer [update update-each map-keys]]
 
 
             [toshtogo.server.util.middleware :refer [wrap-body-hash
@@ -55,6 +55,7 @@
 
 (defn normalise-search-params [params]
   (-> params
+      (map-keys keyword)
       (update :order-by (fn [x] (or (parse-order-by x) [:job_created :desc])))
       (update :page (fn [s] (Integer/parseInt (or s "1"))))
       (update :page-size (fn [s] (Integer/parseInt (or s "25"))))
@@ -74,7 +75,7 @@
 (defroutes api-routes
   (context "/api" {:keys [persistence body check-idempotent!]}
     (context "/jobs" []
-       (GET "/" {params :params}
+       (GET "/" {params :query-params}
             (resp/response (get-jobs persistence (normalise-search-params params))))
       (context "/:job-id" [job-id]
 

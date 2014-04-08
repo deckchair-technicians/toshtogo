@@ -1,11 +1,9 @@
 function submit_form() {
   var jobs_form = $('#jobs-form');
-  jobs_form.submit(function () {
-    $.post($(this).attr('action'), $(this).serialize(), function (json) {
-      handle_jobs(JSON.parse(json));
+  $.getJSON(jobs_form.attr('action') + '?' + jobs_form.serialize(), function (json) {
+      handle_jobs(json);
     });
-  });
-};
+}
 
 function handle_jobs(jobs) {
   var jobs_table_body = $('#jobs-table-body');
@@ -29,12 +27,15 @@ function handle_jobs(jobs) {
     el.addClass(job.outcome)
   });
   jobs_table_body.show();
-
-  var status_select = $('#job-status-select');
-  status_select.chosen().change(submit_form);
-};
+}
 
 $(document).ready(function () {
     $.getJSON("/api/jobs?page=" + (purl().param('page') || 1), handle_jobs);
+
+    $(".chosen-select").chosen();
+
+    var status_select = $('#job-status-select');
+
+    status_select.chosen().change(submit_form);
   }
 );
