@@ -23,6 +23,23 @@ function mapJobOutcome(outcome) {
 
   return map[outcome] || outcome;
 }
+
+function loadJobTypes() {
+  var jobTypeUrl = "/api/metadata/job_types"
+  var jobTypesSelect = $('#job-type-select');
+
+  jobTypesSelect.empty();
+
+  $.getJSON(jobTypeUrl, function (jobTypes) {
+    jobTypes.forEach(function (jobType) {
+      var jobOption = $('#job-type-template').clone().removeClass('template').removeAttr('id').appendTo(jobTypesSelect);
+      jobOption.attr('value', jobType);
+      jobOption.text(jobType);
+    })
+    jobTypesSelect.trigger("chosen:updated");
+  })
+}
+
 function handleJobs(jobs) {
   var jobs_table_body = $('#jobs-table-body');
   jobs_table_body.empty();
@@ -44,7 +61,9 @@ function handleJobs(jobs) {
     el.find('.status').text(job.outcome);
     el.addClass(mapJobOutcome(job.outcome))
   });
+
   paginate(jobs);
+
   jobs_table_body.show();
 }
 
@@ -78,13 +97,11 @@ function paginate(jobs) {
 
 $(document).ready(function () {
     submitForm((purl().param('page') || 1));
-
+    loadJobTypes();
     $(".chosen-select").chosen();
-
-    var status_select = $('#job-status-select');
-
-    status_select.chosen().change(function () {
+    $(".chosen-select").chosen().change(function () {
       submitForm(1)
     });
+
   }
 );

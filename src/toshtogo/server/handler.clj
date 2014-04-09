@@ -81,16 +81,24 @@
 
 (defn paginate [{pages :paging :as jobs} {query :query-string uri :uri :as query}]
   (update jobs :paging (fn [paging] (update paging :pages
-                                           (fn [page-count]
-                                             (for [page (range 1 (inc page-count))]
-                                               (page-url uri query page)))))))
+                                            (fn [page-count]
+                                              (for [page (range 1 (inc page-count))]
+                                                (page-url uri query page)))))))
+
+(defn job-types [jobs {query :query-string uri :uri :as query}]
+  (assoc jobs :job_types "/api/metadata/job_types"))
+
+(defn restify [jobs query]
+  (-> jobs
+    (paginate query)
+    (job-types query)))
 
 (defroutes api-routes
   (context "/api" {:keys [persistence body check-idempotent!]}
     (context "/jobs" []
        (GET "/" {params :query-params :as request}
             (let [normalised-params (normalise-search-params params)]
-              (resp/response (paginate (get-jobs persistence normalised-params) request))))
+              (resp/response (restify (get-jobs persistence normalised-params) request))))
       (context "/:job-id" [job-id]
 
         (PUT  "/" []

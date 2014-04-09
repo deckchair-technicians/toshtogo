@@ -23,11 +23,16 @@
 
     <div class="container-fluid">
         <form method="get" action="/api/jobs" id="jobs-form" class="form-horizontal col-md-4" role="search">
-            <div class="container">
+            <div class="form-group">
+                <label for="job-type-select" class="col-md-1 control-label">Job type</label>
+                <select id="job-type-select" name="job_type" class="chosen-select form-control col-md-1" style="width:600px;"
+                        multiple></select>
+            </div>
+            <div class="form-group">
                 <label for="job-status-select" class="col-md-1 control-label">Status</label>
                 <select name='outcome' id="job-status-select" data-placeholder="Filter"
                         class="chosen-select form-control col-md-1"
-                        style="width:300px;" multiple>
+                        style="width:600px;" multiple>
                     <option selected value="cancelled">Cancelled</option>
                     <option selected value="error">Error</option>
                     <option selected value="running">Running</option>
@@ -36,6 +41,7 @@
                 </select>
             </div>
         </form>
+        <div class="clearfix"></div>
         <ul class="pagination col-md-8" id="page-control">
         </ul>
     </div>
@@ -71,6 +77,7 @@
     </table>
 
     <li class="template" id="paginate"><a href="#">1</a></li>
+    <option class="template" id="job-type-template"></option>
 </div>
 
 <script type="text/javascript" src="jobs.js"></script>
