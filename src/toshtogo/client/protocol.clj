@@ -11,7 +11,10 @@
                       :tags tags))))
 
 (defn fungibility-group [job-req group-id]
-  (assoc job-req :fungibility_group group-id))
+  (assoc job-req :fungibility_group_id group-id))
+
+(defn fungibile-under-parent [job-req]
+  (assoc job-req :fungibile_under_parent true))
 
 (def success server-protocol/success)
 (def error server-protocol/error)

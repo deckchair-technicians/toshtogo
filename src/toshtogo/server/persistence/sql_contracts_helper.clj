@@ -118,10 +118,8 @@
        :request_body
        (merge-where query [:= :request_hash (murmur-uuid! v)])
 
-       :fungibility_group
-       (merge-where query [:in :jobs.job_id (-> (select :fungibility_groups.f_group_job_id)
-                                                (from :fungibility_groups)
-                                                (where [:= :fungibility_groups.f_group_id v]))])
+       :fungibility_group_id
+       (merge-where query [:= :jobs.fungibility_group_id v])
 
        :get_tags
        (merge-left-join query :job_tags

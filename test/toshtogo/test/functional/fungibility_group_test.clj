@@ -5,7 +5,7 @@
             [toshtogo.client.protocol :refer :all]
             ))
 
-(facts "When requesting more work we may specify :fungibility_group, if a job exists with the same type and request_body as the requested dependency, this will be used instead of creating a new job"
+(facts "When requesting more work we may specify :fungibility_group_id, if a job exists with the same type and request_body as the requested dependency, this will be used instead of creating a new job"
        (let [job-id            (uuid)
              child-job-id      (uuid)
              fungibility-group-id (uuid)
@@ -39,7 +39,7 @@
                    (contract :dependencies)
                    => (contains [(contains {:result_body child-job-request})]))))))
 
-(facts "If we specify :fungibility_group, jobs which have been completed will also be matched"
+(facts "If we specify :fungibility_group_id, jobs which have been completed will also be matched"
        (let [job-id            (uuid)
              child-job-id      (uuid)
              fungibility-group-id (uuid)

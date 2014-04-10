@@ -1,9 +1,10 @@
 (ns toshtogo.server.api
   (:import (java.util UUID))
   (:require [clj-time.core :refer [now minus seconds]]
+            [clojure.pprint :refer [pprint]]
             [toshtogo.util.core :refer [assoc-not-nil uuid ppstr debug]]
             [toshtogo.server.persistence.protocol :refer :all]
-            [toshtogo.server.util.job-requests :refer [flattened-dependencies]]))
+            [toshtogo.server.util.job-requests :refer [normalised-job-list]]))
 
 (defn- recursively-add-dependencies
   "This is terribly inefficient"
@@ -55,50 +56,45 @@
       (insert-contract! persistence job-id new-contract-ordinal contract-due))))
 
 (defn new-job! [persistence agent-details root-job]
-  (let [root-and-dependencies (concat [(dissoc root-job :dependencies)] (flattened-dependencies root-job))]
+  (let [root-and-dependencies (normalised-job-list root-job)]
 
     (insert-jobs! persistence root-and-dependencies agent-details)
 
     (doseq [job root-and-dependencies]
       (new-contract! persistence (contract-req (job :job_id))))
 
-    (doseq [job root-and-dependencies]
-      (when (:fungibility_group job)
-        (insert-fungibility-group-entry! persistence job)))
-
     (get-job persistence (root-job :job_id))))
 
 
-(defn process-result! [persistence job-id commitment-id result agent-details]
-  (case (:outcome result)
-    :success
-    nil
+(defn process-result! [persistence contract commitment-id result agent-details]
+  (let [job-id (contract :job_id)]
+    (case (:outcome result)
+      :success
+      nil
 
-    :more-work
-    (do
-      ;Create new contract for parent job, which will be
-      ;ready for work when dependencies complete
-      (new-contract! persistence (contract-req job-id))
+      :more-work
+      (do
+        ;Create new contract for parent job, which will be
+        ;ready for work when dependencies complete
+        (new-contract! persistence (contract-req job-id))
+        (doseq [dependency (drop 1 (normalised-job-list (assoc contract :dependencies (result :dependencies))))]
+          (if (:fungibility_group_id dependency)
+            (if-let [existing-job (first (get-jobs persistence {:job_type             (:job_type dependency)
+                                                                :request_body         (:request_body dependency)
+                                                                :fungibility_group_id (:fungibility_group_id dependency)}))]
+              (insert-dependency! persistence job-id (:job_id existing-job))
+              (new-job! persistence agent-details dependency))
 
-      (doseq [dependency (flattened-dependencies {:job_id       job-id
-                                                  :dependencies (result :dependencies)})]
-        (if (:fungibility_group dependency)
-          (if-let [existing-job (first (get-jobs persistence {:job_type          (:job_type dependency)
-                                                              :request_body      (:request_body dependency)
-                                                              :fungibility_group (:fungibility_group dependency)}))]
-            (insert-dependency! persistence job-id (:job_id existing-job))
-            (new-job! persistence agent-details dependency))
+            (new-job! persistence agent-details dependency))))
 
-          (new-job! persistence agent-details dependency))))
+      :try-later
+      (new-contract! persistence (contract-req job-id (result :contract_due)))
 
-    :try-later
-    (new-contract! persistence (contract-req job-id (result :contract_due)))
+      :error
+      nil
 
-    :error
-    nil
-
-    :cancelled
-    nil))
+      :cancelled
+      nil)))
 
 (defn complete-work!
   [persistence commitment-id result agent-details]
@@ -111,7 +107,7 @@
       :running
       (do
         (insert-result! persistence commitment-id result)
-        (process-result! persistence job-id commitment-id result agent-details))
+        (process-result! persistence contract commitment-id result agent-details))
 
       :cancelled
       nil

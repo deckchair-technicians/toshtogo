@@ -289,7 +289,8 @@
                   :requesting_agent    (isinstance UUID)
                   :result_body         nil
                   :job_type            job-type
-                  :tags                (just tags :in-any-order)})
+                  :tags                (just tags :in-any-order)
+                  :fungibility_group_id job-id})
         (provided (now) => created-time)
 
         (deliver commitment (request-work! client job-type))

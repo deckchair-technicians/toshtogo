@@ -22,17 +22,17 @@
                                             :parent_job_id parent-job-id
                                             :child_job_id  child-job-id}))
 
-    (insert-fungibility-group-entry! [this entry]
-      (tsql/insert! cnxn :fungibility_groups {:f_group_id           (:fungibility_group entry)
-                                              :f_group_request_hash (murmur-uuid! (:request_body entry))
-                                              :f_group_job_id       (:job_id entry)}))
-
     (insert-jobs! [this jobs agent-details]
       (doseq [job jobs]
         (let [job-id          (job :job_id)
               job-tag-records (map (fn [tag] {:job_id job-id :tag tag}) (job :tags))
               job-agent       (agent! agents agent-details)
-              job-row         (job-record job-id (job :job_type) (job-agent :agent_id) (job :request_body) (job :notes))
+              job-row         (job-record job-id
+                                          (job :job_type)
+                                          (job-agent :agent_id)
+                                          (job :request_body)
+                                          (job :notes)
+                                          (job :fungibility_group_id))
               parent-job-id   (job :parent_job_id)]
 
           (tsql/insert! cnxn :jobs job-row)

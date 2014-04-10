@@ -11,13 +11,14 @@
             [toshtogo.util.sql :as tsql])
   (:import [toshtogo.util OptimisticLockingException]))
 
-(defn job-record [id job-type agent-id body notes]
+(defn job-record [id job-type agent-id body notes fungibility-group-id]
   {:job_id            id
    :job_type          job-type
    :requesting_agent  agent-id
    :job_created       (now)
    :request_body      (json/generate-string body)
    :request_hash      (murmur-uuid! body)
+   :fungibility_group_id fungibility-group-id
    :notes             notes})
 
 (defn collect-tags [job row]

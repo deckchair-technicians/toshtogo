@@ -9,7 +9,7 @@
   (when job
     (-> job
         (update-each [:contract_created :contract_claimed :contract_due :contract_finished :job_created :last_heartbeat] parse-datetime)
-        (update-each [:commitment_id :contract_id :job_id :requesting_agent :commitment_agent :request_hash] uuid)
+        (update-each [:commitment_id :contract_id :job_id :requesting_agent :commitment_agent :request_hash :fungibility_group_id] uuid)
         (update :tags #(map keyword %))
         (update-each [:outcome] keyword))))
 
