@@ -10,9 +10,9 @@
             [toshtogo.server.agents.protocol :refer :all]
             [toshtogo.server.persistence.protocol :refer :all]
             [toshtogo.server.api :refer :all]
-            [toshtogo.server.migrations.run :refer [run-migrations!]]))
+            [toshtogo.test.functional.test-support :refer :all]))
 
-(background (before :contents (run-migrations! dev-db)))
+(background (before :contents @migrated-dev-db))
 
 (def agent-details (util/agent-details "savagematt" "toshtogo"))
 

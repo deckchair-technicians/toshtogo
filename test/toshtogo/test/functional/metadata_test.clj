@@ -6,10 +6,9 @@
             [toshtogo.util.core :refer [uuid-str uuid]]
             [toshtogo.test.functional.test-support :refer :all]
             [toshtogo.client.protocol :refer :all]
-            [toshtogo.server.core :refer [dev-db]]
-            [toshtogo.server.migrations.run :refer [run-migrations!]]))
+            [toshtogo.server.core :refer [dev-db]]))
 
-(background (before :contents (run-migrations! dev-db)))
+(background (before :contents @migrated-dev-db))
 
 (fact "Can get a list of available job types"
       (sql/execute! dev-db ["truncate jobs cascade"])

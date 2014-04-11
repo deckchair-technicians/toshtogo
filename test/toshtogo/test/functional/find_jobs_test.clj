@@ -3,10 +3,9 @@
             [toshtogo.test.functional.test-support :refer :all]
             [toshtogo.client.protocol :refer :all]
             [toshtogo.util.core :refer [uuid uuid-str]]
-            [toshtogo.server.core :refer [dev-db]]
-            [toshtogo.server.migrations.run :refer [run-migrations!]]))
+            [toshtogo.server.core :refer [dev-db]]))
 
-(background (before :contents (run-migrations! dev-db)))
+(background (before :contents @migrated-dev-db))
 
 (facts "Can specify order when getting jobs"
        (let [job-id-1 (uuid)

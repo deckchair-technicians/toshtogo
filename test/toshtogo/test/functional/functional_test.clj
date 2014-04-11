@@ -10,10 +10,9 @@
             [toshtogo.util.core :refer [uuid uuid-str debug]]
             [toshtogo.util.hashing :refer [murmur-uuid!]]
             [toshtogo.server.core :refer [dev-db]]
-            [toshtogo.server.migrations.run :refer [run-migrations!]]
             [toshtogo.test.functional.test-support :refer :all]))
 
-(background (before :contents (run-migrations! dev-db)))
+(background (before :contents @migrated-dev-db))
 
 (with-redefs
   [toshtogo.client.protocol/heartbeat-time 1]

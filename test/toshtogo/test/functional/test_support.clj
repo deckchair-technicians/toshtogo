@@ -1,10 +1,13 @@
 (ns toshtogo.test.functional.test-support
   (:require [toshtogo.client.protocol :refer :all]
-            [toshtogo.server.core :refer [dev-app]]
+            [toshtogo.server.core :refer [dev-app dev-db]]
             [toshtogo.client.core :as ttc]
             [clj-time.core :refer [now minutes seconds millis plus minus after? interval within?]]
             [clojure.pprint :refer [pprint]]
-            [toshtogo.util.core :refer [uuid uuid-str debug cause-trace]]))
+            [toshtogo.util.core :refer [uuid uuid-str debug cause-trace]]
+            [toshtogo.server.migrations.run :refer [run-migrations!]]))
+
+(def migrated-dev-db (delay (run-migrations! dev-db)))
 
 (def in-process {:type :app :app (dev-app :debug false)})
 (def localhost {:type :http :base-path "http://localhost:3000"})
