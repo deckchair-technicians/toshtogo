@@ -62,6 +62,7 @@
       (update-each [:job_id :fungibility_group_id] uuid)
       (update :job_type keyword)
       (update :tags #(map keyword %))
+      (update :existing_job_dependencies #(map uuid %))
       (update :dependencies #(map normalise-job-req %))))
 
 (defn update-query-param [query-string param-name new-value]
@@ -140,6 +141,7 @@
                                   (-> body
                                       (update :outcome keyword)
                                       (update :contract_due parse-datetime)
+                                      (update :existing_job_dependencies (fn [dep-job-id] (map uuid dep-job-id)))
                                       (update :dependencies (fn [deps] (map normalise-job-req deps))))
                                   (body :agent))
                   (commitment-redirect commitment-id))

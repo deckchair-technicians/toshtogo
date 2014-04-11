@@ -85,7 +85,10 @@
               (insert-dependency! persistence job-id (:job_id existing-job))
               (new-job! persistence agent-details dependency))
 
-            (new-job! persistence agent-details dependency))))
+            (new-job! persistence agent-details dependency)))
+
+        (doseq [dependency-job-id (:existing_job_dependencies result)]
+          (insert-dependency! persistence job-id dependency-job-id)))
 
       :try-later
       (new-contract! persistence (contract-req job-id (result :contract_due)))

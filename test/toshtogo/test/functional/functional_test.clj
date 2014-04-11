@@ -138,7 +138,7 @@
                                    (contains {:result_body {:b "child two"}})]
                                   :in-any-order))))))
 
-  (facts "Requesting more work"
+  (facts "Agents can respond by requesting more work before the job is executed"
          (let [job-id (uuid)
                parent-job-type (uuid-str)
                child-job-type (uuid-str)]
@@ -169,6 +169,61 @@
                      => (contains [(contains {:result_body {:first-dep "first dep"}})
                                    (contains {:result_body {:second-dep "second dep"}})]
                                   :in-any-order))))))
+
+  (facts "Jobs can have additional dependencies beyond their children"
+         (let [parent-job-id (uuid)
+               other-job-id (uuid)
+               parent-job-type (uuid-str)
+               other-job-type (uuid-str)
+               child-job-type (uuid-str)]
+
+           (put-job! client other-job-id (job-req {:some-other-job "other job"} other-job-type))
+
+           (put-job! client parent-job-id (-> (job-req {:parent-job "parent job"} parent-job-type)
+                                              (with-dependency-on other-job-id)))
+
+           (fact "Parent job is not ready until dependency completes"
+                 (request-work! client parent-job-type)
+                 => nil)
+
+           @(do-work! client other-job-type return-success)
+           => truthy
+
+           (fact (str "Parent job is released when dependencies are complete, "
+                      "with dependency responses included in the job")
+                 (let [contract (request-work! client parent-job-type)]
+                   contract
+                   => (contains {:request_body {:parent-job "parent job"}})
+
+                   (:dependencies contract)
+                   => (contains [(contains {:request_body {:some-other-job "other job"}})])))))
+
+  (facts "Agents can respond by adding a dependency on an existing job"
+         (let [parent-job-id (uuid)
+               other-job-id (uuid)
+               parent-job-type (uuid-str)
+               other-job-type (uuid-str)
+               child-job-type (uuid-str)]
+
+           (put-job! client other-job-id (job-req {:some-other-job "other job"} other-job-type))
+           (put-job! client parent-job-id (job-req {:parent-job "parent job"} parent-job-type))
+
+           @(do-work! client parent-job-type (fn [job] (add-dependencies other-job-id)))
+           => truthy
+
+           (fact "Parent job is not ready until new dependencies complete"
+                 (request-work! client parent-job-type) => nil)
+
+           @(do-work! client other-job-type return-success) => truthy
+
+           (fact (str "Parent job is released when dependencies are complete, "
+                      "with dependency responses included in the job")
+                 (let [contract (request-work! client parent-job-type)]
+                   contract
+                   => (contains {:request_body {:parent-job "parent job"}})
+
+                   (:dependencies contract)
+                   => (contains [(contains {:request_body {:some-other-job "other job"}})])))))
 
   (facts "Try again later"
          (when (= :app (:type client-config))
