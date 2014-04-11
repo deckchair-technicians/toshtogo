@@ -3,7 +3,10 @@
             [toshtogo.test.functional.test-support :refer :all]
             [toshtogo.util.core :refer [uuid uuid-str debug]]
             [toshtogo.client.protocol :refer :all]
-            ))
+            [toshtogo.server.core :refer [dev-db]]
+            [toshtogo.server.migrations.run :refer [run-migrations!]]))
+
+(background (before :contents (run-migrations! dev-db)))
 
 (facts "When requesting more work we may specify :fungibility_group_id, if a job exists with the same type and request_body as the requested dependency, this will be used instead of creating a new job"
        (let [job-id            (uuid)

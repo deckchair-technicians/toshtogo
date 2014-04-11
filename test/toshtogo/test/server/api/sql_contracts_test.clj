@@ -9,7 +9,10 @@
             [toshtogo.client.util :as util]
             [toshtogo.server.agents.protocol :refer :all]
             [toshtogo.server.persistence.protocol :refer :all]
-            [toshtogo.server.api :refer :all]))
+            [toshtogo.server.api :refer :all]
+            [toshtogo.server.migrations.run :refer [run-migrations!]]))
+
+(background (before :contents (run-migrations! dev-db)))
 
 (def agent-details (util/agent-details "savagematt" "toshtogo"))
 

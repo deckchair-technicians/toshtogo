@@ -24,7 +24,8 @@
                  [com.dbdeploy/dbdeploy-core "3.0M3"]
                  [watchtower "0.1.1"]
                  [pallet-map-merge "0.1.0"]
-                 [trptcolin/versioneer "0.1.0"]]
+                 [trptcolin/versioneer "0.1.0"]
+                 [savagematt/hermit "0.7"]]
 
   :plugins [[lein-ring "0.8.8"]
             [s3-wagon-private "1.1.2"]]

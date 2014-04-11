@@ -1,57 +1,49 @@
 (ns toshtogo.server.migrations.run
   (:require  [clojure.java.io :as io]
              [clojure.java.jdbc :as sql]
-             [me.raynes.fs :as fs])
-  (:import [java.security CodeSource ProtectionDomain]
-           [java.net URL]
-           [java.util.zip ZipInputStream]
-           [com.dbdeploy DbDeploy]))
-
-(defn code-source
-  "utility function to get the name of jar in which this function is invoked"
-  [& [ns]]
-  (-> (or ns (class *ns*))
-      .getProtectionDomain
-      .getCodeSource))
-
-(defn get-resources [prefix]
-  (let [csource ^CodeSource (code-source)
-        jar ^URL (.getLocation csource)
-        zip (ZipInputStream. (.openStream jar))]
-    (loop [resources []]
-      (let [next-entry (.getNextEntry zip)]
-        (if (nil? next-entry)
-          resources
-          (let [name (.getName next-entry)
-                new-resources (if (.startsWith name prefix) (conj resources name) resources)]
-            (recur new-resources)))))))
-
-(defn extract-migrations!
-  "Extracts the migrations"
-  []
-  (let [migration-paths (get-resources "toshtogo/server/migrations/")
-        temp-dir (fs/temp-dir "toshtogo_migrations")]
-    (doseq [path migration-paths]
-      (spit (str temp-dir "/" (fs/base-name path))
-            (slurp (io/resource path))))
-    temp-dir))
+             [me.raynes.fs :as fs]
+             [hermit.core :as hermit])
+  (:import [com.dbdeploy DbDeploy]))
 
 (def create-changelog-sql "
-     create table if not exists changelog (
-       change_number bigint not null primary key,
-       complete_dt timestamp not null,
-       applied_by varchar(100) not null,
-       description varchar(500) not null
-     );")
+CREATE TABLE IF NOT EXISTS changelog (
+  change_number BIGINT NOT NULL primary key,
+  complete_dt TIMESTAMP NOT NULL,
+  applied_by VARCHAR(100) NOT NULL,
+  description VARCHAR(500) NOT NULL
+);")
+
+(defn acquire-advisory-lock!
+  [cnxn]
+  (when-not
+      (:pg_try_advisory_lock (first (sql/query cnxn ["select pg_try_advisory_lock(1);"])))
+    (println "Lock in use.. retrying")
+    (Thread/sleep 5000)
+    (recur cnxn)))
+
+(defn release-advisory-lock!
+  [cnxn]
+  (sql/query cnxn ["select pg_advisory_unlock(1);"]))
 
 (defn run-migrations!
   [db]
   (sql/execute! db [create-changelog-sql])
-  (let [temp-dir (extract-migrations!)
-        db-deploy (doto (DbDeploy.)
-                    (.setUrl (format "jdbc:%s:%s" (db :subprotocol) (db :subname)))
-                    (.setDriver (db :classname))
-                    (.setUserid (db :user))
-                    (.setPassword (db :password))
-                    (.setScriptdirectory temp-dir))]
-    (.go db-deploy)))
+
+  (sql/db-transaction
+   [cnxn db]
+   (try
+     (acquire-advisory-lock! cnxn)
+
+     (let [temp (fs/temp-dir "toshtogo_migrations")]
+       (hermit/copy-resources! "toshtogo/server/migrations/reference-file" temp)
+
+       (let [db-deploy (doto (DbDeploy.)
+                         (.setUrl (format "jdbc:%s:%s" (db :subprotocol) (db :subname)))
+                         (.setDriver (db :classname))
+                         (.setUserid (db :user))
+                         (.setPassword (db :password))
+                         (.setScriptdirectory temp))]
+         (.go db-deploy)))
+
+     (finally
+       (release-advisory-lock! cnxn)))))
