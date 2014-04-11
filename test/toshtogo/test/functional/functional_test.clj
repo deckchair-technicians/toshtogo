@@ -198,6 +198,19 @@
                    (:dependencies contract)
                    => (contains [(contains {:request_body {:some-other-job "other job"}})])))))
 
+  (facts "Can explicitly set job_id on dependencies"
+         (let [parent-job-id (uuid)
+               child-job-id (uuid)
+               parent-job-type (uuid-str)
+               child-job-type (uuid-str)]
+
+           (put-job! client parent-job-id (-> (job-req {:parent-job "parent job"} parent-job-type)
+                                              (with-dependencies [(-> (job-req {:child-job "child job"} child-job-type)
+                                                                      (with-job-id child-job-id))])))
+
+           (get-job client child-job-id)
+           => (contains {:request_body {:child-job "child job"}})))
+
   (facts "Agents can respond by adding a dependency on an existing job"
          (let [parent-job-id (uuid)
                other-job-id (uuid)

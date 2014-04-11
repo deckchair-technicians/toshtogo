@@ -1,6 +1,6 @@
 (ns toshtogo.client.protocol
   (:require [flatland.useful.map :refer [update]]
-            [toshtogo.util.core :refer [debug uuid cause-trace assoc-not-nil]]
+            [toshtogo.util.core :refer [debug uuid cause-trace assoc-not-nil ensure-seq]]
             [toshtogo.server.persistence.protocol :as server-protocol]))
 
 (defn job-req
@@ -12,7 +12,10 @@
                       :tags tags))))
 
 (defn with-dependencies [job-req dependencies]
-  (update job-req :dependencies #(concat % dependencies)))
+  (update job-req :dependencies #(concat % (ensure-seq dependencies))))
+
+(defn with-job-id [job-req job-id]
+  (assoc job-req :job_id job-id))
 
 (defn with-dependency-on [job-req job-id & job-ids]
   (update job-req :existing_job_dependencies #(concat % [job-id] job-ids)))
