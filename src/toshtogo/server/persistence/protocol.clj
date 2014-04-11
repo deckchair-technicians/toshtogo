@@ -19,9 +19,15 @@
 (defn cancelled []
   {:outcome :cancelled})
 
-(defn add-dependencies [dependency & dependencies]
-  {:outcome      :more-work
-   :dependencies (concat [dependency] dependencies)})
+(defn add-dependencies
+      "Dependency can either be a (job-req) or the :job_id of an existing job"
+      [dependency & dependencies]
+  (let [all-deps (concat [dependency] dependencies)
+        new-job-dependencies (filter map? all-deps)
+        existing-job-dependencies (filter (comp not map?) all-deps)]
+    (cond-> {:outcome :more-work}
+            (not (empty? new-job-dependencies)) (assoc :dependencies new-job-dependencies)
+            (not (empty? existing-job-dependencies)) (assoc :existing_job_dependencies existing-job-dependencies))))
 
 (defn try-later
   ([contract-due]

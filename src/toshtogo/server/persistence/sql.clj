@@ -44,6 +44,9 @@
           (when parent-job-id
             (insert-dependency! this parent-job-id job-id))
 
+          (doseq [dependency-id (:existing_job_dependencies job)]
+            (insert-dependency! this job-id dependency-id))
+
           (get-job this job-id))))
 
     (insert-contract! [this job-id contract-ordinal contract-due]
