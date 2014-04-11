@@ -1,5 +1,6 @@
 (ns toshtogo.client.middleware
-  (:require [toshtogo.client.util :refer [merge-dependency-results]]
+  (:require [clojure.pprint :refer [pprint]]
+            [toshtogo.client.util :refer [merge-dependency-results]]
             [toshtogo.client.protocol :refer :all]))
 
 (defn wrap-merge-dependency-results
@@ -33,3 +34,20 @@
     (if-let [missing-dependency-jobs (missing-dependencies (job :request_body) dependency-builders)]
       (apply add-dependencies missing-dependency-jobs)
       (handler job))))
+
+(defn wrap-print-job [handler]
+  (fn [job]
+    (println "REQUEST")
+    (pprint job)
+    (println)
+
+    (let [response (handler job)]
+
+      (println "RESPONSE")
+      (pprint response)
+      (println)
+      response)))
+
+(defn wrap-extract-request [handler]
+  (fn [job]
+    (handler (:request_body job))))
