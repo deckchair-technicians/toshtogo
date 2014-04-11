@@ -134,7 +134,28 @@
          (put-job! client job-id-3 (job-req {:job "waiting"} job-type))
 
 
-         (fact "Can get jobs of different types"
+         (fact "Can get jobs of different outcomes"
                (get-and-select client {:outcome [:waiting :running] :job_type job-type} :outcome :job_id)
                => (contains [(contains {:job_id job-id-3 :outcome :waiting}
                                        {:job_id job-id-2 :outcome :running})]))))
+
+(facts "Can filter by name"
+       (let [job-id-1 (uuid)
+             job-id-2 (uuid)
+             name-1 "abc"
+             name-2 "abcdef"]
+
+         (put-job! client job-id-1 (-> (job-req {} (uuid-str))
+                                       (with-name name-1)))
+
+         (put-job! client job-id-2 (-> (job-req {} (uuid-str))
+                                       (with-name name-2)))
+
+         (fact "Can get jobs by name"
+               (get-and-select client {:name name-1} :job_name :job_id)
+               => (contains [(contains {:job_id job-id-1 :job_name name-1})]))
+
+         (fact "Can get jobs by name prefix"
+               (get-and-select client {:name_starts_with name-1} :job_name :job_id)
+               => (contains [(contains {:job_id job-id-1 :job_name name-1}
+                                       {:job_id job-id-2 :job_name name-2})]))))

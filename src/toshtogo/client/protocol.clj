@@ -10,11 +10,23 @@
                       :notes notes
                       :tags tags))))
 
+(defn with-dependencies [job-req dependencies]
+  (assoc job-req :dependencies dependencies))
+
 (defn fungibility-group [job-req group-id]
   (assoc job-req :fungibility_group_id group-id))
 
 (defn fungibile-under-parent [job-req]
   (assoc job-req :fungibile_under_parent true))
+
+(defn with-name [job-req job-name]
+  (assoc job-req :job_name job-name))
+
+(defn with-notes [job-req notes]
+  (assoc job-req :notes notes))
+
+(defn with-tags [job-req tags]
+  (assoc job-req :tags tags))
 
 (def success server-protocol/success)
 (def error server-protocol/error)

@@ -75,6 +75,12 @@
        :outcome
        (merge-where query (concat [:or] (map outcome-expression (ensure-seq v))))
 
+       :name
+       (merge-where query [:= :jobs.job_name v])
+
+       :name_starts_with
+       (merge-where query [:like :jobs.job_name (str v "%")])
+
        :has_contract
        (if v
          (merge-where query [:not= :contracts.contract_id nil])

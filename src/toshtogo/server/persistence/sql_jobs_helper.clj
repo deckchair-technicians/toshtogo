@@ -11,8 +11,9 @@
             [toshtogo.util.sql :as tsql])
   (:import [toshtogo.util OptimisticLockingException]))
 
-(defn job-record [id job-type agent-id body notes fungibility-group-id]
+(defn job-record [id job-name job-type agent-id body notes fungibility-group-id]
   {:job_id            id
+   :job_name          job-name
    :job_type          job-type
    :requesting_agent  agent-id
    :job_created       (now)

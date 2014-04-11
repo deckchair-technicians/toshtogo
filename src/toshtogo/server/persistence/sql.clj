@@ -28,6 +28,7 @@
               job-tag-records (map (fn [tag] {:job_id job-id :tag tag}) (job :tags))
               job-agent       (agent! agents agent-details)
               job-row         (job-record job-id
+                                          (job :job_name)
                                           (job :job_type)
                                           (job-agent :agent_id)
                                           (job :request_body)

@@ -265,10 +265,15 @@
             finished-time (plus claimed-time (millis 5))
             due-time (minus created-time (seconds 5))
             request-body {:a-field "field value"}
-            commitment  (promise)]
+            commitment  (promise)
+            notes "Some description of the job"
+            job-name "job name"]
 
         ; Newly created
-        (put-job! client job-id (job-req request-body job-type :tags tags :notes "Some description of the job"))
+        (put-job! client job-id (-> (job-req request-body job-type)
+                                    (with-tags tags)
+                                    (with-notes notes)
+                                    (with-name job-name)))
         => (just {:commitment_agent    nil
                   :commitment_id       nil
                   :contract_claimed    nil
@@ -278,7 +283,8 @@
                   :contract_id         (isinstance UUID)
                   :contract_number     1
                   :dependencies        []
-                  :notes               "Some description of the job"
+                  :job_name            job-name
+                  :notes               notes
                   :error               nil
                   :job_created         (close-to created-time)
                   :job_id              job-id
