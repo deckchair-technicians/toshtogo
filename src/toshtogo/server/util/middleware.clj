@@ -127,3 +127,15 @@
   (if pred
     (apply middleware handler args)
     handler))
+
+(defn wrap-cors
+      [handler]
+  (fn [req]
+    (when-let [resp (handler req)]
+      (update-in
+        resp
+        [:headers]
+        assoc
+        "Access-Control-Allow-Origin" "*"
+        "Access-Control-Allow-Methods" "*"
+        "Access-Control-Allow-Headers" "*"))))

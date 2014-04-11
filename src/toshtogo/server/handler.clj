@@ -11,16 +11,7 @@
             [flatland.useful.map :refer [update update-each map-keys]]
 
 
-            [toshtogo.server.util.middleware :refer [wrap-body-hash
-                                             wrap-db-transaction
-                                             wrap-dependencies
-                                             wrap-print-response
-                                             wrap-print-request
-                                             wrap-retry-on-exceptions
-                                             wrap-json-response
-                                             wrap-json-exception
-                                             wrap-json-body
-                                             wrap-if]]
+            [toshtogo.server.util.middleware :refer :all]
             [toshtogo.server.persistence.protocol :refer :all]
             [toshtogo.server.api :refer :all]
             [toshtogo.util.core :refer [uuid ppstr debug parse-datetime ensure-seq]])
@@ -190,4 +181,5 @@
         (wrap-db-transaction db)
         wrap-json-response
         (wrap-if debug wrap-print-response)
-        wrap-json-exception)))
+        wrap-json-exception
+        wrap-cors)))
