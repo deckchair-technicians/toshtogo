@@ -1,12 +1,14 @@
 (ns toshtogo.util.core
-  (:import (java.util UUID)
-           (java.util.concurrent TimeoutException))
+  (:import (java.util UUID Map Set)
+           (java.util.concurrent TimeoutException)
+           (clojure.lang PersistentTreeMap PersistentTreeSet))
   (:require
     [clojure.math.numeric-tower :refer [expt]]
     [clj-time.core :refer [after? now plus millis interval]]
     [clj-time.format :as tf]
     [clojure.pprint :refer [pprint]]
-    [clojure.stacktrace :as stacktrace]))
+    [clojure.stacktrace :as stacktrace]
+    [clojure.walk :refer [prewalk]]))
 
 (defn assoc-not-nil
   ([m key val]
@@ -135,3 +137,17 @@
     (if (keyword? x)
       (name x)
       x)))
+
+(defmulti to-ordered* class)
+(defmethod to-ordered*
+           Map
+           [x]
+  (PersistentTreeMap/create x))
+(defmethod to-ordered*
+           Set
+           [x]
+  (PersistentTreeSet/create (sort x)))
+(defmethod to-ordered* :default [x] x)
+
+(defn to-ordered [x]
+  (prewalk to-ordered* x))

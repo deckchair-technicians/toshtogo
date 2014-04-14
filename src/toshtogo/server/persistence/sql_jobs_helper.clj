@@ -7,7 +7,6 @@
             [toshtogo.server.agents.protocol :refer [agent!]]
             [toshtogo.server.persistence.protocol :refer :all]
             [toshtogo.util.core :refer [uuid debug]]
-            [toshtogo.util.hashing :refer [murmur-uuid!]]
             [toshtogo.util.sql :as tsql])
   (:import [toshtogo.util OptimisticLockingException]))
 
@@ -18,7 +17,6 @@
    :requesting_agent  agent-id
    :job_created       (now)
    :request_body      (json/generate-string body)
-   :request_hash      (murmur-uuid! body)
    :fungibility_group_id fungibility-group-id
    :notes             notes})
 

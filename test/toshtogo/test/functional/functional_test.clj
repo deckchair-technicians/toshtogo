@@ -8,7 +8,6 @@
             [toshtogo.client.protocol :refer :all]
             [toshtogo.client.clients.sender-client :refer [to-query-string]]
             [toshtogo.util.core :refer [uuid uuid-str debug]]
-            [toshtogo.util.hashing :refer [murmur-uuid!]]
             [toshtogo.server.core :refer [dev-db]]
             [toshtogo.test.functional.test-support :refer :all]))
 
@@ -361,7 +360,6 @@
                   :last_heartbeat      nil
                   :outcome             :waiting
                   :request_body        request-body
-                  :request_hash        (murmur-uuid! request-body)
                   :requesting_agent    (isinstance UUID)
                   :result_body         nil
                   :job_type            job-type

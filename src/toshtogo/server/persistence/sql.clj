@@ -12,7 +12,6 @@
             [toshtogo.server.persistence.sql-contracts-helper :refer :all]
             [toshtogo.server.agents.protocol :refer [agent!]]
             [toshtogo.util.sql :as tsql]
-            [toshtogo.util.hashing :refer [murmur-uuid!]]
             [toshtogo.util.hsql :as hsql]))
 
 (defn sql-persistence [cnxn agents]
