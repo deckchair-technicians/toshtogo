@@ -2,10 +2,26 @@
   (:require [midje.sweet :refer :all]
             [toshtogo.test.functional.test-support :refer :all]
             [toshtogo.util.core :refer [uuid uuid-str debug]]
+            [toshtogo.util.deterministic-representation :refer [deterministic-representation]]
             [toshtogo.client.protocol :refer :all]
             [toshtogo.server.core :refer [dev-db]]))
 
 (background (before :contents @migrated-dev-db))
+
+(def complex-request {:this "request"
+                      :is {:fairly ["complex" 1 2 123]
+                           :to "try to"
+                           :make_sure [{:we 345435
+                                        :deterministically ["represent" "the"]
+                                        :request :when
+                                        :checking {:fungibility 1 :z 1 :a 1}}
+                                       10
+                                       9
+                                       8
+                                       3
+                                       ]}
+                      123 "a"
+                      })
 
 (facts "When requesting more work we may specify :fungibility_group_id, if a job exists with the same type and request_body as the requested dependency, this will be used instead of creating a new job"
   (let [job-id               (uuid)
@@ -13,7 +29,7 @@
         fungibility-group-id (uuid)
         parent-job-type      (uuid-str)
         child-job-type       (uuid-str)
-        child-job-request    {:some_request_data 1234}]
+        child-job-request    complex-request]
 
     (put-job! client job-id       (job-req {:parent-job "parent job"} parent-job-type))
     (put-job! client child-job-id (-> (job-req child-job-request child-job-type)
@@ -23,7 +39,7 @@
                      (add-dependencies
                       (-> (job-req child-job-request child-job-type)
                           (fungibility-group fungibility-group-id))))
-          complete-child (fn [job] (success (job :request_body)))]
+          complete-child (fn [job] (success {:child "result"}))]
 
       @(do-work! client parent-job-type add-deps) => truthy
 
@@ -39,7 +55,7 @@
           => (contains {:request_body {:parent-job "parent job"}})
 
           (contract :dependencies)
-          => (contains [(contains {:result_body child-job-request})]))))))
+          => (contains [(contains {:result_body {:child "result"}})]))))))
 
 (facts "If we specify :fungibility_group_id, jobs which have been completed will also be matched"
   (let [job-id               (uuid)
@@ -47,13 +63,13 @@
         fungibility-group-id (uuid)
         parent-job-type      (uuid-str)
         child-job-type       (uuid-str)
-        child-job-request    {:some_request_data 1234}]
+        child-job-request    complex-request]
 
     (put-job! client job-id       (job-req {:parent-job "parent job"} parent-job-type))
     (put-job! client child-job-id (-> (job-req child-job-request child-job-type)
                                       (fungibility-group fungibility-group-id)))
                                         ; Matching child job has already completed
-    @(do-work! client child-job-type (fn [job] (success (job :request_body))))
+    @(do-work! client child-job-type (fn [job] (success {:child "result"})))
     => truthy
 
     (let [add-deps (fn [job]
@@ -70,4 +86,4 @@
           => (contains {:request_body {:parent-job "parent job"}})
 
           (contract :dependencies)
-          => (contains [(contains {:result_body child-job-request})]))))))
+          => (contains [(contains {:result_body {:child "result"}})]))))))

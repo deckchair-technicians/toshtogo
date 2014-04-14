@@ -6,6 +6,7 @@
             [toshtogo.server.persistence.protocol :refer :all]
             [toshtogo.server.agents.protocol :refer [agent!]]
             [honeysql.helpers :refer :all]
+            [toshtogo.util.deterministic-representation :refer [deterministic-representation]]
             [toshtogo.util.hsql :as hsql]
             [toshtogo.util.core :refer [uuid debug ensure-seq safe-name]]))
 
@@ -121,7 +122,7 @@
                                                 (where [:= :parent_job_id v]))])
 
        :request_body
-       (merge-where query [:= :request_body (json/generate-string v)])
+       (merge-where query [:= :request_body (json/generate-string (deterministic-representation v))])
 
        :fungibility_group_id
        (merge-where query [:= :jobs.fungibility_group_id v])

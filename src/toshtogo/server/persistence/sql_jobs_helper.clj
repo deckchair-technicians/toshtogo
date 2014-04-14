@@ -7,6 +7,7 @@
             [toshtogo.server.agents.protocol :refer [agent!]]
             [toshtogo.server.persistence.protocol :refer :all]
             [toshtogo.util.core :refer [uuid debug]]
+            [toshtogo.util.deterministic-representation :refer [deterministic-representation]]
             [toshtogo.util.sql :as tsql])
   (:import [toshtogo.util OptimisticLockingException]))
 
@@ -16,7 +17,7 @@
    :job_type          job-type
    :requesting_agent  agent-id
    :job_created       (now)
-   :request_body      (json/generate-string body)
+   :request_body      (json/generate-string (deterministic-representation body))
    :fungibility_group_id fungibility-group-id
    :notes             notes})
 
