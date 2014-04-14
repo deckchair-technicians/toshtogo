@@ -23,8 +23,8 @@
 (defn fungibility-group [job-req group-id]
   (assoc job-req :fungibility_group_id group-id))
 
-(defn fungibile-under-parent [job-req]
-  (assoc job-req :fungibile_under_parent true))
+(defn fungible-under-parent [job-req]
+  (assoc job-req :fungible_under_parent true))
 
 (defn with-name [job-req job-name]
   (assoc job-req :job_name job-name))
