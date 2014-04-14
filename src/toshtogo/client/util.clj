@@ -17,6 +17,13 @@
                  "\nException was:"
                  (.getMessage e)))))))
 
+(defn dependency-merger [left right]
+  (if (sequential? right)
+    (if (not (sequential? left))
+      (throw (IllegalArgumentException. (str "Cannot merge non-sequential left with sequential right. Left:\n" left "\n\nRight:\n" right)))
+      (concat left right))
+    right))
+
 (defn merge-dependency-results
   "Takes a toshtogo job.
 
@@ -29,7 +36,8 @@
   directly in the :request_body, or by dependent jobs.
 
   If there are multiple dependencies of the same type, the last one will win, unless
-  the :job_type is specified in merge-multiple, which will cause "
+  the :job_type is specified in merge-multiple, which will cause all dependencies of that
+  type to be added as a sequence under their :job_type"
   [job & {:keys [merge-multiple] :or {merge-multiple []}}]
   (let [dependencies               (job :dependencies)
         job-type-result-pairs      (map (fn [dep] [(keyword (:job_type dep)) (:result_body dep)]) dependencies)
@@ -41,8 +49,7 @@
                                        (mapcat identity <>)
                                        (apply hash-map <>)
                                        (apply dissoc <> merge-multiple))]
-    (apply merge (job :request_body)
-           (cons multiple-value-deps single-value-deps))))
+    (apply merge (merge-with dependency-merger (job :request_body) multiple-value-deps) single-value-deps)))
 
 (defn agent-details
   "Returns a map containing :hostname :system_name :system_version.\n
