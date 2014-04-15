@@ -87,3 +87,38 @@
 
           (contract :dependencies)
           => (contains [(contains {:result_body {:child "result"}})]))))))
+
+(future-fact "If we specify :fungibility_group_id, other dependencies added at the same time will be matched"
+  (let [job-id               (uuid)
+        parent-job-type      (uuid-str)
+        child-job-type       (uuid-str)
+        child-job-request    complex-request]
+
+    (put-job! client job-id (job-req {:parent-job "parent job"} parent-job-type))
+
+    (let [add-deps (fn [job]
+                     (add-dependencies
+                       (-> (job-req child-job-request child-job-type)
+                           (fungible-under-parent))
+
+                       (-> (job-req child-job-request child-job-type)
+                           (fungible-under-parent))))]
+
+      @(do-work! client parent-job-type add-deps)
+      => truthy
+
+      (fact "Parent job is not ready until new dependencies complete"
+            (request-work! client parent-job-type) => nil)
+
+      (fact "One child job has been added"
+            @(do-work! client child-job-type return-success)
+            => truthy)
+
+      (fact "ONLY one child job has been added"
+            @(do-work! client child-job-type return-success)
+            => falsey)
+
+      (fact "Parent job is ready when single depdendency completes"
+        (let [contract (request-work! client parent-job-type)]
+          contract
+          => (contains {:request_body {:parent-job "parent job"}}))))))
