@@ -8,7 +8,12 @@
   :request_body of the job and assigns it to :combined_request.\n
   \n
   Useful for making toshtogo agents agnostic to whether dependencies are provided\n
-  directly in the :request_body, or by dependent jobs."
+  directly in the :request_body, or by dependent jobs.\n
+
+  :merge-multiple is an optional keyword argument which takes a sequence\n
+  of job types for which a sequence of all dependencies with that job type will be\n
+  returned (as opposed to just the last dependency for each job type, which is the\n
+  default behaviour)"
   [handler & {:keys [merge-multiple] :or {merge-multiple []}}]
   (fn [job]
     (handler (assoc job :request_body (merge-dependency-results job :merge-multiple merge-multiple)))))
