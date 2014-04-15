@@ -122,3 +122,33 @@
         (let [contract (request-work! client parent-job-type)]
           contract
           => (contains {:request_body {:parent-job "parent job"}}))))))
+
+(facts "Fungibility includes job_type"
+  (let [job-id               (uuid)
+        fungibility-group-id (uuid)
+        child-job-id-1       (uuid)
+        child-job-id-2       (uuid)
+        parent-job-type      (uuid-str)
+        child-job-type-1     (uuid-str)
+        child-job-type-2     (uuid-str)
+        identical-child-request    complex-request]
+
+    (put-job! client job-id       (job-req {:parent-job "parent job"} parent-job-type))
+
+    (put-job! client child-job-id-1 (-> (job-req identical-child-request child-job-type-1)
+                                      (fungibility-group fungibility-group-id)))
+
+    (fact "There is a completed job of type 1"
+      @(do-work! client child-job-type-1 return-success)
+      => truthy)
+
+    (fact "We add a dependency on a job of type 2 with an identical request and fungibility group"
+      @(do-work! client parent-job-type (fn [job]
+                                          (add-dependencies
+                                            (-> (job-req identical-child-request child-job-type-2)
+                                                (fungibility-group fungibility-group-id)))))
+      => truthy)
+
+    (fact "Child job of different type is NOT matched to job in same fungibility group with identical request but different job_type"
+          @(do-work! client child-job-type-2 return-success)
+          => truthy)))
