@@ -158,9 +158,9 @@
 
     (context "/metadata" []
              (GET "/job_types" {:keys [persistence]}
-                  (get-job-types persistence)))))
+               (get-job-types persistence))))
 
-  (route/not-found {:status "I'm sorry :("})
+  (route/not-found {:status "I'm sorry :("}))
 
 (defn html-resource [path]
   (resp/resource-response path {:root "toshtogo/gui/"}))
