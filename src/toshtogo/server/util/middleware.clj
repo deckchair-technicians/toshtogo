@@ -137,5 +137,5 @@
         [:headers]
         assoc
         "Access-Control-Allow-Origin" "*"
-        "Access-Control-Allow-Methods" "*"
-        "Access-Control-Allow-Headers" "*"))))
+        "Access-Control-Allow-Methods" "POST,GET,OPTIONS,PUT,DELETE"
+        "Access-Control-Allow-Headers" (get-in req [:headers "access-control-request-headers"] "*")))))
