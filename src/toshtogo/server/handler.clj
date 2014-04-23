@@ -160,6 +160,8 @@
              (GET "/job_types" {:keys [persistence]}
                (get-job-types persistence))))
 
+  (OPTIONS ["/:path" :path #".+"] [] {:status 200 :body {:result "You made a pre-flight CORS OPTIONS request. Well done :-)"}})
+
   (route/not-found {:status "I'm sorry :("}))
 
 (defn html-resource [path]
