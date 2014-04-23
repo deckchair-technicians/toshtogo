@@ -137,5 +137,5 @@
         [:headers]
         assoc
         "Access-Control-Allow-Origin" "*"
-        "Access-Control-Allow-Methods" "*"
+        "Access-Control-Allow-Methods" "POST,GET,OPTIONS,PUT,DELETE"
         "Access-Control-Allow-Headers" "*"))))
