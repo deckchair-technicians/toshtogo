@@ -103,7 +103,7 @@
                                       (assoc :job_id job-id)
                                       (dissoc :agent)
                                       normalise-job-req))]
-               (job-redirect job-id))
+               {:status 200 :body "Job created"})
              #(job-redirect job-id))))
 
         (GET "/" []
