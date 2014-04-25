@@ -23,8 +23,11 @@
                       123 "a"
                       })
 
-(facts "When requesting more work we may specify :fungibility_group_id, if a job exists with the same type and request_body as the requested dependency, this will be used instead of creating a new job"
-  (let [job-id               (uuid)
+(facts (str "When requesting more work we may specify :fungibility_group_id, if a job exists "
+            "with the same type and request_body as the requested dependency, this will be "
+            "used instead of creating a new job")
+
+       (let [job-id               (uuid)
         child-job-id         (uuid)
         fungibility-group-id (uuid)
         parent-job-type      (uuid-str)
@@ -149,6 +152,7 @@
                                                 (fungibility-group fungibility-group-id)))))
       => truthy)
 
-    (fact "Child job of different type is NOT matched to job in same fungibility group with identical request but different job_type"
+    (fact (str "Child job of different type is NOT matched to job in same fungibility group with identical "
+               "request but different job_type")
           @(do-work! client child-job-type-2 return-success)
           => truthy)))

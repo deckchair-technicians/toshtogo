@@ -6,9 +6,7 @@
             [ring.adapter.jetty :refer [run-jetty]]
             [clojure.java.jdbc :as sql]
             [toshtogo.client.protocol :refer :all]
-            [toshtogo.client.clients.sender-client :refer [to-query-string]]
             [toshtogo.util.core :refer [uuid uuid-str debug]]
-            [toshtogo.server.core :refer [dev-db]]
             [toshtogo.test.functional.test-support :refer :all]))
 
 (background (before :contents @migrated-dev-db))
@@ -40,7 +38,7 @@
 
           (put-job! client job-id (job-req {:a-field "field value"} job-type))
 
-          (request-work! client job-type)
+          (request-work! client job-type) => truthy
           (request-work! client job-type) => nil))
 
   (fact "Work is returned in order"
@@ -60,8 +58,7 @@
 
           (put-job! client job-id (job-req {:a-field "field value"} job-type))
 
-          (let [func (fn [job] (success {:response-field "all good"}))
-                {:keys [contract result]} @(do-work! client job-type func)]
+          (let [{:keys [contract result]} @(do-work! client job-type (return-success-with-result {:response-field "all good"}))]
             contract
             => (contains {:job_id job-id :request_body {:a-field "field value"}})
             result
@@ -76,8 +73,7 @@
 
           (put-job! client job-id (job-req {:a-field "field value"} job-type))
 
-          (let [func (fn [job] (error "something went wrong"))
-                {:keys [contract result]} @(do-work! client job-type func)]
+          (let [{:keys [contract result]} @(do-work! client job-type return-error)]
             contract
             => (contains {:job_id job-id :request_body {:a-field "field value"}})
             result
@@ -86,160 +82,7 @@
           (get-job client job-id)
           => (contains {:outcome :error :error "something went wrong"})))
 
-  (fact "Client can report unhandled exceptions"
-        (let [job-id (uuid)
-              job-type (uuid-str)]
-
-          (put-job! client job-id (job-req {:a-field "field value"} job-type))
-
-          (let [func (fn [job] (throw (Exception. "WTF")))
-                {:keys [contract result]} @(do-work! client job-type func)]
-            contract
-            => (contains {:job_id job-id :request_body {:a-field "field value"}})
-            result
-            => (contains {:outcome :error :error (contains "WTF")}))
-
-          (get-job client job-id)
-          => (contains {:outcome :error :error (contains "WTF")})))
-
-  (facts "Jobs can have dependencies"
-         (let [job-id (uuid)
-               parent-job-type (uuid-str)
-               child-job-type (uuid-str)]
-
-           (put-job!
-             client
-             job-id (job-req
-                      {:a "field value"} parent-job-type
-                      :dependencies [(job-req {:b "child one"} child-job-type)
-                                     (job-req {:b "child two"} child-job-type)]))
-
-           (fact "No contract is created for parent job"
-                 (request-work! client parent-job-type) => nil)
-
-           (let [func (fn [job] (success (job :request_body)))]
-             (fact "Dependencies are executed in order"
-                   (:contract @(do-work! client child-job-type func))
-                   => (contains {:request_body {:b "child one"}}))
-
-             (fact "Parent job is not ready until all dependencies complete"
-                   (request-work! client parent-job-type) => nil
-                   (get-job client job-id) => (contains {:outcome :waiting}))
-
-             @(do-work! client child-job-type func)
-
-             (fact (str "Parent job is released when dependencies are complete, "
-                        "with dependency responses merged into its request")
-                   (let [contract (request-work! client parent-job-type)]
-                     contract
-                     => (contains {:request_body {:a "field value"}})
-
-                     (contract :dependencies)
-                     => (contains [(contains {:result_body {:b "child one"}})
-                                   (contains {:result_body {:b "child two"}})]
-                                  :in-any-order))))))
-
-  (facts "Agents can respond by requesting more work before the job is executed"
-         (let [job-id (uuid)
-               parent-job-type (uuid-str)
-               child-job-type (uuid-str)]
-
-           (put-job! client job-id (job-req {:parent-job "parent job"} parent-job-type))
-
-           (let [add-deps (fn [job]
-                            (add-dependencies
-                              (job-req {:first-dep "first dep"} child-job-type)
-                              (job-req {:second-dep "second dep"} child-job-type)))
-                 complete-child (fn [job] (success (job :request_body)))]
-
-             @(do-work! client parent-job-type add-deps) => truthy
-
-             (fact "Parent job is not ready until new dependencies complete"
-                   (request-work! client parent-job-type) => nil)
-
-             @(do-work! client child-job-type complete-child) => truthy
-             @(do-work! client child-job-type complete-child) => truthy
-
-             (fact (str "Parent job is released when dependencies are complete, "
-                        "with dependency responses included in the job")
-                   (let [contract (request-work! client parent-job-type)]
-                     contract
-                     => (contains {:request_body {:parent-job "parent job"}})
-
-                     (:dependencies contract)
-                     => (contains [(contains {:result_body {:first-dep "first dep"}})
-                                   (contains {:result_body {:second-dep "second dep"}})]
-                                  :in-any-order))))))
-
-  (facts "Jobs can have additional dependencies beyond their children"
-         (let [parent-job-id (uuid)
-               other-job-id (uuid)
-               parent-job-type (uuid-str)
-               other-job-type (uuid-str)
-               child-job-type (uuid-str)]
-
-           (put-job! client other-job-id (job-req {:some-other-job "other job"} other-job-type))
-
-           (put-job! client parent-job-id (-> (job-req {:parent-job "parent job"} parent-job-type)
-                                              (with-dependency-on other-job-id)))
-
-           (fact "Parent job is not ready until dependency completes"
-                 (request-work! client parent-job-type)
-                 => nil)
-
-           @(do-work! client other-job-type return-success)
-           => truthy
-
-           (fact (str "Parent job is released when dependencies are complete, "
-                      "with dependency responses included in the job")
-                 (let [contract (request-work! client parent-job-type)]
-                   contract
-                   => (contains {:request_body {:parent-job "parent job"}})
-
-                   (:dependencies contract)
-                   => (contains [(contains {:request_body {:some-other-job "other job"}})])))))
-
-  (facts "Can explicitly set job_id on dependencies"
-         (let [parent-job-id (uuid)
-               child-job-id (uuid)
-               parent-job-type (uuid-str)
-               child-job-type (uuid-str)]
-
-           (put-job! client parent-job-id (-> (job-req {:parent-job "parent job"} parent-job-type)
-                                              (with-dependencies [(-> (job-req {:child-job "child job"} child-job-type)
-                                                                      (with-job-id child-job-id))])))
-
-           (get-job client child-job-id)
-           => (contains {:request_body {:child-job "child job"}})))
-
-  (facts "Agents can respond by adding a dependency on an existing job"
-         (let [parent-job-id (uuid)
-               other-job-id (uuid)
-               parent-job-type (uuid-str)
-               other-job-type (uuid-str)
-               child-job-type (uuid-str)]
-
-           (put-job! client other-job-id (job-req {:some-other-job "other job"} other-job-type))
-           (put-job! client parent-job-id (job-req {:parent-job "parent job"} parent-job-type))
-
-           @(do-work! client parent-job-type (fn [job] (add-dependencies other-job-id)))
-           => truthy
-
-           (fact "Parent job is not ready until new dependencies complete"
-                 (request-work! client parent-job-type) => nil)
-
-           @(do-work! client other-job-type return-success) => truthy
-
-           (fact (str "Parent job is released when dependencies are complete, "
-                      "with dependency responses included in the job")
-                 (let [contract (request-work! client parent-job-type)]
-                   contract
-                   => (contains {:request_body {:parent-job "parent job"}})
-
-                   (:dependencies contract)
-                   => (contains [(contains {:request_body {:some-other-job "other job"}})])))))
-
-  (facts "Try again later"
+  (facts "Agent can request that a job is re-attempted"
          (when (= :app (:type client-config))
            (let [job-id (uuid)
                  job-type (uuid-str)
@@ -249,13 +92,30 @@
              (put-job! client job-id (job-req [] job-type))
 
              (let [delay (fn [job] (try-later due-time "some error happened"))]
-               @(do-work! client job-type delay)) => truthy
+               @(do-work! client job-type delay) => truthy)
 
              (request-work! client job-type) => nil
              (provided (now) => before-due-time)
 
              @(do-work! client job-type return-success) => truthy
              (provided (now) => due-time))))
+
+  (fact "do-work! on client reports unhandled exceptions"
+        (let [job-id (uuid)
+              job-type (uuid-str)]
+
+          (put-job! client job-id (job-req {:a-field "field value"} job-type))
+
+          (let [func (fn [job] (throw (Exception. "WTF")))
+                {:keys [contract result]} @(do-work! client job-type func)]
+
+            contract
+            => (contains {:job_id job-id :request_body {:a-field "field value"}})
+            result
+            => (contains {:outcome :error :error (contains "WTF")}))
+
+          (get-job client job-id)
+          => (contains {:outcome :error :error (contains "WTF")})))
 
   (facts "Heartbeats get stored, but only if they are more recent than the current heartbeat."
          (let [job-id (uuid)
@@ -268,61 +128,6 @@
 
            (let [{:keys [last_heartbeat]} (get-job client job-id)]
              (after? last_heartbeat start-time-ish) => truthy)))
-
-  (facts "Agents receive a cancellation signal in the heartbeat response when jobs are paused"
-         (let [job-id (uuid)
-               job-type (uuid-str)
-               start-time-ish (now)
-               commitment-id (promise)]
-
-           (put-job! client job-id (job-req {} job-type))
-
-           (let [commitment (do-work! client job-type (fn [job]
-                                                        (deliver commitment-id (job :commitment_id))
-                                                        (Thread/sleep 10000)
-                                                        (error "Should never return")))]
-             (future-done? commitment) => falsey
-
-             (heartbeat! client @commitment-id)
-             => (contains {:instruction :continue})
-
-             (get-job client job-id)
-             => (contains {:outcome :running})
-
-             (pause-job! client job-id)
-
-             (get-job client job-id)
-             => (contains {:outcome :cancelled})
-
-             (deref commitment 5000 nil)
-             => (contains {:result {:outcome :cancelled}})
-
-             (Thread/sleep 100)
-             (future-done? commitment) => truthy
-
-             (future-cancel commitment))))
-
-  (fact "Paused jobs can be retried"
-        (let [job-id (uuid)
-              job-type (uuid-str)]
-
-          (put-job! client job-id (job-req {} job-type))
-
-          (pause-job! client job-id)
-
-          (get-job client job-id)
-          => (contains {:outcome :cancelled})
-
-          (retry-job! client job-id)
-
-          (get-job client job-id)
-          => (contains {:outcome :waiting})
-
-          @(do-work! client job-type (constantly (success {:some-field "some value"})))
-          => truthy
-
-          (get-job client job-id)
-          => (contains {:outcome :success}))))
 
 (fact "Current job state is serialised between server and client as expected"
       (let [job-id (uuid)
@@ -391,7 +196,7 @@
                       :contract_number   1
                       :error             nil
                       :outcome           :success
-                      :result_body       {:some-field "some value"}})))
+                      :result_body       {:some-field "some value"}}))))
 
 (fact "Current job state is serialised between server and client as expected"
       (let [job-id (uuid)
