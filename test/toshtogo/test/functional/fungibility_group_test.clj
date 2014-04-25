@@ -41,15 +41,14 @@
     (let [add-deps (fn [job]
                      (add-dependencies
                       (-> (job-req child-job-request child-job-type)
-                          (fungibility-group fungibility-group-id))))
-          complete-child (fn [job] (success {:child "result"}))]
+                          (fungibility-group fungibility-group-id))))]
 
       @(do-work! client parent-job-type add-deps) => truthy
 
       (fact "Parent job is not ready until new dependencies complete"
         (request-work! client parent-job-type) => nil)
 
-      @(do-work! client child-job-type complete-child) => truthy
+      @(do-work! client child-job-type (return-success-with-result {:child "result"})) => truthy
 
       (fact (str "Parent job is released when dependencies are complete, "
                  "with dependency responses returned with the job")
