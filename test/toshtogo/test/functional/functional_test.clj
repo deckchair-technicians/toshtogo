@@ -343,6 +343,7 @@
                                     (with-tags tags)
                                     (with-notes notes)
                                     (with-name job-name)))
+        (get-job client job-id)
         => (just {:commitment_agent    nil
                   :commitment_id       nil
                   :contract_claimed    nil

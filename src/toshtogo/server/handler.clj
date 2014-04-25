@@ -3,7 +3,9 @@
             [compojure.handler :as handler]
             [compojure.route :as route]
             [clojure.string :as s]
-            [cheshire.generate :as json-gen]
+            [cheshire
+             [core :as json]
+             [generate :as json-gen]]
             [ring.util.response :as resp]
             [ring.util.codec :as codec]
             [swiss.arrows :refer :all]
@@ -103,7 +105,7 @@
                                       (assoc :job_id job-id)
                                       (dissoc :agent)
                                       normalise-job-req))]
-               {:status 200 :body "Job created"})
+                {:status 200 :body {:success "Job created"}})
              #(job-redirect job-id))))
 
         (GET "/" []
