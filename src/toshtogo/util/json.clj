@@ -19,7 +19,11 @@
 
 (defmulti decode class)
 (defmethod decode String [s]
-  (json/parse-string s keyword))
+  (try
+    (json/parse-string s keyword)
+    (catch Throwable e
+      (throw (RuntimeException. (str "Could not parse:" s) e)))))
+
 (defmethod decode InputStream [s]
   (decode (slurp s)))
 (defmethod decode nil [s] nil)
