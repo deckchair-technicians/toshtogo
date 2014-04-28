@@ -10,7 +10,7 @@
 (def migrated-dev-db (delay (run-migrations! dev-db)))
 
 (def in-process {:type :app :app (dev-app :debug false)})
-(def localhost {:type :http :base-path "http://localhost:3000"})
+(def localhost {:type :http :base-url "http://localhost:3000"})
 
 (def client-config in-process)
 (def client (ttc/client client-config
