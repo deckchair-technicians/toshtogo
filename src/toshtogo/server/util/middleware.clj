@@ -12,7 +12,8 @@
             [toshtogo.util.json :as json]
             [toshtogo.util.hashing :refer [murmur!]]
             [toshtogo.util.io :refer [byte-array-input! byte-array-output!]])
-  (:import [java.io ByteArrayInputStream]))
+  (:import [java.io ByteArrayInputStream]
+           (clojure.lang ExceptionInfo)))
 
 
 (defn sql-deps [cnxn]
@@ -113,15 +114,21 @@
   (fn [request]
     (handler (update request :body json/decode))))
 
+(defn exception-response [e status-code]
+  (json-response {:body   (json/encode {:stacktrace (cause-trace e)
+                                        :message    (.getMessage e)
+                                        :class      (.getName (class e))
+                                        :ex-data    (ex-data e)})
+                  :status status-code}))
 
 (defn wrap-json-exception
   [handler]
   (fn [request]
     (try (handler request)
          (catch Throwable e
-           (json-response {:body   (json/encode {:stacktrace (cause-trace e)
-                                                 :class      (.getName (class e))})
-                           :status 500})))))
+           (if (= :bad-request (-> e ex-data :cause))
+             (exception-response e 400)
+             (exception-response e 500))))))
 
 (defn wrap-if [handler pred middleware & args]
   (if pred

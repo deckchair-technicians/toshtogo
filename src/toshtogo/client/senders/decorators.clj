@@ -3,7 +3,7 @@
   (:require [flatland.useful.map :refer [update]]
             [toshtogo.util.core :refer [debug exponential-backoff retry-until-success]]
             [toshtogo.util.json :as json]
-            [toshtogo.client.util :refer [nil-on-404 throw-500]]
+            [toshtogo.client.util :refer [nil-on-404 throw-500 throw-400]]
             [toshtogo.client.senders.protocol :refer :all]))
 
 (defn wrap-follow-redirect
@@ -64,7 +64,7 @@
       (nil-on-404 (GET decorated location)))))
 
 (defn wrap-throw-500
-  [decorated]
+      [decorated]
   (reify Sender
     (POST! [this location message]
       (throw-500 (POST! decorated location message)))
@@ -72,6 +72,16 @@
       (throw-500 (PUT! decorated location message)))
     (GET [this location]
       (throw-500 (GET decorated location)))))
+
+(defn wrap-throw-400
+      [decorated]
+  (reify Sender
+    (POST! [this location message]
+      (throw-400 (POST! decorated location message)))
+    (PUT! [this location message]
+      (throw-400 (PUT! decorated location message)))
+    (GET [this location]
+      (throw-400 (GET decorated location)))))
 
 (defn wrap-retry-sender [decorated opts]
   (if (= false (:should-retry opts))
@@ -91,6 +101,7 @@
   (-> sender
       wrap-throw-500
       (wrap-retry-sender opts)
+      wrap-throw-400
       wrap-follow-redirect
       wrap-nil-404
       wrap-json-decode

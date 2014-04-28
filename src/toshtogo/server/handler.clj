@@ -16,6 +16,7 @@
             [toshtogo.server.util.middleware :refer :all]
             [toshtogo.server.persistence.protocol :refer :all]
             [toshtogo.server.api :refer :all]
+            [toshtogo.server.validation :refer :all]
             [toshtogo.util.core :refer [uuid ppstr debug parse-datetime ensure-seq]])
   (:import [toshtogo.server.util IdempotentPutException]
            [java.io InputStream]))
@@ -107,11 +108,14 @@
             (check-idempotent!
              :create-job job-id
              #(let [job (new-job! persistence
-                                  (body :agent)
+                                  (-> body
+                                      :agent
+                                      (validated Agent))
                                   (-> body
                                       (assoc :job_id job-id)
                                       (dissoc :agent)
-                                      normalise-job-req))]
+                                      normalise-job-req
+                                      (validated Job)))]
                 (job-redirect job-id))
              #(job-redirect job-id))))
 
@@ -151,8 +155,12 @@
                                       (update :outcome keyword)
                                       (update :contract_due parse-datetime)
                                       (update :existing_job_dependencies (fn [dep-job-id] (map uuid dep-job-id)))
-                                      (update :dependencies (fn [deps] (map normalise-job-req deps))))
-                                  (body :agent))
+                                      (update :dependencies (fn [deps] (map normalise-job-req deps)))
+                                      (dissoc :agent)
+                                      (validated JobResult))
+                                  (-> body
+                                      :agent
+                                      (validated Agent)))
                   (commitment-redirect commitment-id))
              #(commitment-redirect commitment-id))))
 
@@ -194,5 +202,5 @@
         (wrap-db-transaction db)
         wrap-json-response
         (wrap-if debug wrap-print-response)
-        wrap-json-exception
+        (wrap-json-exception)
         wrap-cors)))

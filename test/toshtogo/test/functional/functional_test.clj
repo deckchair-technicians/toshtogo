@@ -89,7 +89,7 @@
                  before-due-time (now)
                  due-time (plus before-due-time (minutes 1))]
 
-             (put-job! client job-id (job-req [] job-type))
+             (put-job! client job-id (job-req {} job-type))
 
              (let [delay (fn [job] (try-later due-time "some error happened"))]
                @(do-work! client job-type delay) => truthy)
@@ -122,9 +122,9 @@
                job-type (uuid-str)
                start-time-ish (now)]
 
-           (put-job! client job-id (job-req [] job-type))
+           (put-job! client job-id (job-req {} job-type))
 
-           @(do-work! client job-type (fn [job] (Thread/sleep 1) (success "Oh yeah")))
+           @(do-work! client job-type (fn [job] (Thread/sleep 1) (success {:oh "yeah"})))
 
            (let [{:keys [last_heartbeat]} (get-job client job-id)]
              (after? last_heartbeat start-time-ish) => truthy)))

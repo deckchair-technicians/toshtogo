@@ -66,6 +66,8 @@
 
 (defn uuid-str [] (str (uuid)))
 
+(defn uuid? [x] (instance? UUID x))
+
 (defn cause-trace
   [e]
   (with-out-str (stacktrace/print-cause-trace e)))

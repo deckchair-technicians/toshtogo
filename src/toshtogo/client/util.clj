@@ -1,6 +1,7 @@
 (ns toshtogo.client.util
   (:import [toshtogo.client.senders SenderException]
-           (java.net UnknownHostException InetAddress))
+           [toshtogo.client BadRequestException]
+           [java.net UnknownHostException InetAddress])
   (:require [trptcolin.versioneer.core :as version]
             [swiss.arrows :refer :all]
             [flatland.useful.map :refer [map-vals]]
@@ -70,6 +71,13 @@
   `(let [result# (do ~@body)]
      (if (and (:status result#) (< 499 (:status result#) 600))
        (throw (SenderException. (str result#)))
+       result#)))
+
+(defmacro throw-400
+  [& body]
+  `(let [result# (do ~@body)]
+     (if (and (:status result#) (= 400 (:status result#)))
+       (throw (BadRequestException. (str result#)))
        result#)))
 
 (defmacro nil-on-404
