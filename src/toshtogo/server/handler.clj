@@ -20,11 +20,18 @@
   (:import [toshtogo.server.util IdempotentPutException]
            [java.io InputStream]))
 
+(defn redirect
+      "CORS requires 200 responses for PUT and POST. So we
+      have to return a 200 response containing the redirect url."
+      [url]
+      (-> (resp/response {:redirect true :url url})
+          (resp/header "Location" url)))
+
 (defn job-redirect [job-id]
-  (resp/redirect-after-post (str "/api/jobs/" job-id)))
+  (redirect (str "/api/jobs/" job-id)))
 
 (defn commitment-redirect [commitment-id]
-  (resp/redirect-after-post (str "/api/commitments/" commitment-id)))
+  (redirect (str "/api/commitments/" commitment-id)))
 
 (defn parse-order-by-expression [order-by]
   (let [[name direction]   (-> order-by
@@ -105,7 +112,7 @@
                                       (assoc :job_id job-id)
                                       (dissoc :agent)
                                       normalise-job-req))]
-                {:status 200 :body {:success "Job created"}})
+                (job-redirect job-id))
              #(job-redirect job-id))))
 
         (GET "/" []

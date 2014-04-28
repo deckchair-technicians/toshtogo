@@ -6,11 +6,15 @@
             [toshtogo.client.util :refer [nil-on-404 throw-500]]
             [toshtogo.client.senders.protocol :refer :all]))
 
-(defn wrap-follow-303
+(defn wrap-follow-redirect
   ([decorated]
-   (wrap-follow-303 decorated
+   (wrap-follow-redirect decorated
                     (fn [sender resp] [sender resp]
-                      (if (= 303 (:status resp))
+                      ; See code in handlers. Because CORS requires a 200 response,
+                      ; we have to represent redirects slightly disgustingly.
+                      (if (or (and (= 200 (:status resp))
+                                   (get-in resp [:headers "Location"]))
+                              (= 303 (:status resp)))
                         (GET sender (get-in resp [:headers "Location"]))
                         resp))))
   ([decorated follow]
@@ -87,7 +91,7 @@
   (-> sender
       wrap-throw-500
       (wrap-retry-sender opts)
-      wrap-follow-303
+      wrap-follow-redirect
       wrap-nil-404
       wrap-json-decode
       (wrap-debug debug)))
