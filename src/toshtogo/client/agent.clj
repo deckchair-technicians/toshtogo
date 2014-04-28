@@ -7,6 +7,12 @@
   (doall (map (fn [_] (.submit pool f)) (range count))))
 
 (defn in-busy-loop
+      "Repeatedly call (f shutdown-promise) until shutdown-promise is delivered.
+
+      Catch errors from f and pass to error-handler.
+
+      If error handler fails, we'll print the exception and
+      throw an exception."
       [f shutdown-promise error-handler]
   (while (not (realized? shutdown-promise))
     (try
@@ -44,23 +50,26 @@
       time to terminate.
 
       Exceptions from f will be sent to error-handler, which defaults to
-      printing the stack trace to stdout"
+      printing the stack trace to stdout.
+
+      Note that if error-handler throws an exception, the thread will die
+      forever."
   ([f & {:keys [error-handler thread-count]
          :or   {error-handler print-cause-trace
                 thread-count  1}}]
 
    (let [shutdown-promise (promise)
          executor-service (Executors/newFixedThreadPool thread-count)
-         f-busy-loop (fn [] (in-busy-loop f shutdown-promise error-handler))
-         futures (start executor-service thread-count f-busy-loop)
-         stopper (delay
-                   (.shutdown executor-service)
-                   (deliver shutdown-promise true)
-                   (doseq [fut futures]
-                     @fut))
-         service (reify Service
-                   (stop [this]
-                     @stopper))]
+         f-busy-loop      (fn [] (in-busy-loop f shutdown-promise error-handler))
+         futures          (start executor-service thread-count f-busy-loop)
+         stopper          (delay
+                             (.shutdown executor-service)
+                             (deliver shutdown-promise true)
+                             (doseq [fut futures]
+                               @fut))
+         service          (reify Service
+                             (stop [this]
+                               @stopper))]
 
      (.addShutdownHook (Runtime/getRuntime) (Thread. (fn [] (stop service))))
 
