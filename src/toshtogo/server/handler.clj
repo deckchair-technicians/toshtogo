@@ -25,7 +25,7 @@
       "CORS requires 200 responses for PUT and POST. So we
       have to return a 200 response containing the redirect url."
       [url]
-      (-> (resp/response {:redirect true :url url})
+      (-> (resp/response {:redirect true :location url})
           (resp/header "Location" url)))
 
 (defn job-redirect [job-id]
