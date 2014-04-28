@@ -78,7 +78,7 @@
 (defmacro throw-400
   [& body]
   `(let [result# (do ~@body)]
-     (if (and (:status result#) (= 400 (:status result#)))
+     (if (= 400 (:status result#))
        (throw (BadRequestException. (str result#)))
        result#)))
 
