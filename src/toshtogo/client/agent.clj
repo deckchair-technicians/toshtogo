@@ -4,7 +4,7 @@
             [toshtogo.client.protocol :refer :all]))
 
 (defn start [^ExecutorService pool count f]
-  (map (fn [_] (.submit pool f)) (range count)))
+  (doall (map (fn [_] (.submit pool f)) (range count))))
 
 (defn in-busy-loop
       [f shutdown-promise error-handler]
@@ -28,14 +28,15 @@
   (stop [this]))
 
 (defn start-service
-      "Returns a Service, with a single function (stop [])
+      "Returns a reified Service protocol, with a single method (stop [])
 
       The service runs f in a busy loop across as many threads as requested
       until stop is called.
 
       f is a function that takes a promise which is delivered when
-      the service is stopped (on JVM termination). This allows the wrapped
-      function a chance to exit quickly.
+      the service is stopped (on JVM termination if not before).
+
+      f can inspect the promise periodically to exit quickly and gracefully.
 
       The service will not allow the JVM to shut down until the currently
       executing function calls complete. If f is long-running and does not
@@ -52,13 +53,14 @@
          executor-service (Executors/newFixedThreadPool thread-count)
          f-busy-loop (fn [] (in-busy-loop f shutdown-promise error-handler))
          futures (start executor-service thread-count f-busy-loop)
-         stop (delay (.shutdown executor-service)
-                     (deliver shutdown-promise true)
-                     (doseq [fut futures]
-                       @fut))
+         stopper (delay
+                   (.shutdown executor-service)
+                   (deliver shutdown-promise true)
+                   (doseq [fut futures]
+                     @fut))
          service (reify Service
                    (stop [this]
-                     @stop))]
+                     @stopper))]
 
      (.addShutdownHook (Runtime/getRuntime) (Thread. (fn [] (stop service))))
 
@@ -69,9 +71,18 @@
     (handler (apply assoc job key val keyvals))))
 
 (defn job-consumer
+      "Takes a Toshtogo client, a job-type and a handler function that takes a toshtogo job.
+
+      Returns a function that takes a shutdown promise.
+
+      The returned function will call do-work! for the given job type, passing any jobs to
+      handler. The job will be enriched with the :shutdown-promise passed in to the wrapping
+      function.
+
+      Sleeps for the given number of ms if there is no work to do."
       [client job-type handler & {:keys [sleep-on-no-work-ms] :or {sleep-on-no-work-ms 1000}}]
   (fn [shutdown-promise]
     (let [outcome @(do-work! client job-type (-> handler
                                                  (wrap-assoc :shutdown-promise shutdown-promise)))]
       (when-not outcome
-        (Thread/sleep 1000)))))
+        (Thread/sleep sleep-on-no-work-ms)))))

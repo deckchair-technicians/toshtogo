@@ -1,6 +1,7 @@
 (ns toshtogo.server.persistence.protocol
   (:import (java.util UUID))
-  (:require [clojure.pprint :refer [pprint]]))
+  (:require [clj-time.core :refer [now]]
+            [clojure.pprint :refer [pprint]]))
 
 (defn contract-req
   ([job-id]
@@ -30,6 +31,8 @@
             (not (empty? existing-job-dependencies)) (assoc :existing_job_dependencies existing-job-dependencies))))
 
 (defn try-later
+  ([]
+     (try-later (now)))
   ([contract-due]
      {:outcome       :try-later
       :contract_due contract-due})
