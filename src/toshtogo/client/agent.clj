@@ -71,7 +71,10 @@
     (handler (apply assoc job key val keyvals))))
 
 (defn job-consumer
-      "Takes a Toshtogo client, a job-type and a handler function that takes a toshtogo job.
+      "Takes:
+      - a Toshtogo client
+      - a job-type
+      - a handler function that takes a toshtogo job
 
       Returns a function that takes a shutdown promise.
 
@@ -79,7 +82,8 @@
       handler. The job will be enriched with the :shutdown-promise passed in to the wrapping
       function.
 
-      Sleeps for the given number of ms if there is no work to do."
+      Sleeps for the given number of ms if there is no work to do, so that we don't DOS the
+      toshtogo server (defaults to 1 second)."
       [client job-type handler & {:keys [sleep-on-no-work-ms] :or {sleep-on-no-work-ms 1000}}]
   (fn [shutdown-promise]
     (let [outcome @(do-work! client job-type (-> handler
