@@ -52,7 +52,7 @@
                                        (apply dissoc <> merge-multiple))]
     (apply merge (merge-with dependency-merger (job :request_body) multiple-value-deps) single-value-deps)))
 
-(defn agent-details
+(defn agent-details*
   "Returns a map containing :hostname :system_name :system_version.\n
   \n
   Works out hostname itself.\n
@@ -65,6 +65,8 @@
   {:hostname       (hostname)
    :system_name    maven-artifact
    :system_version (version/get-version maven-group maven-artifact)})
+
+(def agent-details (memoize agent-details*))
 
 (defmacro throw-500
   [& body]
