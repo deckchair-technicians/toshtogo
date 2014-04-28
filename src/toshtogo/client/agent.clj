@@ -81,7 +81,7 @@
 
 (defn job-consumer
       "Takes:
-      - a Toshtogo client
+      - a client-factory function that returns a Toshtogo client (which will be called at least once per job)
       - a job-type
       - a handler function that takes a toshtogo job
 
@@ -93,9 +93,9 @@
 
       Sleeps for the given number of ms if there is no work to do, so that we don't DOS the
       toshtogo server (defaults to 1 second)."
-      [client job-type handler & {:keys [sleep-on-no-work-ms] :or {sleep-on-no-work-ms 1000}}]
+      [client-factory job-type handler & {:keys [sleep-on-no-work-ms] :or {sleep-on-no-work-ms 1000}}]
   (fn [shutdown-promise]
-    (let [outcome @(do-work! client job-type (-> handler
+    (let [outcome @(do-work! (client-factory) job-type (-> handler
                                                  (wrap-assoc :shutdown-promise shutdown-promise)))]
       (when-not outcome
         (Thread/sleep sleep-on-no-work-ms)))))

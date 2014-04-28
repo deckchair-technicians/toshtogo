@@ -12,7 +12,7 @@
       (let [job-id (uuid)
             job-type (uuid-str)
             service (start-service (job-consumer
-                                     client
+                                     (constantly client)
                                      job-type
                                      return-success
                                      :sleep-on-no-work-ms 1))]
@@ -35,7 +35,7 @@
       (let [job-id (uuid)
             job-type (uuid-str)
             service (start-service (job-consumer
-                                     client
+                                     (constantly client)
                                      job-type
                                      return-success
                                      :sleep-on-no-work-ms 1))]
@@ -60,7 +60,7 @@
                                           )
                                         (error "shutdown-promise triggered"))
             service (start-service (job-consumer
-                                     client
+                                     (constantly client)
                                      job-type
                                      wait-for-shutdown-promise
                                      :sleep-on-no-work-ms 1))]
@@ -81,7 +81,7 @@
 
 (fact "Stopping the service twice does not throw an exception"
       (let [service (start-service (job-consumer
-                                     client
+                                     (constantly client)
                                      (uuid-str)
                                      return-success
                                      :sleep-on-no-work-ms 1))]
