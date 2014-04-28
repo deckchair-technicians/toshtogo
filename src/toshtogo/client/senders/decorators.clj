@@ -1,10 +1,23 @@
 (ns toshtogo.client.senders.decorators
   (:import (toshtogo.client.senders SenderException))
-  (:require [flatland.useful.map :refer [update]]
+  (:require [clojure.pprint :refer [pprint]]
+            [flatland.useful.map :refer [update]]
             [toshtogo.util.core :refer [debug exponential-backoff retry-until-success]]
             [toshtogo.util.json :as json]
             [toshtogo.client.util :refer [nil-on-404 throw-500 throw-400]]
             [toshtogo.client.senders.protocol :refer :all]))
+
+(defn wrapper [decorated map-fn]
+  (reify
+    Sender
+    (POST! [this location message]
+      (map-fn this (POST! decorated location message)))
+
+    (PUT! [this location message]
+      (map-fn this (PUT! decorated location message)))
+
+    (GET [this location]
+      (map-fn this (GET decorated location)))))
 
 (defn wrap-follow-redirect
   ([decorated]
@@ -13,33 +26,18 @@
                       ; See code in handlers. Because CORS requires a 200 response,
                       ; we have to represent redirects slightly disgustingly.
                       (if (or (and (= 200 (:status resp))
-                                   (get-in resp [:headers "Location"]))
+                                   (get-in resp [:body :location]))
                               (= 303 (:status resp)))
-                        (GET sender (get-in resp [:headers "Location"]))
+                        (GET sender (get-in resp [:body :location]))
                         resp))))
   ([decorated follow]
-   (reify
-     Sender
-     (POST! [this location message]
-       (follow this (POST! decorated location message)))
+   (wrapper decorated follow)))
 
-     (PUT! [this location message]
-       (follow this (PUT! decorated location message)))
+(defn wrap-json-decode-body [decorated]
+  (wrapper decorated (fn [sender resp] (update resp :body json/decode))))
 
-     (GET [this location]
-       (follow this (GET decorated location))))))
-
-(defn wrap-json-decode [decorated]
-  (reify
-    Sender
-    (POST! [this location message]
-      (json/decode (:body (POST! decorated location message))))
-
-    (PUT! [this location message]
-      (json/decode (:body (PUT! decorated location message))))
-
-    (GET [this location]
-      (json/decode (:body (GET decorated location))))))
+(defn wrap-extract-body [decorated]
+  (wrapper decorated (fn [sender resp] (:body resp))))
 
 (defn wrap-debug [decorated should-debug]
   (if should-debug
@@ -55,33 +53,15 @@
 
 (defn wrap-nil-404
   [decorated]
-  (reify Sender
-    (POST! [this location message]
-      (nil-on-404 (POST! decorated location message)))
-    (PUT! [this location message]
-      (nil-on-404 (PUT! decorated location message)))
-    (GET [this location]
-      (nil-on-404 (GET decorated location)))))
+  (wrapper decorated (fn [sender resp] (nil-on-404 resp))))
 
 (defn wrap-throw-500
       [decorated]
-  (reify Sender
-    (POST! [this location message]
-      (throw-500 (POST! decorated location message)))
-    (PUT! [this location message]
-      (throw-500 (PUT! decorated location message)))
-    (GET [this location]
-      (throw-500 (GET decorated location)))))
+  (wrapper decorated (fn [sender resp] (throw-500 resp))))
 
 (defn wrap-throw-400
       [decorated]
-  (reify Sender
-    (POST! [this location message]
-      (throw-400 (POST! decorated location message)))
-    (PUT! [this location message]
-      (throw-400 (PUT! decorated location message)))
-    (GET [this location]
-      (throw-400 (GET decorated location)))))
+  (wrapper decorated (fn [sender resp] (throw-400 resp))))
 
 (defn wrap-retry-sender [decorated opts]
   (if (= false (:should-retry opts))
@@ -102,7 +82,8 @@
       wrap-throw-500
       (wrap-retry-sender opts)
       wrap-throw-400
-      wrap-follow-redirect
       wrap-nil-404
-      wrap-json-decode
+      wrap-json-decode-body
+      wrap-follow-redirect
+      wrap-extract-body
       (wrap-debug debug)))
