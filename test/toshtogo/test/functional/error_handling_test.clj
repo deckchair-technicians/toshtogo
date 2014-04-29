@@ -32,3 +32,5 @@
 
         (put-job! client job-id (job-req {:a-field "DIFFERENT value"} (uuid-str)))
         => (throws BadRequestException)))
+
+(future-fact "Exceptions as a result of bad requests are thrown immediately")

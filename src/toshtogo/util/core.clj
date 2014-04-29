@@ -102,12 +102,16 @@
            (future-cancel f#)
            (throw (TimeoutException. ~message)))))))
 
+(defn asdas [attempt-number e])
+
 (defn retry-until-success*
   ":interval        pause between retries, in millis
    :interval-fn     function that takes an integer for # of retries and return the # of millis to pause
    :timeout         number of millis after which we give up
-   :error-fn        function to pass errors to"
-  [func & {:keys [interval interval-fn timeout max-retries error-fn] :or {interval 10 error-fn nil} :as opts}]
+   :error-fn        function to pass errors to
+   :immediate-throw a sequence of exception classes that short-circuit retry cycle"
+  [func & {:keys [interval interval-fn timeout max-retries error-fn]
+           :or {interval 10 error-fn nil} :as opts}]
   (let [error-fn (or error-fn (constantly nil))
         interval-fn (if interval-fn interval-fn (fn [i] interval))
         started (now)
@@ -118,14 +122,14 @@
 
     (with-timeout timeout "Giving up on retry"
                   (loop [attempt-number 1
-                         result (or-exception func)]
-                    (if (first result)
-                      (first result)
+                        [result exception] (or-exception func)]
+                    (if (not exception)
+                      result
                       (if (or (timeout-expired?) (max-tries-exceeded? attempt-number))
                         (throw (RuntimeException.
                                  (str "Giving up on retry after" attempt-number "attempts and" (elapsed-time))
-                                 (second result)))
-                        (do (error-fn (second result))
+                                 exception))
+                        (do (error-fn exception)
                             (sleep (interval-fn attempt-number))
                             (recur (inc attempt-number) (or-exception func)))))))))
 

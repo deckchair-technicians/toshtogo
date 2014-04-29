@@ -1,11 +1,11 @@
 (ns toshtogo.client.senders.decorators
-  (:import (toshtogo.client.senders SenderException))
   (:require [clojure.pprint :refer [pprint]]
             [flatland.useful.map :refer [update]]
             [toshtogo.util.core :refer [debug exponential-backoff retry-until-success]]
             [toshtogo.util.json :as json]
             [toshtogo.client.util :refer [nil-on-404 throw-500 throw-400]]
-            [toshtogo.client.senders.protocol :refer :all]))
+            [toshtogo.client.senders.protocol :refer :all])
+  (:import (toshtogo.client BadRequestException)))
 
 (defn wrapper [decorated map-fn]
   (reify
@@ -63,12 +63,19 @@
       [decorated]
   (wrapper decorated (fn [sender resp] (throw-400 resp))))
 
+(defn immediately-throw [f e-class]
+  (fn [e]
+    (if (instance? e-class e)
+      (throw e)
+      (when f
+        (f e)))))
+
 (defn wrap-retry-sender [decorated opts]
   (if (= false (:should-retry opts))
     decorated
     (let [retry-opts (-> opts
                          (update :exponential-backoff #(or % 5000))
-                         (update :error-fn #(or % (constantly nil))))]
+                         (update :error-fn #(immediately-throw % BadRequestException)))]
       (reify Sender
         (POST! [this location message]
           (retry-until-success retry-opts (POST! decorated location message)))
