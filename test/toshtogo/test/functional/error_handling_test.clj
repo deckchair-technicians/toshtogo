@@ -24,3 +24,11 @@
 
         (complete-work! client (:commitment_id contract) {:not "a valid result"})
         => (throws BadRequestException)))
+
+(fact "Idempotency exceptions are marked as client errors"
+      (let [job-id (uuid)]
+
+        (put-job! client job-id (job-req {:a-field "field value"} (uuid-str)))
+
+        (put-job! client job-id (job-req {:a-field "DIFFERENT value"} (uuid-str)))
+        => (throws BadRequestException)))

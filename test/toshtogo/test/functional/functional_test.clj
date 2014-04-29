@@ -1,13 +1,13 @@
 (ns toshtogo.test.functional.functional-test
-  (:import (java.util UUID)
-           (toshtogo.client.senders SenderException))
   (:require [midje.sweet :refer :all]
             [clj-time.core :refer [now minutes seconds millis plus minus after? interval within?]]
             [ring.adapter.jetty :refer [run-jetty]]
             [clojure.java.jdbc :as sql]
             [toshtogo.client.protocol :refer :all]
             [toshtogo.util.core :refer [uuid uuid-str debug]]
-            [toshtogo.test.functional.test-support :refer :all]))
+            [toshtogo.test.functional.test-support :refer :all])
+  (:import (java.util UUID)
+           (toshtogo.client BadRequestException)))
 
 (background (before :contents @migrated-dev-db))
 
@@ -30,7 +30,7 @@
           (put-job! no-retry-client job-id (job-req {:a-field "same content"} job-type))
 
           (put-job! no-retry-client job-id (job-req {:a-field "DIFFERENT CONTENT"} job-type))
-          => (throws SenderException)))
+          => (throws BadRequestException)))
 
   (fact "Work can only be requested once"
         (let [job-id (uuid)

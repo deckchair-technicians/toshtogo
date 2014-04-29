@@ -1,8 +1,7 @@
 (ns toshtogo.server.util.idempotentput
   (:require [honeysql.helpers :refer :all]
             [toshtogo.util.hsql :as hsql]
-            [toshtogo.util.sql :as sql])
-  (:import [toshtogo.server.util IdempotentPutException]))
+            [toshtogo.util.sql :as sql]))
 
 (defn put-is-identical?
   [previous-put hash-1 hash-2]
@@ -30,9 +29,11 @@
 
       (if (put-is-identical? previous-put hash-1 hash-2)
         (on-second-attempt)
-        (throw (IdempotentPutException.
-                (str "Previous put for " operation-type "/" id
-                     " had hash \n"
-                     [(previous-put :hash_1) (previous-put :hash_2)]
-                     "\n which does not match "
-                     body-hash)))))))
+        (throw (ex-info (str "Previous put for " operation-type "/" id
+                             " had hash \n"
+                             [(previous-put :hash_1) (previous-put :hash_2)]
+                             "\n which does not match "
+                             body-hash)
+
+                        {:cause :bad-request
+                         :data  {:id id}}))))))

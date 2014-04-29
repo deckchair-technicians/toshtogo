@@ -34,8 +34,7 @@
 
   :ring {:handler toshtogo.server.core/dev-app-instance :reload-paths ["src"]}
 
-  :aot [toshtogo.server.util.IdempotentPutException
-        toshtogo.util.OptimisticLockingException
+  :aot [toshtogo.util.OptimisticLockingException
         toshtogo.client.senders.SenderException
         toshtogo.client.BadRequestException]
 
