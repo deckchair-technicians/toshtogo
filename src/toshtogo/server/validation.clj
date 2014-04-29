@@ -18,7 +18,7 @@
    :request_body                               (s/pred map? "should be a map")
    (s/optional-key :job_id)                    s/Uuid
    (s/optional-key :fungibility_group_id)      s/Uuid
-   (s/optional-key :fungible-under-parent)     s/Bool
+   (s/optional-key :fungible_under_parent)     s/Bool
    (s/optional-key :tags)                      [s/Keyword]
    (s/optional-key :job_name)                  s/Str
    (s/optional-key :notes)                     s/Str
