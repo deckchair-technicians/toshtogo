@@ -79,6 +79,23 @@
   (fn [job]
     (handler (apply assoc job key val keyvals))))
 
+(defn per-thread-singleton
+      "Stolen from clojure.contrib.
+
+      Returns a per-thread singleton function.  f is a function of no
+      arguments that creates and returns some object.  The singleton
+      function will call f only once for each thread, and cache its value
+      for subsequent calls from the same thread.  This allows you to
+      safely and lazily initialize shared objects on a per-thread basis.
+
+      Warning: due to a bug in JDK 5, it may not be safe to use a
+      per-thread-singleton in the initialization function for another
+      per-thread-singleton.  See
+      http://bugs.sun.com/bugdatabase/view_bug.do?bug_id=5025230"
+  [f]
+  (let [thread-local (proxy [ThreadLocal] [] (initialValue [] (f)))]
+    (fn [] (.get thread-local))))
+
 (defn job-consumer
       "Takes:
       - a client-factory function that returns a Toshtogo client (which will be called at least once per job)
@@ -94,8 +111,9 @@
       Sleeps for the given number of ms if there is no work to do, so that we don't DOS the
       toshtogo server (defaults to 1 second)."
       [client-factory job-type handler & {:keys [sleep-on-no-work-ms] :or {sleep-on-no-work-ms 1000}}]
-  (fn [shutdown-promise]
-    (let [outcome @(do-work! (client-factory) job-type (-> handler
-                                                 (wrap-assoc :shutdown-promise shutdown-promise)))]
-      (when-not outcome
-        (Thread/sleep sleep-on-no-work-ms)))))
+      (let [per-thread-client-factory (per-thread-singleton client-factory)]
+        (fn [shutdown-promise]
+          (let [outcome @(do-work! (per-thread-client-factory) job-type (-> handler
+                                                                 (wrap-assoc :shutdown-promise shutdown-promise)))]
+            (when-not outcome
+              (Thread/sleep sleep-on-no-work-ms))))))
