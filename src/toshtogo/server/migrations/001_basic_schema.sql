@@ -7,9 +7,9 @@ create table agents (
 
   unique (hostname, system_name, system_version)
 );
-
+---
 create index agent_idx on agents (hostname, system_name, system_version);
-
+---
 -- JOBS
 create table jobs (
   job_id           uuid           primary key,
@@ -20,16 +20,16 @@ create table jobs (
   request_body     text           not null,
   dependencies_succeeded integer     default 0 not null
 );
-
+---
 create index job_created_idx on jobs (job_created);
-
+---
 create table job_tags (
   job_id           uuid           not null references jobs(job_id),
   tag              varchar(128)   not null
 );
-
+---
 create index job_tag_idx on job_tags using hash(tag);
-
+---
 create table job_dependencies (
   dependency_id      uuid         primary key,
   parent_job_id      uuid         references jobs(job_id),
@@ -37,7 +37,7 @@ create table job_dependencies (
 
   unique (parent_job_id, child_job_id)
 );
-
+---
 -- CONTRACTS
 create table contracts (
   contract_id      uuid           primary key,
@@ -48,10 +48,11 @@ create table contracts (
 
   unique(job_id, contract_number)
 );
-
+---
 create index contract_created_idx  on contracts (contract_created);
+---
 create index contract_number_idx   on contracts (contract_number);
-
+---
 create table agent_commitments (
   commitment_id       uuid        primary key,
   commitment_contract uuid        unique not null references contracts(contract_id),
@@ -59,25 +60,26 @@ create table agent_commitments (
   contract_claimed    timestamp   not null,
   last_heartbeat      timestamp   default now()
 );
-
+---
 create index commitment_claimed_idx  on agent_commitments (contract_claimed);
-
+---
 create table commitment_outcomes (
   outcome_id        uuid          primary key references agent_commitments(commitment_id),
   error             text,
   contract_finished timestamp     not null,
   outcome           varchar(16)   not null -- success, error,  more-work, timeout, try-later
 );
-
+---
 create index commitment_finished_idx on commitment_outcomes (contract_finished);
+---
 create index commitment_status_idx   on commitment_outcomes (outcome);
-
+---
 create table job_results (
   job_id           uuid           primary key references jobs(job_id),
   result_body      text           not null
 );
 
-
+---
 -- PUT_IDEMPOTENCY
 -- Two halves of a 128 bit murmur hash of
 -- the request body

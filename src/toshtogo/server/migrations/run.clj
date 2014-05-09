@@ -3,7 +3,8 @@
              [clojure.java.jdbc :as sql]
              [me.raynes.fs :as fs]
              [hermit.core :as hermit])
-  (:import [com.dbdeploy DbDeploy]))
+  (:import [com.dbdeploy DbDeploy]
+           (com.dbdeploy.database DelimiterType)))
 
 (def create-changelog-sql "
 CREATE TABLE IF NOT EXISTS changelog (
@@ -42,7 +43,9 @@ CREATE TABLE IF NOT EXISTS changelog (
                          (.setDriver (db :classname))
                          (.setUserid (db :user))
                          (.setPassword (db :password))
-                         (.setScriptdirectory temp))]
+                         (.setScriptdirectory temp)
+                         (.setDelimiter "---")
+                         (.setDelimiterType DelimiterType/row))]
          (.go db-deploy)))
 
      (finally
