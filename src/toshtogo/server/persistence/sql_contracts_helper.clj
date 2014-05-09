@@ -127,6 +127,11 @@
        :fungibility_group_id
        (merge-where query [:= :jobs.fungibility_group_id v])
 
+       :tree_id
+       (merge-where query [:in :jobs.job_id (-> (select :tree_job_id)
+                                                (from :job_tree_members)
+                                                (where [:= :membership_tree_id v]))])
+
        :get_tags
        (merge-left-join query :job_tags
                         [:= :jobs.job_id :job_tags.job_id])

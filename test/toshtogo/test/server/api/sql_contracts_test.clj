@@ -17,7 +17,7 @@
 (def agent-details (util/agent-details "savagematt" "toshtogo"))
 
 (defn given-job-exists [persistence id job-type & deps]
-  (new-job! persistence agent-details (job-req id {:some-data (uuid)} job-type :dependencies deps)))
+  (new-root-job! persistence agent-details (job-req id {:some-data (uuid)} job-type :dependencies deps)))
 
 (defn given-job-succeeded [persistence job-id]
   (let [job      (get-job persistence job-id)
@@ -31,7 +31,7 @@
          id-two                         (uuid)
          job-type-one                        (uuid-str) ;so we can run against a dirty database
          job-type-two                        (uuid-str)
-         {:keys [agents persistence]} (sql-deps cnxn)]
+         {:keys [_ persistence]} (sql-deps cnxn)]
 
      (given-job-exists persistence id-two job-type-two)
      (given-job-exists persistence id-one job-type-one)
@@ -45,7 +45,7 @@
    (let [job-id    (uuid)
          job-type   (uuid-str)        ;so we can run against a dirty database
          commitment-id (uuid)
-         {:keys [agents persistence]} (sql-deps cnxn)]
+         {:keys [_ persistence]} (sql-deps cnxn)]
 
      (given-job-exists persistence job-id job-type)
 

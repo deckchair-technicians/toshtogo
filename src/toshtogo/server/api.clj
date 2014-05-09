@@ -55,19 +55,25 @@
 
       (insert-contract! persistence job-id new-contract-ordinal contract-due))))
 
-(defn new-job! [persistence agent-details root-job]
-  (let [root-and-dependencies (normalised-job-list root-job)]
+(defn new-job! [persistence agent-details job tree-id]
+  (let [root-and-dependencies (normalised-job-list job)]
 
-    (insert-jobs! persistence root-and-dependencies agent-details)
+    (insert-jobs! persistence root-and-dependencies agent-details tree-id)
 
-    (doseq [job root-and-dependencies]
-      (new-contract! persistence (contract-req (job :job_id) (job :contract_due))))
+    (doseq [job-or-dependency root-and-dependencies]
+      (insert-tree-membership! persistence tree-id (:job_id job-or-dependency))
+      (new-contract! persistence (contract-req (job-or-dependency :job_id) (job-or-dependency :contract_due))))
 
-    (get-job persistence (root-job :job_id))))
+    (get-job persistence (job :job_id))))
 
+(defn new-root-job! [persistence agent-details job]
+  (let [tree-id (uuid)]
+    (insert-tree! persistence tree-id (:job_id job))
+    (new-job! persistence agent-details job tree-id)))
 
-(defn process-result! [persistence contract commitment-id result agent-details]
-  (let [job-id (contract :job_id)]
+(defn process-result! [persistence contract result agent-details]
+  (let [job-id (contract :job_id)
+        home-tree-id (contract :home_tree_id)]
     (case (:outcome result)
       :success
       nil
@@ -83,11 +89,12 @@
                                                                 :request_body         (:request_body dependency)
                                                                 :fungibility_group_id (:fungibility_group_id dependency)}))]
               (insert-dependency! persistence job-id (:job_id existing-job))
-              (new-job! persistence agent-details dependency))
+              (new-job! persistence agent-details dependency home-tree-id))
 
-            (new-job! persistence agent-details dependency)))
+            (new-job! persistence agent-details dependency home-tree-id)))
 
         (doseq [dependency-job-id (:existing_job_dependencies result)]
+          (insert-tree-membership! persistence home-tree-id dependency-job-id)
           (insert-dependency! persistence job-id dependency-job-id)))
 
       :try-later
@@ -110,7 +117,7 @@
       :running
       (do
         (insert-result! persistence commitment-id result)
-        (process-result! persistence contract commitment-id result agent-details))
+        (process-result! persistence contract result agent-details))
 
       :cancelled
       nil

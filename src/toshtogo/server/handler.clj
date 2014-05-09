@@ -61,7 +61,7 @@
       (update :page (fn [s] (Integer/parseInt (or s "1"))))
       (update :page-size (fn [s] (Integer/parseInt (or s "25"))))
       ;(update-each [:latest_contract :has_contract] parse-boolean-param)
-      (update-each [:commitment_id :job_id :depends_on_job_id :dependency_of_job_id :fungibility_group_id] uuid)
+      (update-each [:tree_id :commitment_id :job_id :depends_on_job_id :dependency_of_job_id :fungibility_group_id] uuid)
       (update-each [:job_type :outcome] #(when % (map keyword (ensure-seq %))))
       (update :tags keywords-param)
       (update :max_due_time parse-datetime)))
@@ -107,7 +107,8 @@
           (let [job-id (uuid job-id)]
             (check-idempotent!
              :create-job job-id
-             #(let [job (new-job! persistence
+             #(do
+               (new-root-job! persistence
                                   (-> body
                                       :agent
                                       (validated Agent))
@@ -115,7 +116,7 @@
                                       (assoc :job_id job-id)
                                       (dissoc :agent)
                                       normalise-job-req
-                                      (validated Job)))]
+                                      (validated Job)))
                 (job-redirect job-id))
              #(job-redirect job-id))))
 

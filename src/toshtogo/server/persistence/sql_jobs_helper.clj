@@ -1,18 +1,20 @@
 (ns toshtogo.server.persistence.sql-jobs-helper
-  (:require [flatland.useful.map :refer [update update-each]]
+  (:require [flatland.useful.map :as mp]
             [pallet.map-merge :refer [merge-keys]]
             [clj-time.core :refer [now]]
             [clj-time.coerce :as tc]
             [cheshire.core :as json]
+            [honeysql.helpers :refer :all]
             [toshtogo.server.agents.protocol :refer [agent!]]
             [toshtogo.server.persistence.protocol :refer :all]
             [toshtogo.util.core :refer [uuid debug]]
             [toshtogo.util.deterministic-representation :refer [deterministic-representation]]
-            [toshtogo.util.sql :as tsql])
+            [toshtogo.util.hsql :as hsql])
   (:import [toshtogo.util OptimisticLockingException]))
 
-(defn job-record [id job-name job-type agent-id body notes fungibility-group-id]
-  {:job_id            id
+(defn job-record [tree-id job-id job-name job-type agent-id body notes fungibility-group-id]
+  {:home_tree_id      tree-id
+   :job_id           job-id
    :job_name          job-name
    :job_type          job-type
    :requesting_agent  agent-id
@@ -24,7 +26,7 @@
 (defn collect-tags [job row]
   (if job
     (-> job
-        (update :tags #(conj % (row :tag) )))
+        (mp/update :tags #(conj % (row :tag) )))
     (assoc row :tags #{(row :tag)})))
 
 (defn job-outcome [job]
@@ -43,9 +45,9 @@
   (-> job
       (dissoc :tag)
       (dissoc :job_id_2 :job_id_3 :job_id_4 :commitment_contract :outcome_id)
-      (update :outcome keyword)
+      (mp/update :outcome keyword)
       (fix-job-outcome)
-      (update-each [:request_body :result_body] #(json/parse-string % keyword))))
+      (mp/update-each [:request_body :result_body] #(json/parse-string % keyword))))
 
 (defn fold-in-tags [job-with-tags]
   (reduce collect-tags
@@ -63,3 +65,10 @@
    :commitment_contract contract-id
    :commitment_agent    (agent :agent_id)
    :contract_claimed    (now)})
+
+(defn is-tree-member [cnxn tree-id job-id]
+  (not (empty? (hsql/query cnxn (-> (select :*)
+                                    (from :job_tree_members)
+                                    (where [:and
+                                            [:= :membership_tree_id tree-id]
+                                            [:= :tree_job_id job-id]]))))))

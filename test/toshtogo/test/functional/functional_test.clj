@@ -165,27 +165,28 @@
                                     (with-notes notes)
                                     (with-name job-name)))
         (get-job client job-id)
-        => (just {:commitment_agent    nil
-                  :commitment_id       nil
-                  :contract_claimed    nil
-                  :contract_created    (close-to created-time)
-                  :contract_due        (close-to due-time)
-                  :contract_finished   nil
-                  :contract_id         (isinstance UUID)
-                  :contract_number     1
-                  :dependencies        []
-                  :job_name            job-name
-                  :notes               notes
-                  :error               nil
-                  :job_created         (close-to created-time)
-                  :job_id              job-id
-                  :last_heartbeat      nil
-                  :outcome             :waiting
-                  :request_body        request-body
-                  :requesting_agent    (isinstance UUID)
-                  :result_body         nil
-                  :job_type            job-type
-                  :tags                (just tags :in-any-order)
+        => (just {:home_tree_id         (isinstance UUID)
+                  :commitment_agent     nil
+                  :commitment_id        nil
+                  :contract_claimed     nil
+                  :contract_created     (close-to created-time)
+                  :contract_due         (close-to due-time)
+                  :contract_finished    nil
+                  :contract_id          (isinstance UUID)
+                  :contract_number      1
+                  :dependencies         []
+                  :job_name             job-name
+                  :notes                notes
+                  :error                nil
+                  :job_created          (close-to created-time)
+                  :job_id               job-id
+                  :last_heartbeat       nil
+                  :outcome              :waiting
+                  :request_body         request-body
+                  :requesting_agent     (isinstance UUID)
+                  :result_body          nil
+                  :job_type             job-type
+                  :tags                 (just tags :in-any-order)
                   :fungibility_group_id job-id})
         (provided (now) => created-time)
 

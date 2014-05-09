@@ -33,10 +33,10 @@
               id-two (uuid)
               job-type-one (uuid-str) ;so we can run against a dirty database
               job-type-two (uuid-str)
-              {:keys [agents persistence]} (sql-deps cnxn)]
+              {:keys [_ persistence]} (sql-deps cnxn)]
 
-          (new-job! persistence agent-details (job-req id-one {:some-data 123} job-type-one))
-          (new-job! persistence agent-details (job-req id-two {:some-data 456} job-type-two))
+          (new-root-job! persistence agent-details (job-req id-one {:some-data 123} job-type-one))
+          (new-root-job! persistence agent-details (job-req id-two {:some-data 456} job-type-two))
 
           (get-contracts persistence {:outcome :waiting :job_type job-type-one})
           => (contains (contains {:job_id id-one})))))
@@ -49,9 +49,9 @@
               parent-type (uuid-str) ;so we can run against a dirty database
               child-type (uuid-str)
               child-commitment-id (uuid)
-              {:keys [agents persistence]} (sql-deps cnxn)]
+              {:keys [_ persistence]} (sql-deps cnxn)]
 
-          (new-job! persistence agent-details (job-req parent-id {:some-data 123} parent-type))
+          (new-root-job! persistence agent-details (job-req parent-id {:some-data 123} parent-type))
 
           (complete-job! persistence parent-id (add-dependencies (job-req child-id {:some-data 456} child-type)))
 
@@ -78,9 +78,9 @@
          [cnxn dev-db]
          (let [job-id (uuid)
                job-type (uuid-str)
-               {:keys [agents persistence]} (sql-deps cnxn)]
+               {:keys [_ persistence]} (sql-deps cnxn)]
 
-           (new-job! persistence agent-details (job-req job-id {:some-data 123} job-type))
+           (new-root-job! persistence agent-details (job-req job-id {:some-data 123} job-type))
 
            (get-job persistence job-id)
            => (contains {:outcome :waiting})
@@ -99,9 +99,9 @@
          (let [job-id (uuid)
                job-type (uuid-str)
                commitment-id (uuid)
-               {:keys [agents persistence]} (sql-deps cnxn)]
+               {:keys [_ persistence]} (sql-deps cnxn)]
 
-           (new-job! persistence agent-details (job-req job-id {:some-data 123} job-type))
+           (new-root-job! persistence agent-details (job-req job-id {:some-data 123} job-type))
 
            (request-work! persistence commitment-id {:job_type job-type} agent-details) => truthy
            (get-job persistence job-id)
@@ -125,7 +125,7 @@
                commitment-id (uuid)
                {:keys [agents persistence]} (sql-deps cnxn)]
 
-           (new-job! persistence agent-details (job-req job-id {:some-data 123} job-type))
+           (new-root-job! persistence agent-details (job-req job-id {:some-data 123} job-type))
 
            (request-work! persistence commitment-id {:job_type job-type} agent-details) => truthy
            (complete-work! persistence commitment-id (success {}) agent-details)
@@ -143,10 +143,9 @@
                job-id-1-2 (uuid)
                job-id-1-2-1 (uuid)
                job-type (uuid-str)
-               commitment-id (uuid)
-               {:keys [agents persistence]} (sql-deps cnxn)]
+               {:keys [_ persistence]} (sql-deps cnxn)]
 
-           (new-job! persistence
+           (new-root-job! persistence
                      agent-details
                      (job-req job-id-1 {} job-type
                               :dependencies
