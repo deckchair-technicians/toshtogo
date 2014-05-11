@@ -96,10 +96,21 @@
   (let [thread-local (proxy [ThreadLocal] [] (initialValue [] (f)))]
     (fn [] (.get thread-local))))
 
+(defn- ensure-seq
+  [s]
+  (if (sequential? s) s [s]))
+
+(defn- handle-job!
+  [handler per-thread-client-factory shutdown-promise job-type]
+  @(do-work! (per-thread-client-factory)
+             job-type
+             (-> handler
+                 (wrap-assoc :shutdown-promise shutdown-promise))))
+
 (defn job-consumer
-      "Takes:
+  "Takes:
       - a client-factory function that returns a Toshtogo client (which will be called at least once per job)
-      - a job-type
+      - a job-type, or sequence of job-type's
       - a handler function that takes a toshtogo job
 
       Returns a function that takes a shutdown promise.
@@ -110,10 +121,13 @@
 
       Sleeps for the given number of ms if there is no work to do, so that we don't DOS the
       toshtogo server (defaults to 1 second)."
-      [client-factory job-type handler & {:keys [sleep-on-no-work-ms] :or {sleep-on-no-work-ms 1000}}]
-      (let [per-thread-client-factory (per-thread-singleton client-factory)]
-        (fn [shutdown-promise]
-          (let [outcome @(do-work! (per-thread-client-factory) job-type (-> handler
-                                                                 (wrap-assoc :shutdown-promise shutdown-promise)))]
-            (when-not outcome
-              (Thread/sleep sleep-on-no-work-ms))))))
+  [client-factory job-type-or-types handler & {:keys [sleep-on-no-work-ms] :or {sleep-on-no-work-ms 1000}}]
+  (let [per-thread-client-factory (per-thread-singleton client-factory)
+        job-types (ensure-seq job-type-or-types)]
+    (fn [shutdown-promise]
+      (let [outcome (first
+                     (filter
+                      identity
+                      (map (partial handle-job! handler per-thread-client-factory shutdown-promise) job-types)))]
+        (when-not outcome
+          (Thread/sleep sleep-on-no-work-ms))))))
