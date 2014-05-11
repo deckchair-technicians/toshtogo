@@ -116,6 +116,24 @@
              @(do-work! client job-type return-success) => truthy
              (provided (now) => due-time))))
 
+  (facts "Contracts should be prioritised by job creation date, not contract creation date"
+         (when (= :app (:type client-config))
+           (let [job-id-1 (uuid)
+                 job-id-2 (uuid)
+                 job-type (uuid-str)
+                 before-due-time (now)
+                 due-time (plus before-due-time (minutes 1))]
+
+             (put-job! client job-id-1 (job-req {} job-type))
+             (Thread/sleep 1)
+             (put-job! client job-id-2 (job-req {} job-type))
+
+             (let [delay (fn [job] (try-later due-time "some error happened"))]
+               @(do-work! client job-type delay) => truthy)
+
+             (:job_id (request-work! client job-type)) => job-id-1
+             (provided (now) => due-time))))
+
   (fact "do-work! on client reports unhandled exceptions"
         (let [job-id (uuid)
               job-type (uuid-str)]
