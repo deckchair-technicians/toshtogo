@@ -131,7 +131,7 @@
                         persistence
                         (assoc job-filter
                           :ready_for_work true
-                          :order-by [:contract_created]))]
+                          :order-by [:job_created]))]
     (insert-commitment! persistence commitment-id (contract :contract_id) agent-details)
 
     (get-contract persistence {:commitment_id     commitment-id
