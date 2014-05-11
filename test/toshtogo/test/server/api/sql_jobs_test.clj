@@ -7,9 +7,12 @@
             [toshtogo.server.core :refer [dev-db]]
             [toshtogo.util.core :refer [uuid uuid-str debug]]
             [toshtogo.client.util :as util]
+            [toshtogo.test.functional.test-support :refer :all]
             [toshtogo.server.agents.protocol :refer :all]
             [toshtogo.server.persistence.protocol :refer :all]
             [toshtogo.server.api :refer :all]))
+
+(background (before :contents @migrated-dev-db))
 
 (def agent-details (util/agent-details "savagematt" "toshtogo"))
 
