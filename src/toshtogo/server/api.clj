@@ -35,7 +35,7 @@
 
 (defn new-contract! [persistence contract-req]
   (let [job-id                (contract-req :job_id)
-        contract-due          (:contract_due contract-req (minus (now) (seconds 5)))
+        contract-due          (or (:contract_due contract-req) (minus (now) (seconds 5)))
         last-contract         (get-contract persistence {:job_id job-id :latest_contract true})
         new-contract-ordinal   (if last-contract (inc (last-contract :contract_number)) 1)
         last-contract-outcome (:outcome last-contract)]
@@ -61,7 +61,7 @@
     (insert-jobs! persistence root-and-dependencies agent-details)
 
     (doseq [job root-and-dependencies]
-      (new-contract! persistence (contract-req (job :job_id))))
+      (new-contract! persistence (contract-req (job :job_id) (job :contract_due))))
 
     (get-job persistence (root-job :job_id))))
 

@@ -70,6 +70,7 @@
   (-> req
       (update-each [:job_id :fungibility_group_id] uuid)
       (update :job_type keyword)
+      (update :contract_due parse-datetime)
       (update :tags #(map keyword %))
       (update :existing_job_dependencies #(map uuid %))
       (update :dependencies #(map normalise-job-req %))))

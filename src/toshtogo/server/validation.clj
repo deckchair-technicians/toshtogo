@@ -21,6 +21,7 @@
    (s/optional-key :fungible_under_parent)     s/Bool
    (s/optional-key :tags)                      [s/Keyword]
    (s/optional-key :job_name)                  s/Str
+   (s/optional-key :contract_due)              DateTime
    (s/optional-key :notes)                     s/Str
    (s/optional-key :existing_job_dependencies) [s/Uuid]
    (s/optional-key :dependencies)              [(s/recursive #'Job)]})

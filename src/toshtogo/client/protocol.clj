@@ -32,6 +32,9 @@
 (defn with-notes [job-req notes]
   (assoc job-req :notes notes))
 
+(defn with-start-time [job-req start-time]
+  (assoc job-req :contract_due start-time))
+
 (defn with-tags [job-req tags]
   (assoc job-req :tags tags))
 

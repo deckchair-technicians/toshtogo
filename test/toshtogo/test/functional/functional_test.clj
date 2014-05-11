@@ -82,7 +82,23 @@
           (get-job client job-id)
           => (contains {:outcome :error :error "something went wrong"})))
 
-  (facts "Agent can request that a job is re-attempted"
+  (facts "Agent can schedule a job to start later"
+         (when (= :app (:type client-config))
+           (let [job-id (uuid)
+                 job-type (uuid-str)
+                 before-due-time (now)
+                 due-time (plus before-due-time (minutes 1))]
+
+             (put-job! client job-id (-> (job-req {} job-type)
+                                         (with-start-time due-time)))
+
+             (request-work! client job-type) => nil
+             (provided (now) => before-due-time)
+
+             @(do-work! client job-type return-success) => truthy
+             (provided (now) => due-time))))
+
+  (facts "Agent can request that a job is re-attempted later"
          (when (= :app (:type client-config))
            (let [job-id (uuid)
                  job-type (uuid-str)
