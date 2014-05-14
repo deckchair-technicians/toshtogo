@@ -2,6 +2,7 @@
   (:import (java.util UUID))
   (:require [clj-time.core :refer [now minus seconds]]
             [clojure.pprint :refer [pprint]]
+            [swiss.arrows :refer :all]
             [toshtogo.util.core :refer [assoc-not-nil uuid ppstr debug]]
             [toshtogo.server.persistence.protocol :refer :all]
             [toshtogo.server.util.job-requests :refer [normalised-job-list]]))
@@ -81,7 +82,11 @@
         ;Create new contract for parent job, which will be
         ;ready for work when dependencies complete
         (new-contract! persistence (contract-req job-id))
-        (doseq [dependency (drop 1 (normalised-job-list (assoc contract :dependencies (result :dependencies))))]
+        (doseq [dependency (-<> contract
+                                (assoc :dependencies (result :dependencies))
+                                (normalised-job-list)
+                                (drop 1 <>))]
+
           (if (:fungibility_group_id dependency)
             (if-let [existing-job (first (get-jobs persistence {:job_type             (:job_type dependency)
                                                                 :request_body         (:request_body dependency)
