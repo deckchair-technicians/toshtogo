@@ -106,12 +106,11 @@
     (get-jobs [this params]
       (let [params (update params :order-by #(concat (ensure-seq %) [:jobs.job_id]))]
         (if (:page params)
-          (update
-            (hsql/page cnxn (job-query params)
-                       :count-sql-map (job-query (dissoc params :get_tags))
-                       :page          (:page params 1)
-                       :page-size     (:page-size params))
-            :data normalise-job-rows)
+          (-> (hsql/page cnxn (job-query params)
+                         :count-sql-map (job-query (dissoc params :get_tags))
+                         :page (:page params 1)
+                         :page-size (:page-size params))
+              (update :data normalise-job-rows))
           (normalise-job-rows
             (hsql/query
               cnxn
