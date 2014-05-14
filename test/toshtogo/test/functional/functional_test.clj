@@ -165,7 +165,6 @@
 
   (fact "Current job state is serialised between server and client as expected"
         (let [job-id (uuid)
-              commitment-id (atom "not set")
               job-type (uuid-str)
               tags (set [(keyword (uuid-str)) (keyword (uuid-str))])
               created-time (now)
