@@ -126,12 +126,13 @@
 
     nil))
 
-(defn request-work! [persistence commitment-id job-filter agent-details]
+(defn request-work! [persistence commitment-id job-query agent-details]
   (when-let [contract (get-contract
-                        persistence
-                        (assoc job-filter
-                          :ready_for_work true
-                          :order-by [:job_created]))]
+                       persistence
+                       (merge
+                        {:ready_for_work true
+                         :order-by [:job_created]}
+                        job-query))]
     (insert-commitment! persistence commitment-id (contract :contract_id) agent-details)
 
     (get-contract persistence {:commitment_id     commitment-id

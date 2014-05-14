@@ -31,6 +31,42 @@
         (stop service)
         ))
 
+(fact "Can make more complicated queries for work"
+  (let [job-id-1   (uuid)
+        job-id-2   (uuid)
+        job-type-1 (uuid-str)
+        job-type-2 (uuid-str)
+        service    (start-service (job-consumer
+                                   (constantly client)
+                                   {:job_type [job-type-1 job-type-2]}
+                                   return-success
+                                   :sleep-on-no-work-ms 1))]
+
+        (put-job! client job-id-1 (job-req {:some "request"} job-type-2))
+
+        (deref (future (while (-> (get-job client job-id-1)
+                                  :outcome
+                                  (not= :success))
+                         (Thread/sleep 100)))
+               2000 nil)
+
+        (get-job client job-id-1)
+        => (contains {:outcome :success})
+
+        (put-job! client job-id-2 (job-req {:some "request"} job-type-1))
+
+        (deref (future (while (-> (get-job client job-id-2)
+                                  :outcome
+                                  (not= :success))
+                         (Thread/sleep 100)))
+               2000 nil)
+
+        (get-job client job-id-2)
+        => (contains {:outcome :success})
+
+        (stop service)
+        ))
+
 (fact "Stopping the service does indeed stop listening for jobs"
       (let [job-id (uuid)
             job-type (uuid-str)
@@ -103,4 +139,3 @@
         => #(not= "service stopped at exception" %)
 
         (stop service)))
-

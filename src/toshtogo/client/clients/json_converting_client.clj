@@ -44,8 +44,8 @@
     (retry-job! [this job-id]
       (retry-job! decorated job-id))
 
-    (request-work! [this job-type]
-      (convert-job (request-work! decorated job-type)))
+    (request-work! [this job-type-or-query]
+      (convert-job (request-work! decorated job-type-or-query)))
 
     (heartbeat! [this commitment-id]
       (convert-heartbeat (heartbeat! decorated commitment-id)))

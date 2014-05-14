@@ -48,11 +48,12 @@
              (str "/api/jobs/" job-id "?action=retry")
              nil))
 
-    (request-work! [this job-type]
-      (PUT! sender
-            "/api/commitments"
-            {:commitment_id (uuid)
-             :job_type          job-type}))
+    (request-work! [this job-type-or-query]
+      (let [query (if (not (map? job-type-or-query)) {:job_type (str job-type-or-query)} job-type-or-query)]
+        (PUT! sender
+              "/api/commitments"
+              (assoc query
+                :commitment_id (uuid)))))
 
     (complete-work! [this commitment-id result]
       (PUT! sender
