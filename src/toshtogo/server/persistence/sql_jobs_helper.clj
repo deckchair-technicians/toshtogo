@@ -26,8 +26,10 @@
 (defn collect-tags [job row]
   (if job
     (-> job
-        (mp/update :tags #(conj % (row :tag) )))
-    (assoc row :tags #{(row :tag)})))
+        (mp/update :tags #(conj % (row :tag))))
+    (if (row :tag)
+      (assoc row :tags #{(row :tag)})
+      row)))
 
 (defn job-outcome [job]
   (if (:outcome job)
