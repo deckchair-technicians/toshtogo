@@ -16,9 +16,9 @@
 
 (def dev-app-instance (dev-app :debug true))
 
-(defn -main [& args]
+(defn -main [& {debug "-debug"}]
   (run-migrations! dev-db)
-  (run-jetty (dev-app :debug true) {:port 3000}))
+  (run-jetty (dev-app :debug (= "yes" debug)) {:port 3000}))
 
 (defn reload-templates! [files]
   (require 'toshtogo.server.handler :reload-all))
