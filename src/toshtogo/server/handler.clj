@@ -40,10 +40,11 @@
     [(keyword name) (or (keyword direction) :asc)]))
 
 (defn parse-order-by [order-by]
-  (->> order-by
-       ensure-seq
-       (map parse-order-by-expression)
-       (filter (comp not empty?))))
+  (when order-by
+    (->> order-by
+         ensure-seq
+         (map parse-order-by-expression)
+         (filter (comp not empty?)))))
 
 (defn parse-boolean-param [s]
   (and s (not= "false" (s/trim (s/lower-case s)))))
@@ -57,14 +58,19 @@
 (defn normalise-search-params [params]
   (-> params
       (map-keys keyword)
-      (update :order-by (fn [x] (or (parse-order-by x) [:job_created :desc])))
-      (update :page (fn [s] (Integer/parseInt (or s "1"))))
-      (update :page-size (fn [s] (Integer/parseInt (or s "25"))))
+      (update :order-by (fn [x] (or (parse-order-by x) [:job_created])))
       ;(update-each [:latest_contract :has_contract] parse-boolean-param)
       (update-each [:tree_id :commitment_id :job_id :depends_on_job_id :dependency_of_job_id :fungibility_group_id] uuid)
       (update-each [:job_type :outcome] #(when % (map keyword (ensure-seq %))))
       (update :tags keywords-param)
       (update :max_due_time parse-datetime)))
+
+(defn normalise-paging-params
+  "Parse (or default) the paging related parameters."
+  [params]
+  (-> params
+      (update :page (fn [s] (Integer/parseInt (or s "1"))))
+      (update :page-size (fn [s] (Integer/parseInt (or s "25"))))))
 
 (defn normalise-job-req [req]
   (-> req
@@ -99,7 +105,7 @@
   (context "/api" {:keys [persistence body check-idempotent!]}
     (context "/jobs" []
        (GET "/" {params :query-params :as request}
-            (let [normalised-params (normalise-search-params params)]
+            (let [normalised-params (-> params normalise-search-params normalise-paging-params)]
               (resp/response (restify (get-jobs persistence normalised-params) request))))
       (context "/:job-id" [job-id]
 
@@ -141,7 +147,7 @@
         (let [commitment-id (uuid (body :commitment_id))]
           (check-idempotent!
            :create-commitment commitment-id
-           #(if-let [commitment (request-work! persistence commitment-id {:job_type (keyword (body :job_type))} (body :agent))]
+           #(if-let [commitment (request-work! persistence commitment-id (dissoc body :commitment_id) (body :agent))]
               (commitment-redirect commitment-id)
               {:status 204})
            #(commitment-redirect commitment-id))))
