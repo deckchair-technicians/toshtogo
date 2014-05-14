@@ -13,15 +13,15 @@
   (:import [toshtogo.util OptimisticLockingException]))
 
 (defn job-record [tree-id job-id job-name job-type agent-id body notes fungibility-group-id]
-  {:home_tree_id      tree-id
-   :job_id           job-id
-   :job_name          job-name
-   :job_type          job-type
-   :requesting_agent  agent-id
-   :job_created       (now)
-   :request_body      (json/generate-string (deterministic-representation body))
+  {:home_tree_id         tree-id
+   :job_id               job-id
+   :job_name             job-name
+   :job_type             job-type
+   :requesting_agent     agent-id
+   :job_created          (now)
+   :request_body         (json/generate-string (deterministic-representation body))
    :fungibility_group_id fungibility-group-id
-   :notes             notes})
+   :notes                notes})
 
 (defn collect-tags [job row]
   (if job
