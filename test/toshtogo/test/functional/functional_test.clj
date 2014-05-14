@@ -245,7 +245,7 @@
           => (just {:job_id               job-id
                     :job_type             job-type}))))
 
-(fact "Current job state is serialised between server and client as expected"
+(fact "Getting a job returns just the immediate dependencies"
       (let [job-id (uuid)
             job-type (uuid-str)]
 
@@ -260,13 +260,8 @@
 
         (get-job client job-id)
         => (contains {:request_body {:job "1"}
-                      :dependencies (contains [
-                                                (contains {:request_body {:job "1.1"}
-                                                           :dependencies (contains [(contains {:request_body {:job "1.1.1"}})
-                                                                                    (contains {:request_body {:job "1.1.2"}})]
-                                                                                   :in-any-order)})
-                                                (contains {:request_body {:job "1.2"}})
-                                                ]
+                      :dependencies (contains [(contains {:request_body {:job "1.1"}})
+                                               (contains {:request_body {:job "1.2"}})]
                                               :in-any-order)})))
 (fact "Getting a non-existent job returns null"
       (get-job client (uuid)) => nil)

@@ -6,12 +6,10 @@
             [toshtogo.server.persistence.protocol :refer :all]
             [toshtogo.server.util.job-requests :refer [normalised-job-list]]))
 
-(defn- recursively-add-dependencies
-  "This is terribly inefficient"
+(defn- assoc-dependencies
   [persistence job]
   (when job
-    (assoc job :dependencies (doall (map (partial recursively-add-dependencies persistence)
-                                         (get-jobs persistence {:dependency_of_job_id (job :job_id)}))))))
+    (assoc job :dependencies (get-jobs persistence {:dependency_of_job_id (job :job_id)}))))
 
 (defn- merge-dependencies [contract persistence]
   (when contract
@@ -27,7 +25,7 @@
           (get-jobs persistence (dependencies-of job-id))))
 
 (defn get-job [persistence job-id]
-  (doall (recursively-add-dependencies persistence (first (get-jobs persistence {:job_id job-id})))))
+  (assoc-dependencies persistence (first (get-jobs persistence {:job_id job-id}))))
 
 (defn get-contract [persistence params]
   (cond-> (first (get-contracts persistence params))
