@@ -175,7 +175,7 @@
     (assoc contract :outcome (contract-outcome contract))
     contract))
 
-(defn normalise-record [contract]
+(defn normalise-contract [contract]
   (-> contract
       (mp/update :outcome keyword)
       fix-contract-outcome

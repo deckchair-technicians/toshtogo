@@ -118,7 +118,7 @@
 
     (get-contracts [this params]
       (map
-       normalise-record
+       normalise-contract
        (hsql/query
               cnxn
               (contract-query (assoc params :has_contract true)))))
