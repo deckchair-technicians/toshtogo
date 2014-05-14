@@ -60,6 +60,11 @@
 (defn max-due-time [query v]
   (merge-where query [:<= :contracts.contract_due v]))
 
+(defn fully-qualify-field [f]
+  (case f
+    :job_id :jobs.job_id
+    f))
+
 (defn contract-query [params]
   (reduce
    (fn [query [k v]]
@@ -136,6 +141,9 @@
        (merge-left-join query :job_tags
                         [:= :jobs.job_id :job_tags.job_id])
 
+       :fields
+       (apply select query (map fully-qualify-field v))
+
        :order-by
        (if v
          (apply order-by query (ensure-seq v))
@@ -163,7 +171,9 @@
       :waiting)))
 
 (defn fix-contract-outcome [contract]
-  (assoc contract :outcome (contract-outcome contract)))
+  (if (contains? contract :outcome)
+    (assoc contract :outcome (contract-outcome contract))
+    contract))
 
 (defn normalise-record [contract]
   (-> contract

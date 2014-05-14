@@ -41,7 +41,9 @@
           :no-contract))))
 
 (defn fix-job-outcome [job]
-  (assoc job :outcome (job-outcome job)))
+  (if (contains? job :outcome)
+    (assoc job :outcome (job-outcome job))
+    job))
 
 (defn normalise-job [job]
   (-> job

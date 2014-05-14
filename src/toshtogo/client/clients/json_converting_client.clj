@@ -5,12 +5,17 @@
             [toshtogo.client.protocol :refer :all]
             [toshtogo.client.senders.protocol :refer :all]))
 
+(defn set-tags [job]
+  (if (:tags job)
+    (update job :tags #(map keyword %))
+    job))
+
 (defn convert-job [job]
   (when job
     (-> job
         (update-each [:contract_created :contract_claimed :contract_due :contract_finished :job_created :last_heartbeat] parse-datetime)
         (update-each [:home_tree_id :commitment_id :contract_id :job_id :requesting_agent :commitment_agent :fungibility_group_id] uuid)
-        (update :tags #(map keyword %))
+        (set-tags)
         (update-each [:outcome] keyword))))
 
 (defn convert-heartbeat [heartbeat]

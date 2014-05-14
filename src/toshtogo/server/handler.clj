@@ -48,7 +48,7 @@
 (defn parse-boolean-param [s]
   (and s (not= "false" (s/trim (s/lower-case s)))))
 
-(defn keywords-param [s]
+(defn sequence-of-keywords [s]
   (when s
     (->> s
          ensure-seq
@@ -63,7 +63,7 @@
       ;(update-each [:latest_contract :has_contract] parse-boolean-param)
       (update-each [:tree_id :commitment_id :job_id :depends_on_job_id :dependency_of_job_id :fungibility_group_id] uuid)
       (update-each [:job_type :outcome] #(when % (map keyword (ensure-seq %))))
-      (update :tags keywords-param)
+      (update-each [:fields :tags] sequence-of-keywords)
       (update :max_due_time parse-datetime)))
 
 (defn normalise-job-req [req]

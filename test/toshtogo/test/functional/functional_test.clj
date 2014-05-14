@@ -163,75 +163,87 @@
            (let [{:keys [last_heartbeat]} (get-job client job-id)]
              (after? last_heartbeat start-time-ish) => truthy)))
 
-(fact "Current job state is serialised between server and client as expected"
-      (let [job-id (uuid)
-            commitment-id (atom "not set")
-            job-type (uuid-str)
-            tags (set [(keyword (uuid-str)) (keyword (uuid-str))])
-            created-time (now)
-            claimed-time (plus created-time (millis 5))
-            finished-time (plus claimed-time (millis 5))
-            due-time (minus created-time (seconds 5))
-            request-body {:a-field "field value"}
-            commitment  (promise)
-            notes "Some description of the job"
-            job-name "job name"]
+  (fact "Current job state is serialised between server and client as expected"
+        (let [job-id (uuid)
+              commitment-id (atom "not set")
+              job-type (uuid-str)
+              tags (set [(keyword (uuid-str)) (keyword (uuid-str))])
+              created-time (now)
+              claimed-time (plus created-time (millis 5))
+              finished-time (plus claimed-time (millis 5))
+              due-time (minus created-time (seconds 5))
+              request-body {:a-field "field value"}
+              commitment  (promise)
+              notes "Some description of the job"
+              job-name "job name"]
 
-        ; Newly created
-        (put-job! client job-id (-> (job-req request-body job-type)
-                                    (with-tags tags)
-                                    (with-notes notes)
-                                    (with-name job-name)))
-        (get-job client job-id)
-        => (just {:home_tree_id         (isinstance UUID)
-                  :commitment_agent     nil
-                  :commitment_id        nil
-                  :contract_claimed     nil
-                  :contract_created     (close-to created-time)
-                  :contract_due         (close-to due-time)
-                  :contract_finished    nil
-                  :contract_id          (isinstance UUID)
-                  :contract_number      1
-                  :dependencies         []
-                  :job_name             job-name
-                  :notes                notes
-                  :error                nil
-                  :job_created          (close-to created-time)
-                  :job_id               job-id
-                  :last_heartbeat       nil
-                  :outcome              :waiting
-                  :request_body         request-body
-                  :requesting_agent     (isinstance UUID)
-                  :result_body          nil
-                  :job_type             job-type
-                  :tags                 (just tags :in-any-order)
-                  :fungibility_group_id job-id})
-        (provided (now) => created-time)
+          ; Newly created
+          (put-job! client job-id (-> (job-req request-body job-type)
+                                      (with-tags tags)
+                                      (with-notes notes)
+                                      (with-name job-name)))
+          (get-job client job-id)
+          => (just {:home_tree_id         (isinstance UUID)
+                    :commitment_agent     nil
+                    :commitment_id        nil
+                    :contract_claimed     nil
+                    :contract_created     (close-to created-time)
+                    :contract_due         (close-to due-time)
+                    :contract_finished    nil
+                    :contract_id          (isinstance UUID)
+                    :contract_number      1
+                    :dependencies         []
+                    :job_name             job-name
+                    :notes                notes
+                    :error                nil
+                    :job_created          (close-to created-time)
+                    :job_id               job-id
+                    :last_heartbeat       nil
+                    :outcome              :waiting
+                    :request_body         request-body
+                    :requesting_agent     (isinstance UUID)
+                    :result_body          nil
+                    :job_type             job-type
+                    :tags                 (just tags :in-any-order)
+                    :fungibility_group_id job-id})
+          (provided (now) => created-time)
 
-        (deliver commitment (request-work! client job-type))
-        => truthy
-        (provided (now) => claimed-time)
+          (deliver commitment (request-work! client job-type))
+          => truthy
+          (provided (now) => claimed-time)
 
-        (get-job client job-id)
-        => (contains {:commitment_agent  (isinstance UUID)
-                      :commitment_id     (isinstance UUID)
-                      :contract_claimed  (close-to claimed-time)
-                      :contract_finished nil
-                      :error             nil
-                      :last_heartbeat    (close-to claimed-time)
-                      :outcome           :running
-                      :requesting_agent  (isinstance UUID)})
+          (get-job client job-id)
+          => (contains {:commitment_agent  (isinstance UUID)
+                        :commitment_id     (isinstance UUID)
+                        :contract_claimed  (close-to claimed-time)
+                        :contract_finished nil
+                        :error             nil
+                        :last_heartbeat    (close-to claimed-time)
+                        :outcome           :running
+                        :requesting_agent  (isinstance UUID)})
 
-        (complete-work! client (@commitment :commitment_id) (success {:some-field "some value"}))
-        => truthy
-        (provided (now) => finished-time)
+          (complete-work! client (@commitment :commitment_id) (success {:some-field "some value"}))
+          => truthy
+          (provided (now) => finished-time)
 
-        (get-job client job-id)
-        => (contains {:contract_finished (close-to finished-time)
-                      :contract_number   1
-                      :error             nil
-                      :outcome           :success
-                      :result_body       {:some-field "some value"}}))))
+          (get-job client job-id)
+          => (contains {:contract_finished (close-to finished-time)
+                        :contract_number   1
+                        :error             nil
+                        :outcome           :success
+                        :result_body       {:some-field "some value"}})))
+
+  (fact "We can request a subset of fields"
+        (let [job-id (uuid)
+              job-type (uuid-str)]
+
+          (put-job! client job-id (job-req {} job-type))
+
+          (-> (get-jobs client {:job_id job-id :fields [:job_id :job_type]})
+              :data
+              first)
+          => (just {:job_id               job-id
+                    :job_type             job-type}))))
 
 (fact "Current job state is serialised between server and client as expected"
       (let [job-id (uuid)
