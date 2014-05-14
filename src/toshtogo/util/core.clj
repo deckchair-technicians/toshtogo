@@ -102,8 +102,6 @@
            (future-cancel f#)
            (throw (TimeoutException. ~message)))))))
 
-(defn asdas [attempt-number e])
-
 (defn retry-until-success*
   ":interval        pause between retries, in millis
    :interval-fn     function that takes an integer for # of retries and return the # of millis to pause
