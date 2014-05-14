@@ -111,8 +111,7 @@
 
 (defn complete-work!
   [persistence commitment-id result agent-details]
-  (let [contract (get-contract persistence {:commitment_id commitment-id})
-        job-id (:job_id contract)]
+  (let [contract (get-contract persistence {:commitment_id commitment-id})]
 
     (assert contract (str "Could not find commitment '" commitment-id "'"))
 
