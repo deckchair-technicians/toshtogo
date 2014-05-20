@@ -3,13 +3,13 @@
             [pallet.map-merge :refer [merge-keys]]
             [clj-time.core :refer [now]]
             [clj-time.coerce :as tc]
-            [cheshire.core :as json]
             [honeysql.helpers :refer :all]
-            [toshtogo.server.agents.protocol :refer [agent!]]
             [toshtogo.server.persistence.protocol :refer :all]
-            [toshtogo.util.core :refer [uuid debug]]
-            [toshtogo.util.deterministic-representation :refer [deterministic-representation]]
-            [toshtogo.util.hsql :as hsql])
+            [toshtogo.server.persistence.sql-contracts-helper :refer [job-query]]
+            [toshtogo.util.core :refer [uuid debug assoc-not-nil]]
+            [toshtogo.util.deterministic-representation :refer [database-representation]]
+            [toshtogo.util.hsql :as hsql]
+            [toshtogo.util.json :as json])
   (:import [toshtogo.util OptimisticLockingException]))
 
 (defn job-record [tree-id job-id job-name job-type agent-id body notes fungibility-group-id]
@@ -19,7 +19,7 @@
    :job_type             job-type
    :requesting_agent     agent-id
    :job_created          (now)
-   :request_body         (json/generate-string (deterministic-representation body))
+   :request_body         (database-representation body)
    :fungibility_group_id fungibility-group-id
    :notes                notes})
 
@@ -62,7 +62,7 @@
       (dissoc :job_id_2 :job_id_3 :job_id_4 :commitment_contract :outcome_id)
       (mp/update :outcome keyword)
       (fix-job-outcome)
-      (mp/update-each [:request_body :result_body] #(json/parse-string % keyword))))
+      (mp/update-each [:request_body :result_body] #(json/decode %))))
 
 (defn fold-in-tags [job-with-tags]
   (reduce collect-tags

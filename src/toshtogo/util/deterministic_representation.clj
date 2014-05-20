@@ -1,5 +1,6 @@
 (ns toshtogo.util.deterministic-representation
-  (:require [clojure.walk :refer [prewalk]])
+  (:require [clojure.walk :refer [prewalk]]
+            [toshtogo.util.json :as ttjson])
   (:import (java.util Map Set)
            (clojure.lang PersistentTreeSet PersistentTreeMap Keyword)))
 
@@ -26,3 +27,6 @@
 
 (defn deterministic-representation [x]
   (prewalk deterministic-representation* x))
+
+(defn database-representation [request-body]
+  (ttjson/encode request-body))

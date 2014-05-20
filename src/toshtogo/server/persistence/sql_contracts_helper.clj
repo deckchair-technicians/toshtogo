@@ -1,12 +1,11 @@
 (ns toshtogo.server.persistence.sql-contracts-helper
   (:require [flatland.useful.map :as mp]
-            [cheshire.core :as json]
             [clj-time.core :refer [now]]
             [clojure.string :as str]
             [toshtogo.server.persistence.protocol :refer :all]
-            [toshtogo.server.agents.protocol :refer [agent!]]
             [honeysql.helpers :refer :all]
-            [toshtogo.util.deterministic-representation :refer [deterministic-representation]]
+            [toshtogo.util.deterministic-representation :refer [database-representation]]
+            [toshtogo.util.json :as json]
             [toshtogo.util.hsql :as hsql]
             [toshtogo.util.core :refer [uuid debug ensure-seq safe-name]]))
 
@@ -19,7 +18,7 @@
 
 (defn outcome-record [job-id result]
   {:job_id      job-id
-   :result_body (json/generate-string (result :result))})
+   :result_body (json/encode (result :result))})
 
 (def base-query
   (-> (select :*)
@@ -127,7 +126,7 @@
                                                 (where [:= :parent_job_id v]))])
 
        :request_body
-       (merge-where query [:= :request_body (json/generate-string (deterministic-representation v))])
+       (merge-where query [:= :request_body (database-representation v)])
 
        :fungibility_group_id
        (merge-where query [:= :jobs.fungibility_group_id v])
@@ -183,7 +182,7 @@
   (-> contract
       (mp/update :outcome keyword)
       fix-contract-outcome
-      (mp/update :request_body #(json/parse-string % keyword))))
+      (mp/update :request_body json/decode)))
 
 (def job-types-query (-> (select :job_type)
                          (modifiers :distinct)
