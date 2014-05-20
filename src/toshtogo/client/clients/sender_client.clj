@@ -35,6 +35,9 @@
     (get-jobs [this query]
       (GET sender (str "/api/jobs?" (to-query-string query))))
 
+    (get-tree [this tree-id]
+      (GET sender (str "/api/trees/" tree-id)))
+
     (get-job-types [this]
       (GET sender "/api/metadata/job_types"))
 

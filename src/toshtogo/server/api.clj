@@ -118,6 +118,14 @@
       :cancelled
       nil)))
 
+(defn get-tree [persistence tree-id]
+  (let [params {:tree_id tree-id
+                :fields  [:jobs.job_id :jobs.job_name :jobs.job_type :outcome]}]
+    {:root_job (first (get-jobs persistence {:root_of_tree_id tree-id
+                                             :fields          [:jobs.job_id]}))
+     :jobs     (get-jobs persistence params)
+     :links    (get-dependency-links persistence params)}))
+
 (defn complete-work!
   [persistence commitment-id result agent-details]
   (let [contract (get-contract persistence {:commitment_id commitment-id})]

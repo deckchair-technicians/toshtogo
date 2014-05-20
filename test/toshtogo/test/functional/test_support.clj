@@ -4,6 +4,14 @@
             [toshtogo.client.core :as ttc]
             [clj-time.core :refer [now minutes seconds millis plus minus after? interval within?]]
             [clojure.pprint :refer [pprint]]
+
+            [clojure.stacktrace :refer [print-cause-trace]]
+            [schema.core :as sch]
+            [schema.coerce :as coer]
+            [schema.utils :as s-util]
+            [schema.macros :as s-macros]
+            [midje.checking.core :refer [as-data-laden-falsehood]]
+
             [toshtogo.util.core :refer [uuid uuid-str debug cause-trace]]
             [toshtogo.server.migrations.run :refer [run-migrations!]]))
 
@@ -25,10 +33,6 @@
                         :system "client-test"
                         :version "0.0"))
 
-(def timestamp-tolerance (case (client-config :type)
-                           :app (millis 1)
-                           :http (seconds 5)))
-
 (defn return-success [job] (success {:result 1}))
 
 (defn return-success-with-result [result]
@@ -46,11 +50,3 @@
 
 (defn isinstance [c]
   (fn [x] (instance? c x)))
-
-(defn close-to
-      ([expected]
-       (close-to expected timestamp-tolerance))
-  ([expected tolerance-period]
-   (let [acceptable-interval (interval (minus expected tolerance-period)
-                                       (plus expected tolerance-period))]
-     (fn [x] (within? acceptable-interval expected)))))

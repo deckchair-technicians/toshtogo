@@ -103,6 +103,10 @@
 
 (defroutes api-routes
   (context "/api" {:keys [persistence body check-idempotent!]}
+    (context "/trees" []
+             (GET "/:tree-id" [tree-id]
+                  (resp/response (get-tree persistence (uuid tree-id)))))
+
     (context "/jobs" []
        (GET "/" {params :query-params :as request}
             (let [normalised-params (-> params normalise-search-params normalise-paging-params)]

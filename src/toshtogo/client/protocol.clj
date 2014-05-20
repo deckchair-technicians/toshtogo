@@ -48,6 +48,7 @@
   (put-job! [this job-id job-req])
   (get-job [this job-id])
   (get-jobs [this query])
+  (get-tree [this tree-id])
   (get-job-types [this])
   (pause-job! [this job-id])
   (retry-job! [this job-id])

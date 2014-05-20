@@ -58,7 +58,8 @@
   (upsert-heartbeat!  [this commitment-id])
   (insert-result!     [this commitment-id result])
 
-  (get-jobs      [this params])
-  (get-contracts [this params])
+  (get-jobs             [this params])
+  (get-dependency-links [this params])
+  (get-contracts        [this params])
 
   (get-job-types [this]))

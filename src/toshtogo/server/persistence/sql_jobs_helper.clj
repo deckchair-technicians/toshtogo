@@ -83,7 +83,23 @@
 
 (defn is-tree-member [cnxn tree-id job-id]
   (not (empty? (hsql/query cnxn (-> (select :*)
-                                    (from :job_tree_members)
+                                    (from :job_dependencies)
                                     (where [:and
-                                            [:= :membership_tree_id tree-id]
-                                            [:= :tree_job_id job-id]]))))))
+                                            [:= :link_tree_id tree-id]
+                                            [:or
+                                                  [:= :parent_job_id job-id]
+                                                  [:= :child_job_id job-id]]]))))))
+
+(defn links-query [params]
+  (-> (select :links.parent_job_id :links.child_job_id)
+      (from [:job_dependencies :links])
+      (where [:or
+              [:in :links.parent_job_id (-> (job-query params)
+                                            (select [:jobs.job_id]))]
+              [:in :links.child_job_id (-> (job-query params)
+                                            (select [:jobs.job_id]))]])))
+
+(defn tree-query [tree-id]
+  (-> (select :*)
+      (from :job_trees)
+      (where [:= :job_trees.tree_id tree-id])))

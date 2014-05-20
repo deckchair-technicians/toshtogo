@@ -107,6 +107,11 @@
               cnxn
               (job-query params))))))
 
+    (get-dependency-links [this params]
+      (hsql/query
+        cnxn
+        (links-query params)))
+
     (get-contracts [this params]
       (map
        normalise-contract

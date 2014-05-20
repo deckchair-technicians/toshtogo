@@ -2,7 +2,7 @@
   (:require [midje.sweet :refer :all]
             [toshtogo.test.functional.test-support :refer :all]
             [toshtogo.util.core :refer [uuid uuid-str debug]]
-            [toshtogo.util.deterministic-representation :refer [deterministic-representation]]
+            [toshtogo.util.deterministic-representation :refer [database-representation]]
             [toshtogo.client.protocol :refer :all]
             [toshtogo.server.core :refer [dev-db]]))
 
@@ -22,6 +22,10 @@
                                        ]}
                       123 "a"
                       })
+
+(facts "database-representation works"
+       (database-representation complex-request)
+       => (database-representation complex-request))
 
 (facts (str "When requesting more work we may specify :fungibility_group_id, if a job exists "
             "with the same type and request_body as the requested dependency, this will be "

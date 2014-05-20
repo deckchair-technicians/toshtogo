@@ -140,6 +140,11 @@
                                                  (from :job_dependencies)
                                                  (where [:= :link_tree_id v]))]])
 
+       :root_of_tree_id
+       (merge-where query [:= :jobs.job_id (-> (select :job_trees.root_job_id)
+                                               (from :job_trees)
+                                               (where [:= :job_trees.tree_id v]))])
+
        :get_tags
        (merge-left-join query :job_tags
                         [:= :jobs.job_id :job_tags.job_id])

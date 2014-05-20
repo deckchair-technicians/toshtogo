@@ -18,6 +18,9 @@
         (set-tags)
         (update-each [:outcome] keyword))))
 
+(defn convert-link [link]
+  (update-each link [:parent_job_id :child_job_id] uuid))
+
 (defn convert-heartbeat [heartbeat]
   (update heartbeat :instruction keyword))
 
@@ -34,6 +37,12 @@
     (get-jobs [this query]
       (-> (get-jobs decorated query)
           (update :data #(map convert-job %))))
+
+    (get-tree [this tree-id]
+      (-> (get-tree decorated tree-id)
+          (update :root_job convert-job)
+          (update :jobs #(map convert-job %))
+          (update :links #(map convert-link %))))
 
     (get-job-types [this]
       (map keyword (get-job-types decorated)))
