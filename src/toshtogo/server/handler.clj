@@ -122,7 +122,7 @@
                                       (assoc :job_id job-id)
                                       (dissoc :agent)
                                       normalise-job-req
-                                      (validated Job)))
+                                      (validated JobRequest)))
                 (job-redirect job-id))
              #(job-redirect job-id))))
 

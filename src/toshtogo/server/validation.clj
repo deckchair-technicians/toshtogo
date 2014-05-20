@@ -13,7 +13,7 @@
     thing))
 
 
-(def Job
+(def JobRequest
   {:job_type                                   s/Keyword
    :request_body                               (s/pred map? "should be a map")
    (s/optional-key :job_id)                    s/Uuid
@@ -24,7 +24,7 @@
    (s/optional-key :contract_due)              DateTime
    (s/optional-key :notes)                     s/Str
    (s/optional-key :existing_job_dependencies) [s/Uuid]
-   (s/optional-key :dependencies)              [(s/recursive #'Job)]})
+   (s/optional-key :dependencies)              [(s/recursive #'JobRequest)]})
 
 (def JobResult
   {:outcome                       (s/enum :success :error :cancelled :try-later :more-work)

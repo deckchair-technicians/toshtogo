@@ -14,10 +14,10 @@
                           (fungibility-group (uuid))
                           (with-dependency-on (uuid) (uuid))
                           (with-dependencies [(job-req {:child :request} :child-job-type)]))]
-        (validated valid-job Job)
+        (validated valid-job JobRequest)
         => valid-job))
 
 (fact "Job validation fails for invalid job"
       (let [invalid-job (job-req "not a map" :some-job-type)]
-        (validated invalid-job Job)
+        (validated invalid-job JobRequest)
         => (throws ExceptionInfo)))
