@@ -17,41 +17,45 @@ define(
             };
         }
 
-        $.getJSON("/api/jobs/" + purl().segment(-1), function (job) {
-            $('#all-the-jsons').JSONView(job);
+        function getJob() {
+            $.getJSON("/api/jobs/" + purl().segment(-1), function (job) {
+                $('#all-the-jsons').JSONView(job);
 
-            var retry_button = $('#retry-button');
-            retry_button.hide();
-            retry_button.unbind("click");
+                var retry_button = $('#retry-button');
+                retry_button.hide();
+                retry_button.unbind("click");
 
-            var pause_button = $('#pause-button');
-            pause_button.hide();
-            pause_button.unbind("click");
+                var pause_button = $('#pause-button');
+                pause_button.hide();
+                pause_button.unbind("click");
 
-            if(["waiting", "success", "running", "more-work"].indexOf(job.outcome) < 0){
-                retry_button.show();
-                retry_button.click(function(){
-                    $.ajax
-                    (post(job, "retry"))
-                });
-            }
-            if(["waiting", "running"].indexOf(job.outcome) >= 0){
-                pause_button.show();
-                pause_button.click(function(){
-                    $.ajax
-                    (post(job, "pause"))
-                });
-            }
+                if (["waiting", "success", "running", "more-work"].indexOf(job.outcome) < 0) {
+                    retry_button.show();
+                    retry_button.click(function () {
+                        $.ajax
+                        (post(job, "retry"))
+                    });
+                }
+                if (["waiting", "running"].indexOf(job.outcome) >= 0) {
+                    pause_button.show();
+                    pause_button.click(function () {
+                        $.ajax
+                        (post(job, "pause"))
+                    });
+                }
 
-            $(".job-type").text(job.job_type);
-            $("#request").JSONView(job.request_body);
-            var response = $("#response");
-            response.empty();
-            if(job.result_body){
-                response.JSONView(job.result_body);
-            }else if(job.error){
-                response.append("<textarea>" + job.error+ "</textarea>");
-            }
-        });
+                $(".job-type").text(job.job_type);
+                $("#request").JSONView(job.request_body);
+                var response = $("#response");
+                response.empty();
+                if (job.result_body) {
+                    response.JSONView(job.result_body);
+                } else if (job.error) {
+                    response.append("<textarea>" + job.error + "</textarea>");
+                }
+            });
+        }
+
+        getJob();
     }
 );
