@@ -111,9 +111,14 @@
       Sleeps for the given number of ms if there is no work to do, so that we don't DOS the
       toshtogo server (defaults to 1 second)."
       [client-factory job-type-or-query handler & {:keys [sleep-on-no-work-ms] :or {sleep-on-no-work-ms 1000}}]
-      (let [per-thread-client-factory (per-thread-singleton client-factory)]
+      (let [query (if (map? job-type-or-query)
+                    job-type-or-query
+                    {:job_type job-type-or-query})
+             per-thread-client-factory (per-thread-singleton client-factory)]
         (fn [shutdown-promise]
-          (let [outcome @(do-work! (per-thread-client-factory) job-type-or-query (-> handler
-                                                                 (wrap-assoc :shutdown-promise shutdown-promise)))]
+          (let [client (per-thread-client-factory)
+                outcome (when-not (empty? (get-jobs client query))
+                          @(do-work! client query (-> handler
+                                                      (wrap-assoc :shutdown-promise shutdown-promise))))]
             (when-not outcome
               (Thread/sleep sleep-on-no-work-ms))))))
