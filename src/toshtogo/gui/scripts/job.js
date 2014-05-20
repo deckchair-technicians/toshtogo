@@ -1,4 +1,6 @@
-$(document).ready(function getJob() {
+define(
+    [],
+    function() {
         function post(job, action) {
             return {
                 type: "POST",
@@ -50,6 +52,6 @@ $(document).ready(function getJob() {
             }else if(job.error){
                 response.append("<textarea>" + job.error+ "</textarea>");
             }
-        })
+        });
     }
 );
