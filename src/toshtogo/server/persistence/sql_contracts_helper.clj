@@ -133,9 +133,13 @@
        (merge-where query [:= :jobs.fungibility_group_id v])
 
        :tree_id
-       (merge-where query [:in :jobs.job_id (-> (select :tree_job_id)
-                                                (from :job_tree_members)
-                                                (where [:= :membership_tree_id v]))])
+       (merge-where query [:or
+                           [:in :jobs.job_id (-> (select :parent_job_id)
+                                                     (from :job_dependencies)
+                                                     (where [:= :link_tree_id v]))]
+                           [:in :jobs.job_id (-> (select :child_job_id)
+                                                 (from :job_dependencies)
+                                                 (where [:= :link_tree_id v]))]])
 
        :get_tags
        (merge-left-join query :job_tags

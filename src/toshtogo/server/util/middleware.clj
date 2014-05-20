@@ -6,7 +6,6 @@
             [ring.middleware.json :as ring-json]
             [flatland.useful.map :refer [update]]
             [toshtogo.server.util.idempotentput :refer [check-idempotent!]]
-            [toshtogo.server.agents.sql :refer [sql-agents]]
             [toshtogo.server.persistence.sql :refer [sql-persistence]]
             [toshtogo.util.core :refer [debug ppstr cause-trace]]
             [toshtogo.util.json :as json]
@@ -17,11 +16,9 @@
 
 
 (defn sql-deps [cnxn]
-  (let [agents      (sql-agents cnxn)
-        persistence (sql-persistence cnxn agents)]
+  (let [persistence (sql-persistence cnxn)]
 
-    {:agents      agents
-     :persistence persistence}))
+    {:persistence persistence}))
 
 (defn wrap-body-hash
   [handler]

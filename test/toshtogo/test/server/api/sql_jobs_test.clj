@@ -8,7 +8,6 @@
             [toshtogo.util.core :refer [uuid uuid-str debug]]
             [toshtogo.client.util :as util]
             [toshtogo.test.functional.test-support :refer :all]
-            [toshtogo.server.agents.protocol :refer :all]
             [toshtogo.server.persistence.protocol :refer :all]
             [toshtogo.server.api :refer :all]))
 
@@ -126,7 +125,7 @@
          (let [job-id (uuid)
                job-type (uuid-str)
                commitment-id (uuid)
-               {:keys [agents persistence]} (sql-deps cnxn)]
+               {:keys [persistence]} (sql-deps cnxn)]
 
            (new-root-job! persistence agent-details (job-req job-id {:some-data 123} job-type))
 

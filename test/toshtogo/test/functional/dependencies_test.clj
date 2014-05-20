@@ -33,9 +33,8 @@
                  (get-job client child-one-id) => (contains {:home_tree_id parent-job-tree-id})
                  (get-job client child-two-id) => (contains {:home_tree_id parent-job-tree-id})))
 
-         (fact "Dependencies are executed in order"
-               (:contract @(do-work! client child-job-type (return-success-with-result {:child-one "result"})))
-               => (contains {:request_body {:b "child one"}}))
+         (:contract @(do-work! client {:job_id child-one-id} (return-success-with-result {:child-one "result"})))
+         => (contains {:request_body {:b "child one"}})
 
          (fact "Parent job is not ready until all dependencies complete"
                (request-work! client parent-job-type) => nil
@@ -165,4 +164,3 @@
 
                  (:dependencies contract)
                  => (contains [(contains {:request_body {:some-other-job "other job"}})])))))
-

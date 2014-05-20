@@ -7,7 +7,6 @@
             [toshtogo.test.server.api.util :refer [job-req]]
             [toshtogo.server.core :refer [dev-db]]
             [toshtogo.client.util :as util]
-            [toshtogo.server.agents.protocol :refer :all]
             [toshtogo.server.persistence.protocol :refer :all]
             [toshtogo.server.api :refer :all]
             [toshtogo.test.functional.test-support :refer :all]))
@@ -29,8 +28,8 @@
    [cnxn dev-db]
    (let [id-one                         (uuid)
          id-two                         (uuid)
-         job-type-one                        (uuid-str) ;so we can run against a dirty database
-         job-type-two                        (uuid-str)
+         job-type-one                   (uuid-str) ;so we can run against a dirty database
+         job-type-two                   (uuid-str)
          {:keys [_ persistence]} (sql-deps cnxn)]
 
      (given-job-exists persistence id-two job-type-two)

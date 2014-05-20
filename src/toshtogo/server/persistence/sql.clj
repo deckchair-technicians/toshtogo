@@ -8,52 +8,43 @@
             [toshtogo.util.core :refer [uuid debug ensure-seq ppstr]]
             [toshtogo.server.persistence.protocol :refer :all]
             [toshtogo.server.api :refer [get-job get-contract]]
+            [toshtogo.server.persistence.agents-helper :refer :all]
             [toshtogo.server.persistence.sql-jobs-helper :refer :all]
             [toshtogo.server.persistence.sql-contracts-helper :refer :all]
-            [toshtogo.server.agents.protocol :refer [agent!]]
+            [toshtogo.server.validation :refer [JobRecord DependencyRecord validated]]
             [toshtogo.util.sql :as ttsql]
             [toshtogo.util.hsql :as hsql]))
 
-(defn sql-persistence [cnxn agents]
+(defn sql-persistence [cnxn]
   (reify Persistence
-    (insert-dependency! [this parent-job-id child-job-id]
-      (ttsql/insert! cnxn :job_dependencies {:dependency_id (uuid)
-                                            :parent_job_id parent-job-id
-                                            :child_job_id  child-job-id}))
+    (agent! [this agent-details]
+      (if-let [agent (first (hsql/query cnxn select-agent :params agent-details))]
+        agent
+        (let [agent-record (agent-record agent-details)]
+          (ttsql/insert! cnxn :agents agent-record)
+          agent-record)))
+
+    (insert-dependency! [this dependency-record]
+      (ttsql/insert! cnxn :job_dependencies (-> dependency-record
+                                              (assoc :dependency_id (uuid))
+                                              (validated DependencyRecord))))
 
     (insert-tree! [this tree-id root-job-id]
       (ttsql/insert! cnxn :job_trees {:tree_id tree-id :root_job_id root-job-id}))
 
-    (insert-tree-membership! [this tree-id job-id]
-      (when-not (is-tree-member cnxn tree-id job-id)
-        (ttsql/insert! cnxn :job_tree_members {:membership_tree_id tree-id
-                                               :tree_job_id        job-id})))
-
-    (insert-jobs! [this jobs agent-details tree-id]
-      (doseq [job jobs]
+    (insert-jobs! [this jobs]
+      (doseq [job (map (fn [job]
+                         (-> job
+                             to-job-record
+                             (validated JobRecord)))
+                       jobs)]
         (let [job-id          (job :job_id)
-              job-tag-records (map (fn [tag] {:job_id job-id :tag tag}) (job :tags))
-              job-agent       (agent! agents agent-details)
-              job-row         (job-record tree-id
-                                          job-id
-                                          (job :job_name)
-                                          (job :job_type)
-                                          (job-agent :agent_id)
-                                          (job :request_body)
-                                          (job :notes)
-                                          (job :fungibility_group_id))
-              parent-job-id   (job :parent_job_id)]
+              job-tag-records (map (fn [tag] {:job_id job-id :tag tag}) (job :tags))]
 
-          (ttsql/insert! cnxn :jobs job-row)
+          (ttsql/insert! cnxn :jobs (dissoc job :tags))
 
           (when (not (empty? job-tag-records))
             (apply ttsql/insert! cnxn :job_tags job-tag-records))
-
-          (when parent-job-id
-            (insert-dependency! this parent-job-id job-id))
-
-          (doseq [dependency-id (:existing_job_dependencies job)]
-            (insert-dependency! this job-id dependency-id))
 
           (get-job this job-id))))
 
@@ -71,7 +62,7 @@
         (commitment-record
           commitment-id
           contract-id
-          (agent! agents agent-details))))
+          (agent! this agent-details))))
 
     (upsert-heartbeat! [this commitment-id]
       (let [heartbeat-time (now)]

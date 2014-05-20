@@ -3,8 +3,12 @@
             [clj-time.core :refer [now minutes seconds millis plus minus after? interval within?]]
             [ring.adapter.jetty :refer [run-jetty]]
             [clojure.java.jdbc :as sql]
+
+            [schema.core :as s]
+
             [toshtogo.client.protocol :refer :all]
             [toshtogo.util.core :refer [uuid uuid-str debug]]
+            [toshtogo.test.midje-schema :refer :all]
             [toshtogo.test.functional.test-support :refer :all])
   (:import (java.util UUID)
            (toshtogo.client BadRequestException)))
@@ -14,16 +18,16 @@
 (with-redefs
   [toshtogo.client.protocol/heartbeat-time 1]
   (fact "Work can be requested"
-        (let [job-id   (uuid)
+        (let [job-id (uuid)
               job-type (uuid-str)]
 
           (put-job! client job-id (job-req {:a-field "field value"} job-type))
 
-          (request-work! client job-type) => (contains {:job_id       job-id
-                                                        :request_body {:a-field "field value"}})))
+          (request-work! client job-type) => (matches {:job_id       job-id
+                                                       :request_body {:a-field "field value"}})))
 
   (fact "Work requests are idempotent"
-        (let [job-id   (uuid)
+        (let [job-id (uuid)
               job-type (uuid-str)]
 
           (put-job! no-retry-client job-id (job-req {:a-field "same content"} job-type))
@@ -50,7 +54,7 @@
           (Thread/sleep 1)
           (put-job! client job-id-2 (job-req {} job-type))
 
-          (request-work! client job-type) => (contains {:job_id job-id-1})))
+          (request-work! client job-type) => (matches {:job_id job-id-1})))
 
   (fact "Agents can request work and then complete it"
         (let [job-id (uuid)
@@ -60,12 +64,12 @@
 
           (let [{:keys [contract result]} @(do-work! client job-type (return-success-with-result {:response-field "all good"}))]
             contract
-            => (contains {:job_id job-id :request_body {:a-field "field value"}})
+            => (matches {:job_id job-id :request_body {:a-field "field value"}})
             result
-            => (contains {:outcome :success :result {:response-field "all good"}}))
+            => (matches {:outcome :success :result {:response-field "all good"}}))
 
           (get-job client job-id)
-          => (contains {:outcome :success :result_body {:response-field "all good"}})))
+          => (matches {:outcome :success :result_body {:response-field "all good"}})))
 
   (fact "Agents can report errors"
         (let [job-id (uuid)
@@ -75,12 +79,12 @@
 
           (let [{:keys [contract result]} @(do-work! client job-type return-error)]
             contract
-            => (contains {:job_id job-id :request_body {:a-field "field value"}})
+            => (matches {:job_id job-id :request_body {:a-field "field value"}})
             result
-            => (contains {:outcome :error :error "something went wrong"}))
+            => (matches {:outcome :error :error "something went wrong"}))
 
           (get-job client job-id)
-          => (contains {:outcome :error :error "something went wrong"})))
+          => (matches {:outcome :error :error "something went wrong"})))
 
   (facts "Agent can schedule a job to start later"
          (when (= :app (:type client-config))
@@ -144,12 +148,12 @@
                 {:keys [contract result]} @(do-work! client job-type func)]
 
             contract
-            => (contains {:job_id job-id :request_body {:a-field "field value"}})
+            => (matches {:job_id job-id :request_body {:a-field "field value"}})
             result
-            => (contains {:outcome :error :error (contains "WTF")}))
+            => (matches {:outcome :error :error #"WTF"}))
 
           (get-job client job-id)
-          => (contains {:outcome :error :error (contains "WTF")})))
+          => (matches {:outcome :error :error #"WTF"})))
 
   (facts "Heartbeats get stored, but only if they are more recent than the current heartbeat."
          (let [job-id (uuid)
@@ -172,7 +176,7 @@
               finished-time (plus claimed-time (millis 5))
               due-time (minus created-time (seconds 5))
               request-body {:a-field "field value"}
-              commitment  (promise)
+              commitment (promise)
               notes "Some description of the job"
               job-name "job name"]
 
@@ -182,29 +186,29 @@
                                       (with-notes notes)
                                       (with-name job-name)))
           (get-job client job-id)
-          => (just {:home_tree_id         (isinstance UUID)
-                    :commitment_agent     nil
-                    :commitment_id        nil
-                    :contract_claimed     nil
-                    :contract_created     (close-to created-time)
-                    :contract_due         (close-to due-time)
-                    :contract_finished    nil
-                    :contract_id          (isinstance UUID)
-                    :contract_number      1
-                    :dependencies         []
-                    :job_name             job-name
-                    :notes                notes
-                    :error                nil
-                    :job_created          (close-to created-time)
-                    :job_id               job-id
-                    :last_heartbeat       nil
-                    :outcome              :waiting
-                    :request_body         request-body
-                    :requesting_agent     (isinstance UUID)
-                    :result_body          nil
-                    :job_type             job-type
-                    :tags                 (just tags :in-any-order)
-                    :fungibility_group_id job-id})
+          => (matches {:home_tree_id         s/Uuid
+                       :commitment_agent     is-nil
+                       :commitment_id        is-nil
+                       :contract_claimed     is-nil
+                       :contract_created     (close-to created-time)
+                       :contract_due         (close-to due-time)
+                       :contract_finished    is-nil
+                       :contract_id          s/Uuid
+                       :contract_number      1
+                       :dependencies         (is [])
+                       :job_name             job-name
+                       :notes                notes
+                       :error                is-nil
+                       :job_created          (close-to created-time)
+                       :job_id               job-id
+                       :last_heartbeat       is-nil
+                       :outcome              :waiting
+                       :request_body         (is request-body)
+                       :requesting_agent     s/Uuid
+                       :result_body          is-nil
+                       :job_type             job-type
+                       :tags                 (when-sorted (sort tags))
+                       :fungibility_group_id s/Uuid})
           (provided (now) => created-time)
 
           (deliver commitment (request-work! client job-type))
@@ -212,25 +216,25 @@
           (provided (now) => claimed-time)
 
           (get-job client job-id)
-          => (contains {:commitment_agent  (isinstance UUID)
-                        :commitment_id     (isinstance UUID)
-                        :contract_claimed  (close-to claimed-time)
-                        :contract_finished nil
-                        :error             nil
-                        :last_heartbeat    (close-to claimed-time)
-                        :outcome           :running
-                        :requesting_agent  (isinstance UUID)})
+          => (matches {:commitment_agent  s/Uuid
+                       :commitment_id     s/Uuid
+                       :contract_claimed  (close-to claimed-time)
+                       :contract_finished is-nil
+                       :error             is-nil
+                       :last_heartbeat    (close-to claimed-time)
+                       :outcome           :running
+                       :requesting_agent  s/Uuid})
 
           (complete-work! client (@commitment :commitment_id) (success {:some-field "some value"}))
           => truthy
           (provided (now) => finished-time)
 
           (get-job client job-id)
-          => (contains {:contract_finished (close-to finished-time)
-                        :contract_number   1
-                        :error             nil
-                        :outcome           :success
-                        :result_body       {:some-field "some value"}})))
+          => (matches {:contract_finished (close-to finished-time)
+                       :contract_number   1
+                       :error             is-nil
+                       :outcome           :success
+                       :result_body       {:some-field "some value"}})))
 
   (fact "We can request a subset of fields"
         (let [job-id (uuid)
@@ -241,8 +245,8 @@
           (-> (get-jobs client {:job_id job-id :fields [:job_id :job_type]})
               :data
               first)
-          => (just {:job_id               job-id
-                    :job_type             job-type}))))
+          => (matches {:job_id   job-id
+                       :job_type job-type}))))
 
 (fact "Getting a job returns just the immediate dependencies"
       (let [job-id (uuid)
@@ -258,9 +262,9 @@
                                           (job-req {:job "1.2"} job-type)]))
 
         (get-job client job-id)
-        => (contains {:request_body {:job "1"}
-                      :dependencies (contains [(contains {:request_body {:job "1.1"}})
-                                               (contains {:request_body {:job "1.2"}})]
-                                              :in-any-order)})))
+        => (matches {:request_body {:job "1"}
+                     :dependencies (in-any-order {:request_body {:job "1.1"}}
+                                                 {:request_body {:job "1.2"}})})))
+
 (fact "Getting a non-existent job returns null"
       (get-job client (uuid)) => nil)

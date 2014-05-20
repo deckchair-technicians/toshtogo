@@ -23,6 +23,16 @@
    :fungibility_group_id fungibility-group-id
    :notes                notes})
 
+(defn to-job-record [job]
+  (-> job
+      (dissoc :dependencies
+              :existing_job_dependencies
+              :parent_job_id
+              :fungible_under_parent
+              :should-funge
+              :contract_due)
+      (mp/update :request_body json/encode)))
+
 (defn collect-tags [job row]
   (if-not (contains? row :tag)
     (or job row)

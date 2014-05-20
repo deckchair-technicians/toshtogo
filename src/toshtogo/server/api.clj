@@ -2,10 +2,13 @@
   (:import (java.util UUID))
   (:require [clj-time.core :refer [now minus seconds]]
             [clojure.pprint :refer [pprint]]
+            [clojure.walk :refer [postwalk]]
             [swiss.arrows :refer :all]
+            [flatland.useful.map :refer [update]]
+            [toshtogo.util.json :refer [encode]]
             [toshtogo.util.core :refer [assoc-not-nil uuid ppstr debug]]
             [toshtogo.server.persistence.protocol :refer :all]
-            [toshtogo.server.util.job-requests :refer [normalised-job-list]]))
+            [toshtogo.server.preprocessing :refer [normalise-job-tree replace-fungible-jobs-with-existing-job-ids collect-dependencies collect-new-jobs]]))
 
 (defn- assoc-dependencies
   [persistence job]
@@ -54,25 +57,41 @@
 
       (insert-contract! persistence job-id new-contract-ordinal contract-due))))
 
-(defn new-job! [persistence agent-details job tree-id]
-  (let [root-and-dependencies (normalised-job-list job)]
+(defn new-jobs! [persistence jobs]
+  (insert-jobs! persistence jobs)
+  (doseq [job jobs]
+    (new-contract! persistence (contract-req (job :job_id) (job :contract_due)))))
 
-    (insert-jobs! persistence root-and-dependencies agent-details tree-id)
+(defn new-dependencies!
+      "Assumes job-or-contract already exists. Navigates the dependency tree,
+      creating new jobs and dependencies as required."
+  [persistence agent-details parent-job-or-contract]
+  (let [agent-id (:agent_id (agent! persistence agent-details))
+        parent-job-or-contract (-> parent-job-or-contract
+                                  (normalise-job-tree agent-id)
+                                 (replace-fungible-jobs-with-existing-job-ids persistence))
 
-    (doseq [job-or-dependency root-and-dependencies]
-      (insert-tree-membership! persistence tree-id (:job_id job-or-dependency))
-      (new-contract! persistence (contract-req (job-or-dependency :job_id) (job-or-dependency :contract_due))))
+        dependency-records (collect-dependencies parent-job-or-contract)
+        new-jobs (collect-new-jobs parent-job-or-contract)]
 
-    (get-job persistence (job :job_id))))
+    (new-jobs! persistence new-jobs)
+
+    (doseq [dependency-record dependency-records]
+      (insert-dependency! persistence
+                          dependency-record))))
 
 (defn new-root-job! [persistence agent-details job]
-  (let [tree-id (uuid)]
-    (insert-tree! persistence tree-id (:job_id job))
-    (new-job! persistence agent-details job tree-id)))
+  (let [job (-> job
+              (assoc :home_tree_id (uuid))
+              (normalise-job-tree (:agent_id (agent! persistence agent-details))))]
+
+    (insert-tree! persistence (:home_tree_id job) (:job_id job))
+    (new-jobs! persistence [job])
+
+    (new-dependencies! persistence agent-details job)))
 
 (defn process-result! [persistence contract result agent-details]
-  (let [job-id (contract :job_id)
-        home-tree-id (contract :home_tree_id)]
+  (let [job-id (contract :job_id)]
     (case (:outcome result)
       :success
       nil
@@ -82,23 +101,13 @@
         ;Create new contract for parent job, which will be
         ;ready for work when dependencies complete
         (new-contract! persistence (contract-req job-id))
-        (doseq [dependency (-<> contract
-                                (assoc :dependencies (result :dependencies))
-                                (normalised-job-list)
-                                (drop 1 <>))]
 
-          (if (:fungibility_group_id dependency)
-            (if-let [existing-job (first (get-jobs persistence {:job_type             (:job_type dependency)
-                                                                :request_body         (:request_body dependency)
-                                                                :fungibility_group_id (:fungibility_group_id dependency)}))]
-              (insert-dependency! persistence job-id (:job_id existing-job))
-              (new-job! persistence agent-details dependency home-tree-id))
-
-            (new-job! persistence agent-details dependency home-tree-id)))
-
-        (doseq [dependency-job-id (:existing_job_dependencies result)]
-          (insert-tree-membership! persistence home-tree-id dependency-job-id)
-          (insert-dependency! persistence job-id dependency-job-id)))
+        (new-dependencies!
+          persistence
+          agent-details
+          (-> contract
+               (assoc :dependencies (result :dependencies))
+               (assoc :existing_job_dependencies (result :existing_job_dependencies)))))
 
       :try-later
       (new-contract! persistence (contract-req job-id (result :contract_due)))

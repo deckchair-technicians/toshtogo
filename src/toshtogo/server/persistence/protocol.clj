@@ -47,10 +47,10 @@
   {:dependency_of_job_id job-id :order-by :job_created})
 
 (defprotocol Persistence
+  (agent! [this agent-details])
   (insert-tree! [this tree-id root-job-id])
-  (insert-tree-membership! [this tree-id job-id])
-  (insert-jobs! [this jobs agent-details tree-id])
-  (insert-dependency! [this parent-job-id child-job-id])
+  (insert-jobs! [this jobs])
+  (insert-dependency! [this dependency-record])
   (insert-fungibility-group-entry! [this entry])
 
   (insert-contract!   [this job-id contract-number contract-due])
