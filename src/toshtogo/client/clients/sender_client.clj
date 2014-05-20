@@ -52,8 +52,8 @@
       (let [query (if (not (map? job-type-or-query)) {:job_type (str job-type-or-query)} job-type-or-query)]
         (PUT! sender
               "/api/commitments"
-              (assoc query
-                :commitment_id (uuid)))))
+              {:commitment_id (uuid)
+               :query query})))
 
     (complete-work! [this commitment-id result]
       (PUT! sender

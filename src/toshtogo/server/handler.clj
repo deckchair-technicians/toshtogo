@@ -147,7 +147,10 @@
         (let [commitment-id (uuid (body :commitment_id))]
           (check-idempotent!
            :create-commitment commitment-id
-           #(if-let [commitment (request-work! persistence commitment-id (dissoc body :commitment_id :agent) (body :agent))]
+           #(if-let [commitment (request-work! persistence
+                                               commitment-id
+                                               (normalise-search-params (:query body))
+                                               (body :agent))]
               (commitment-redirect commitment-id)
               {:status 204})
            #(commitment-redirect commitment-id))))

@@ -52,7 +52,7 @@
   (pause-job! [this job-id])
   (retry-job! [this job-id])
 
-  (request-work! [this job-type])
+  (request-work! [this job-type-or-query])
   (heartbeat! [this commitment-id])
   (complete-work! [this commitment-id result]))
 
@@ -88,9 +88,9 @@
       (catch Throwable t
         (error (cause-trace t))))))
 
-(defn do-work! [client job-type func]
+(defn do-work! [client job-type-or-query func]
   (future
-    (when-let [contract (request-work! client job-type)]
+    (when-let [contract (request-work! client job-type-or-query)]
       (let [heartbeat-fn! (fn [contract] (heartbeat! client (contract :commitment_id)))
             wrapped-fn (-> func
                            (wrap-exception-handling)
