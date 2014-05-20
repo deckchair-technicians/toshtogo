@@ -36,6 +36,7 @@
 
   :aot [toshtogo.util.OptimisticLockingException
         toshtogo.client.senders.SenderException
+        toshtogo.client.senders.RecoverableException
         toshtogo.client.BadRequestException]
 
   :profiles {:dev {:dependencies [[javax.servlet/servlet-api "2.5"]

@@ -5,7 +5,8 @@
             [toshtogo.util.json :as json]
             [toshtogo.client.util :refer [nil-on-404 throw-500 throw-400]]
             [toshtogo.client.senders.protocol :refer :all])
-  (:import (toshtogo.client BadRequestException)))
+  (:import (toshtogo.client BadRequestException)
+           (toshtogo.client.senders RecoverableException)))
 
 (defn wrapper [decorated map-fn]
   (reify
@@ -63,19 +64,22 @@
       [decorated]
   (wrapper decorated (fn [sender resp] (throw-400 resp))))
 
-(defn immediately-throw [f e-class]
+(defn immediately-throw
+      "Calls f (presumably for logging), then throws the exception
+      if it passes the predicate"
+      [f immediately-throw?]
   (fn [e]
-    (if (instance? e-class e)
-      (throw e)
-      (when f
-        (f e)))))
+    (when f
+      (f e))
+    (when (immediately-throw? e)
+      (throw e))))
 
 (defn wrap-retry-sender [decorated opts]
   (if (= false (:should-retry opts))
     decorated
     (let [retry-opts (-> opts
                          (update :exponential-backoff #(or % 5000))
-                         (update :error-fn #(immediately-throw % BadRequestException)))]
+                         (update :error-fn #(immediately-throw % (fn [e] (not (instance? RecoverableException e))))))]
       (reify Sender
         (POST! [this location message]
           (retry-until-success retry-opts (POST! decorated location message)))
@@ -87,8 +91,8 @@
 (defn wrap-decoration [sender & {:keys [should-retry error-fn timeout debug] :or {debug false} :as opts}]
   (-> sender
       wrap-throw-500
-      (wrap-retry-sender opts)
       wrap-throw-400
+      (wrap-retry-sender opts)
       wrap-nil-404
       wrap-json-decode-body
       wrap-follow-redirect

@@ -109,7 +109,7 @@
    :error-fn        function to pass errors to
    :immediate-throw a sequence of exception classes that short-circuit retry cycle"
   [func & {:keys [interval interval-fn timeout max-retries error-fn]
-           :or {interval 10 error-fn nil} :as opts}]
+           :or {interval 10 error-fn nil}}]
   (let [error-fn (or error-fn (constantly nil))
         interval-fn (if interval-fn interval-fn (fn [i] interval))
         started (now)
