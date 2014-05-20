@@ -28,7 +28,7 @@ define(
         }
 
         function loadJobTypes() {
-          var jobTypeUrl = "/api/metadata/job_types"
+          var jobTypeUrl = "/api/metadata/job_types";
           var jobTypesSelect = $('#job-type-select');
 
           jobTypesSelect.empty();
@@ -38,7 +38,7 @@ define(
               var jobOption = $('#job-type-template').clone().removeClass('template').removeAttr('id').appendTo(jobTypesSelect);
               jobOption.attr('value', jobType);
               jobOption.text(jobType);
-            })
+            });
             jobTypesSelect.trigger("chosen:updated");
           })
         }
@@ -83,7 +83,7 @@ define(
 
           jobs.paging.pages.forEach(function (page, index) {
             var pageNumber = index + 1;
-            var pager = $('#paginate').clone().removeClass('template').removeAttr('id').appendTo(pagination_control)
+            var pager = $('#paginate').clone().removeClass('template').removeAttr('id').appendTo(pagination_control);
             var anchor = pager.find(":first-child");
 
             if (currentPage == pageNumber) {
