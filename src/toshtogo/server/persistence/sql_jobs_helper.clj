@@ -24,12 +24,13 @@
    :notes                notes})
 
 (defn collect-tags [job row]
-  (if job
-    (-> job
-        (mp/update :tags #(conj % (row :tag))))
-    (if (row :tag)
-      (assoc row :tags #{(row :tag)})
-      row)))
+  (if-not (contains? row :tag)
+    (or job row)
+    (-> (or job row)
+        (mp/update :tags #(if (row :tag)
+                           (conj % (row :tag))
+                           (or % #{})))
+        (dissoc :tag))))
 
 (defn job-outcome [job]
   (if (:outcome job)
