@@ -57,7 +57,7 @@
   (heartbeat! [this commitment-id])
   (complete-work! [this commitment-id result]))
 
-(def heartbeat-time 1000)
+(def heartbeat-time 5000)
 
 (defmacro until-done-or-cancelled
   [work-future & body]
@@ -101,4 +101,3 @@
           (complete-work! client (contract :commitment_id) result))
         {:contract contract
          :result   result}))))
-
