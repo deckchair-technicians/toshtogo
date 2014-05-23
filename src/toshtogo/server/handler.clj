@@ -19,7 +19,6 @@
             [toshtogo.server.validation :refer :all]
             [toshtogo.util.core :refer [uuid ppstr debug parse-datetime ensure-seq]])
   (:import [java.io InputStream]
-           [toshtogo.client BadRequestException]
            [org.postgresql.util PSQLException]))
 
 (defn redirect
@@ -211,12 +210,11 @@
     (handler/site site-routes)
     (-> (handler/api api-routes)
         wrap-dependencies
-
         (wrap-if debug wrap-print-request)
+        (wrap-db-transaction db)
+        (wrap-retry-on-exceptions PSQLException)
         wrap-json-body
         wrap-body-hash
-        (wrap-db-transaction db)
-        (wrap-retry-on-exceptions PSQLException BadRequestException)
         wrap-json-response
         (wrap-if debug wrap-print-response)
         (wrap-json-exception)
