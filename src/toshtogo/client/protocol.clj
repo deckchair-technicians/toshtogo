@@ -86,8 +86,8 @@
   (fn [contract]
     (try
       (func contract)
-      (catch Throwable t
-        (error (cause-trace t))))))
+      (catch Exception e
+        (error (cause-trace e))))))
 
 (defn do-work! [client job-type-or-query func]
   (future
