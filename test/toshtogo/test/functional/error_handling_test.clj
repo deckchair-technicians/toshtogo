@@ -5,11 +5,21 @@
             [clj-time.core :refer [now minutes seconds millis plus minus after? interval within?]]
             [ring.adapter.jetty :refer [run-jetty]]
             [clojure.java.jdbc :as sql]
+            [toshtogo.client.core :as ttc]
             [toshtogo.client.protocol :refer :all]
             [toshtogo.util.core :refer [uuid uuid-str debug]]
+            [schema.core :as sch]
+            [toshtogo.test.midje-schema :refer :all]
             [toshtogo.test.functional.test-support :refer :all]))
 
 (background (before :contents @migrated-dev-db))
+
+(def non-error-logging-client (ttc/client client-config
+                        :error-fn (fn [e] nil)
+                        :debug false
+                        :timeout 1000
+                        :system "client-test"
+                        :version "0.0"))
 
 (defn lift [e]
   (if (instance? ExecutionException e)
@@ -37,6 +47,18 @@
 
         (lift-exceptions (complete-work! client (:commitment_id contract) {:not "a valid result"}))
         => (throws BadRequestException)))
+
+(fact "do-work! will try to send exceptions resulting from a bad response back to the server"
+      (let [job-id (uuid)
+            job-type (uuid-str)
+            _ (put-job! client job-id (job-req {} job-type))
+            result @(do-work! client job-type (constantly {:not-a "valid response"}))]
+
+        result => truthy
+
+        (get-job client job-id)
+        => (matches {:error (sch/both #"not-a" #"valid response")})))
+
 
 (fact "Idempotency exceptions are marked as client errors"
       (let [job-id (uuid)]
