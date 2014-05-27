@@ -96,6 +96,11 @@
   (let [thread-local (proxy [ThreadLocal] [] (initialValue [] (f)))]
     (fn [] (.get thread-local))))
 
+(defn ensure-query-map [job-type-or-query]
+  (if (map? job-type-or-query)
+    job-type-or-query
+    {:job_type job-type-or-query}))
+
 (defn job-consumer
       "Takes:
       - a client-factory function that returns a Toshtogo client (which will be called at least once per job)
@@ -111,13 +116,14 @@
       Sleeps for the given number of ms if there is no work to do, so that we don't DOS the
       toshtogo server (defaults to 1 second)."
       [client-factory job-type-or-query handler & {:keys [sleep-on-no-work-ms] :or {sleep-on-no-work-ms 1000}}]
-      (let [query (if (map? job-type-or-query)
-                    job-type-or-query
-                    {:job_type job-type-or-query})
+      (let [query (-> job-type-or-query
+                      ensure-query-map
+                      (assoc :ready_for_work true)
+                      (assoc :page_size 1))
              per-thread-client-factory (per-thread-singleton client-factory)]
         (fn [shutdown-promise]
           (let [client (per-thread-client-factory)
-                outcome (when-not (empty? (get-jobs client query))
+                outcome (when-not (empty? (:data (get-jobs client query)))
                           @(do-work! client query (-> handler
                                                       (wrap-assoc :shutdown-promise shutdown-promise))))]
             (when-not outcome
