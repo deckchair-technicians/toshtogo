@@ -34,38 +34,38 @@
        (throw (lift e#))))             )
 
 (fact "Sending an invalid job results in client exception (i.e. does not get stuck in retry loop)"
-      (lift-exceptions (put-job! client (uuid) {:not "a job"}))
+      (lift-exceptions (put-job! non-error-logging-client (uuid) {:not "a job"}))
       => (throws BadRequestException))
 
 (fact "Sending an invalid response results in client exception (i.e. does not get stuck in retry loop)"
       (let [job-id (uuid)
             job-type (uuid-str)
-            _ (put-job! client job-id (job-req {:a-field "field value"} job-type))
-            contract (request-work! client job-type)]
+            _ (put-job! non-error-logging-client job-id (job-req {:a-field "field value"} job-type))
+            contract (request-work! non-error-logging-client job-type)]
 
         contract => truthy
 
-        (lift-exceptions (complete-work! client (:commitment_id contract) {:not "a valid result"}))
+        (lift-exceptions (complete-work! non-error-logging-client (:commitment_id contract) {:not "a valid result"}))
         => (throws BadRequestException)))
 
 (fact "do-work! will try to send exceptions resulting from a bad response back to the server"
       (let [job-id (uuid)
             job-type (uuid-str)
-            _ (put-job! client job-id (job-req {} job-type))
-            result @(do-work! client job-type (constantly {:not-a "valid response"}))]
+            _ (put-job! non-error-logging-client job-id (job-req {} job-type))
+            result @(do-work! non-error-logging-client job-type (constantly {:not-a "valid response"}))]
 
         result => truthy
 
-        (get-job client job-id)
+        (get-job non-error-logging-client job-id)
         => (matches {:error (sch/both #"not-a" #"valid response")})))
 
 
 (fact "Idempotency exceptions are marked as client errors"
       (let [job-id (uuid)]
 
-        (put-job! client job-id (job-req {:a-field "field value"} (uuid-str)))
+        (put-job! non-error-logging-client job-id (job-req {:a-field "field value"} (uuid-str)))
 
-        (lift-exceptions (put-job! client job-id (job-req {:a-field "DIFFERENT value"} (uuid-str))))
+        (lift-exceptions (put-job! non-error-logging-client job-id (job-req {:a-field "DIFFERENT value"} (uuid-str))))
         => (throws BadRequestException)))
 
 (future-fact "Exceptions as a result of bad requests are thrown immediately")
