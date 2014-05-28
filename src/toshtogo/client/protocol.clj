@@ -74,7 +74,7 @@
     (let [work-future (future (func contract))]
       (until-done-or-cancelled work-future
                                (Thread/sleep heartbeat-time)
-                               (when (= :cancel (:instruction (heartbeat-fn! contract)))
+                               (when (= :cancel (:instruction (heartbeat-fn!)))
                                  (future-cancel work-future)))
 
       (if (future-cancelled? work-future)
@@ -86,18 +86,26 @@
   (fn [contract]
     (try
       (func contract)
-      (catch Throwable t
-        (error (cause-trace t))))))
+      (catch Exception e
+        (error (cause-trace e))))))
 
 (defn do-work! [client job-type-or-query func]
   (future
     (when-let [contract (request-work! client job-type-or-query)]
-      (let [heartbeat-fn! (fn [contract] (heartbeat! client (contract :commitment_id)))
+      (let [commitment-id (contract :commitment_id)
+             heartbeat-fn! #(heartbeat! client commitment-id)
             wrapped-fn (-> func
                            (wrap-exception-handling)
                            (wrap-heartbeating heartbeat-fn!))
+            ; This may take some time to return
             result (wrapped-fn contract)]
+
         (when (not (= :cancelled (result :outcome)))
-          (complete-work! client (contract :commitment_id) result))
+          (try
+            (complete-work! client commitment-id result)
+
+            (catch Exception e
+              (complete-work! client commitment-id (error (str "Problem sending result:\n" result
+                                                               "\nException:\n" (cause-trace e)) )))))
         {:contract contract
          :result   result}))))

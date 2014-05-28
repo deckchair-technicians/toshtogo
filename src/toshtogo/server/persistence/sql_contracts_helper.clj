@@ -160,7 +160,7 @@
        :page
        query
 
-       :page-size
+       :page_size
        query))
    base-query
    (dissoc params :with-dependencies)))

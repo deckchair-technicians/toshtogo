@@ -71,7 +71,7 @@
   [params]
   (-> params
       (update :page (fn [s] (Integer/parseInt (or s "1"))))
-      (update :page-size (fn [s] (Integer/parseInt (or s "25"))))))
+      (update :page_size (fn [s] (Integer/parseInt (or s "25"))))))
 
 (defn normalise-job-req [req]
   (-> req

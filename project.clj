@@ -1,4 +1,4 @@
-(defproject savagematt/toshtogo "0.5.9-SNAPSHOT"
+(defproject savagematt/toshtogo "0.5.10-SNAPSHOT"
 
   :description "An asynchronous job manager"
 
@@ -34,6 +34,7 @@
 
   :ring {:handler toshtogo.server.core/dev-app-instance :reload-paths ["src"]}
 
+  ;:jvm-opts ["-agentpath:/Applications/YourKit_Java_Profiler_2013_build_13082.app/bin/mac/libyjpagent.jnilib"]
   :aot [toshtogo.util.OptimisticLockingException
         toshtogo.client.senders.SenderException
         toshtogo.client.senders.RecoverableException

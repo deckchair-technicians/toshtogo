@@ -39,12 +39,12 @@
          (put-job! client job-id-3 (job-req {} job-type))
 
          (fact "Getting first page"
-               (ids-and-created-dates client {:order-by [:job_created] :job_type job-type :page 1 :page-size 2})
+               (ids-and-created-dates client {:order-by [:job_created] :job_type job-type :page 1 :page_size 2})
                => (contains [(contains {:job_id job-id-1})
                              (contains {:job_id job-id-2})]))
 
          (fact "Getting second page"
-               (ids-and-created-dates client {:order-by [:job_created] :job_type job-type :page 2 :page-size 2})
+               (ids-and-created-dates client {:order-by [:job_created] :job_type job-type :page 2 :page_size 2})
                => (contains [(contains {:job_id job-id-3})]))))
 
 
