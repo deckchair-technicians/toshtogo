@@ -95,7 +95,9 @@
         :else (throw (IllegalStateException. (str "Unknown outcome " (result :outcome) " in result " (ppstr result))))))
 
     (get-jobs [this params]
-      (let [params (update params :order-by #(concat (ensure-seq %) [:jobs.job_id]))]
+      (let [order-by (ensure-seq (:order-by params))
+            order-by (if (empty? order-by) [:job_created] order-by)
+            params   (assoc params :order-by order-by)]
         (if (:page params)
           (-> (hsql/page cnxn (job-query params)
                          :count-sql-map (job-query (dissoc params :get_tags))
