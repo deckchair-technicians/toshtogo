@@ -70,7 +70,7 @@
   "Parse (or default) the paging related parameters."
   [params]
   (-> params
-      (update :page (fn [s] (Integer/parseInt (or s "1"))))
+      (update :page (fn [s] (when s (Integer/parseInt s))))
       (update :page_size (fn [s] (Integer/parseInt (or s "25"))))))
 
 (defn normalise-job-req [req]
@@ -98,9 +98,10 @@
   (assoc jobs :job_types "/api/metadata/job_types"))
 
 (defn restify [jobs query]
-  (-> jobs
-    (paginate query)
-    (job-types query)))
+  (cond-> jobs
+          (sequential? jobs) ((fn [jobs] {:data jobs}))
+          (:paging jobs)     (paginate query)
+          true               (job-types query)))
 
 (defroutes api-routes
   (context "/api" {:keys [persistence body check-idempotent!]}
@@ -109,8 +110,8 @@
                   (resp/response (get-tree persistence (uuid tree-id)))))
 
     (context "/jobs" []
-       (GET "/" {params :query-params :as request}
-            (let [normalised-params (-> params normalise-search-params normalise-paging-params)]
+      (GET "/" {params :query-params :as request}
+        (let [normalised-params (-> params normalise-search-params normalise-paging-params)]
               (resp/response (restify (get-jobs persistence normalised-params) request))))
       (context "/:job-id" [job-id]
 
