@@ -115,7 +115,7 @@
 
       Sleeps for the given number of ms if there is no work to do, so that we don't DOS the
       toshtogo server (defaults to 1 second)."
-      [client-factory job-type-or-query handler & {:keys [sleep-on-no-work-ms] :or {sleep-on-no-work-ms 1000}}]
+      [client-factory job-type-or-query handler & {:keys [sleep-on-no-work-ms] :or {sleep-on-no-work-ms 3000}}]
       (let [query (-> job-type-or-query
                       ensure-query-map
                       (assoc :ready_for_work true)
