@@ -110,11 +110,14 @@
        (max-due-time query v)
 
        :latest_contract
-       (if v
-         (merge-where query [:or [:= :contract_id nil]
-                             [:= :contract_number job-max-contract-number]])
-         (merge-where query [:or [:contract_id nil]
-                             [:not= :contract_number job-max-contract-number]]))
+       (-> query
+           (merge-left-join [:contracts :contracts2] [:and
+                                                      [:= :contracts.job_id :contracts2.job_id]
+                                                      [:< :contracts.contract_number :contracts2.contract_number]])
+           (merge-where [:or [:= :contracts.contract_id nil]
+                         (if v
+                           [:= :contracts2.contract_number nil]
+                           [:not= :contracts2.contract_number nil])]))
 
        :depends_on_job_id
        (merge-where query [:in :jobs.job_id (-> (select :parent_job_id)
@@ -134,8 +137,8 @@
        :tree_id
        (merge-where query [:or
                            [:in :jobs.job_id (-> (select :parent_job_id)
-                                                     (from :job_dependencies)
-                                                     (where [:= :link_tree_id v]))]
+                                                 (from :job_dependencies)
+                                                 (where [:= :link_tree_id v]))]
                            [:in :jobs.job_id (-> (select :child_job_id)
                                                  (from :job_dependencies)
                                                  (where [:= :link_tree_id v]))]])
