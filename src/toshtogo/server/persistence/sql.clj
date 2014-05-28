@@ -49,7 +49,11 @@
           (get-job this job-id))))
 
     (insert-contract! [this job-id contract-ordinal contract-due]
-      (ttsql/insert! cnxn :contracts (contract-record job-id contract-ordinal contract-due)))
+      (let [contract (contract-record job-id contract-ordinal contract-due)]
+        (ttsql/insert! cnxn :contracts contract)
+        (ttsql/update! cnxn :jobs
+                       {:latest_contract (:contract_id contract)}
+                       ["job_id = ?" job-id])))
 
     (insert-commitment!
       [this commitment-id contract-id agent-details]
