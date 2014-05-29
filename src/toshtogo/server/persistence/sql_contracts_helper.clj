@@ -111,13 +111,10 @@
 
        :latest_contract
        (-> query
-           (merge-left-join [:contracts :contracts2] [:and
-                                                      [:= :contracts.job_id :contracts2.job_id]
-                                                      [:< :contracts.contract_number :contracts2.contract_number]])
-           (merge-where [:or [:= :contracts.contract_id nil]
+           (merge-where [:or [:= :jobs.latest_contract nil]
                          (if v
-                           [:= :contracts2.contract_number nil]
-                           [:not= :contracts2.contract_number nil])]))
+                           [:= :jobs.latest_contract :contracts.contract_id]
+                           [:not= :jobs.latest_contract :contracts.contract_id])]))
 
        :depends_on_job_id
        (merge-where query [:in :jobs.job_id (-> (select :parent_job_id)
