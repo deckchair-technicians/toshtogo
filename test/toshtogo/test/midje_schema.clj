@@ -171,5 +171,5 @@
         (as-data-laden-falsehood {:notes [(with-out-str (pprint errors))]})
         true)
 
-      (catch Exception e
+      (catch Throwable e
         (as-data-laden-falsehood {:notes [(with-out-str (print-cause-trace e))]})))))
