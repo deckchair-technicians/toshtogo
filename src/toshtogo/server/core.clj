@@ -1,8 +1,10 @@
 (ns toshtogo.server.core
   (:require [toshtogo.server.migrations.run :refer [run-migrations!]]
             [toshtogo.server.handler :refer [app]]
+            [toshtogo.server.logging :refer :all]
             [ring.adapter.jetty :refer [run-jetty]]
             [watchtower.core :as watcher])
+  (:import [toshtogo.server.logging SysLogger])
   (:gen-class))
 
 (def dev-db {:classname   "org.postgresql.Driver" ; must be in classpath
@@ -12,7 +14,7 @@
              :password    "postgres"})
 
 (defn dev-app [& {:keys [debug] :or {debug false}}]
-  (app dev-db :debug debug))
+  (app dev-db :debug debug :logger (if debug (SysLogger.) nil)))
 
 (def dev-app-instance (dev-app :debug true))
 

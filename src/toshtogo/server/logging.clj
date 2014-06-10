@@ -3,6 +3,7 @@
   (:require [clojure.stacktrace :refer [print-cause-trace]]
             [schema.core :as sch]
             [schema.macros :as schm]
+            [clojure.pprint :refer [pprint]]
 
             [toshtogo.util.core :refer [exception-as-map]]
             [toshtogo.server.validation :refer [JobRecord JobResult Agent validated]]))
@@ -92,6 +93,12 @@
   nil
   (log [this event]
     nil))
+
+(defrecord SysLogger []
+  Logger
+  (log [this event]
+    (println)
+    (pprint event)))
 
 (defrecord ValidatingLogger [decorated]
   Logger
