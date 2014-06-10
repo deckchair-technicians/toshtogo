@@ -20,7 +20,7 @@
   {:commitment_id sch/Uuid
    :job_id        sch/Uuid
    :job_type      sch/Keyword
-   :job_name      sch/Str
+   :job_name      (sch/maybe sch/Str)
    :request_body  Map
    :agent         Agent})
 
@@ -44,7 +44,8 @@
 
     (event-type= :commitment_result)
     {:event_type (sch/eq :commitment_result)
-     :event_data CommitmentDetails}))
+     :event_data (assoc CommitmentDetails
+                   :result JobResult)}))
 
 (defn new-job-event
   [job]
