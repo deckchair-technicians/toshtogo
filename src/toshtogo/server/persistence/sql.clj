@@ -44,9 +44,7 @@
           (ttsql/insert! cnxn :jobs (dissoc job :tags))
 
           (when (not (empty? job-tag-records))
-            (apply ttsql/insert! cnxn :job_tags job-tag-records))
-
-          (get-job this job-id))))
+            (apply ttsql/insert! cnxn :job_tags job-tag-records)))))
 
     (insert-contract! [this job-id contract-ordinal contract-due]
       (let [contract (contract-record job-id contract-ordinal contract-due)]
