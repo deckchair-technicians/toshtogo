@@ -81,21 +81,25 @@
   [handler & messages]
   (fn [req]
     (let [resp (handler req)]
-      (println)
-      (println "Response")
-      (when messages (println messages))
-      (println "---------------------------")
-      (pprint resp)
+      (with-sys-out
+        (println)
+        (println "Response")
+        (when messages (println messages))
+        (println "---------------------------")
+        (pprint resp))
+
       resp)))
 
 (defn wrap-print-request
   [handler & messages]
   (fn [req]
-    (println)
-    (println "Request")
-    (when messages (println messages))
-    (println "---------------------------")
-    (pprint req)
+    (with-sys-out
+      (println)
+      (println "Request")
+      (when messages (println messages))
+      (println "---------------------------")
+      (pprint req))
+
     (handler req)))
 
 (defn json-response [resp]
