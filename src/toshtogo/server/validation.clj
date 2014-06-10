@@ -31,7 +31,7 @@
    (s/optional-key :result)                    (s/pred map? "should be a map")
    (s/optional-key :error)                     s/Str
    (s/optional-key :existing_job_dependencies) [s/Uuid]
-   (s/optional-key :dependencies)              [(s/recursive #'JobRequest)]
+   (s/optional-key :dependencies)              [JobRequest]
    (s/optional-key :contract_due)              DateTime})
 
 (def JobRecord
