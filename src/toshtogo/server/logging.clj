@@ -100,6 +100,8 @@
   (log [_this event]
     (with-sys-out
       (println)
+      (println (str "Event [" (name (:event_type event)) "]"))
+      (println "---------------------------")
       (pprint event))))
 
 (defrecord ValidatingLogger [decorated]

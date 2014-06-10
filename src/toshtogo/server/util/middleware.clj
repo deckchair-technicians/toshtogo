@@ -4,6 +4,7 @@
             [schema.core :as sch]
             [clojure.stacktrace :refer [print-cause-trace]]
             [clojure.pprint :refer [pprint]]
+            [clojure.string :refer [upper-case]]
             [ring.middleware.json :as ring-json]
             [flatland.useful.map :refer [update]]
             [toshtogo.server.util.idempotentput :refer [check-idempotent!]]
@@ -77,13 +78,16 @@
       (retry* 3 exception-types #(handler req))
       )))
 
+(defn request-summary [req]
+  (str (upper-case (name (:request-method req))) " " (:uri req)))
+
 (defn wrap-print-response
   [handler & messages]
   (fn [req]
     (let [resp (handler req)]
       (with-sys-out
         (println)
-        (println "Response")
+        (println (str "Response [" (request-summary req) "]"))
         (when messages (println messages))
         (println "---------------------------")
         (pprint resp))
@@ -95,7 +99,7 @@
   (fn [req]
     (with-sys-out
       (println)
-      (println "Request")
+      (println (str "Request [" (request-summary req) "]"))
       (when messages (println messages))
       (println "---------------------------")
       (pprint req))
