@@ -39,7 +39,7 @@
   (-> job
       (dissoc :tag)
       (dissoc :job_id_2 :job_id_3 :job_id_4 :commitment_contract :outcome_id)
-      (mp/update :outcome keyword)
+      (mp/update-each [:outcome :job_type] keyword)
       (fix-job-outcome)
       (mp/update-each [:request_body :result_body] #(json/decode %))))
 

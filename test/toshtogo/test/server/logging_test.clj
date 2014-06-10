@@ -14,7 +14,7 @@
                          (assoc :home_tree_id (uuid))
                          (normalise-job-tree (uuid))
                          (to-job-record)))
-      => (matches LoggingEvent)
+      => (matches (strict LoggingEvent))
 
       (commitment-started-event (uuid)
                                 {:job_id       (uuid)
@@ -22,7 +22,7 @@
                                  :job_name     "Some name"
                                  :request_body {:some :request}}
                                 agent-details)
-      => (matches LoggingEvent)
+      => (matches (strict LoggingEvent))
 
       (commitment-result-event {:job_id           (uuid)
                                 :commitment_id (uuid)
@@ -31,4 +31,4 @@
                                 :request_body     {:some :request}}
                                agent-details
                                (success {:some :result}))
-      => (matches LoggingEvent))
+      => (matches (strict LoggingEvent)))

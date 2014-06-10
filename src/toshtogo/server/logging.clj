@@ -5,6 +5,7 @@
             [schema.macros :as schm]
             [clojure.pprint :refer [pprint]]
 
+            [toshtogo.util.schema :as toshtogo-schema]
             [toshtogo.util.core :refer [exception-as-map with-sys-out]]
             [toshtogo.server.validation :refer [JobRecord JobResult Agent validated]]))
 
@@ -31,8 +32,7 @@
     {:event_type          (sch/eq :server_error)
      :event_data          {:stacktrace sch/Str}
 
-     ;TODO: Should be (sch/recursive LoggingEvent) but schema can't handle it
-     :events_before_error [Map]}
+     :events_before_error [(toshtogo-schema/recursive #'LoggingEvent)]}
 
     (event-type= :new_job)
     {:event_type (sch/eq :new_job)
