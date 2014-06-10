@@ -7,7 +7,6 @@
             [flatland.useful.map :refer [update update-each]]
             [toshtogo.util.core :refer [uuid debug ensure-seq ppstr]]
             [toshtogo.server.persistence.protocol :refer :all]
-            [toshtogo.server.api :refer [get-job get-contract]]
             [toshtogo.server.persistence.agents-helper :refer :all]
             [toshtogo.server.persistence.sql-jobs-helper :refer :all]
             [toshtogo.server.persistence.sql-contracts-helper :refer :all]
@@ -33,14 +32,11 @@
       (ttsql/insert! cnxn :job_trees {:tree_id tree-id :root_job_id root-job-id}))
 
     (insert-jobs! [this jobs]
-      (doseq [job (map (fn [job]
-                         (-> job
-                             to-job-record
-                             (validated JobRecord)))
-                       jobs)]
+      (doseq [job (validated jobs [JobRecord])]
         (let [job-id          (job :job_id)
               job-tag-records (map (fn [tag] {:job_id job-id :tag tag}) (job :tags))]
 
+          ; TODO: Batch inserts would be more efficient for long lists of dependencies
           (ttsql/insert! cnxn :jobs (dissoc job :tags))
 
           (when (not (empty? job-tag-records))

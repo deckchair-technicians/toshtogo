@@ -155,3 +155,9 @@
 
 (defn to-ordered [x]
   (prewalk to-ordered* x))
+
+(defn exception-as-map [e]
+  {:stacktrace (cause-trace e)
+   :message    (.getMessage e)
+   :class      (.getName (class e))
+   :ex-data    (ex-data e)})

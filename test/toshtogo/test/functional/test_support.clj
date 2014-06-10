@@ -12,7 +12,10 @@
             [schema.macros :as s-macros]
             [midje.checking.core :refer [as-data-laden-falsehood]]
 
+            [toshtogo.server.persistence.sql :refer [sql-persistence]]
+            [toshtogo.server.api :refer [api]]
             [toshtogo.util.core :refer [uuid uuid-str debug cause-trace]]
+            [toshtogo.client.util :as client-util]
             [toshtogo.server.migrations.run :refer [run-migrations!]]))
 
 (def migrated-dev-db (delay (run-migrations! dev-db)))
@@ -50,3 +53,10 @@
 
 (defn isinstance [c]
   (fn [x] (instance? c x)))
+
+(def agent-details (client-util/agent-details "savagematt" "toshtogo"))
+
+(defn deps [cnxn]
+  (let [persistence (sql-persistence cnxn)]
+    {:persistence persistence
+     :api         (api persistence nil agent-details)}))

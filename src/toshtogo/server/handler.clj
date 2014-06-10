@@ -17,7 +17,8 @@
             [toshtogo.server.persistence.protocol :refer :all]
             [toshtogo.server.api :refer :all]
             [toshtogo.server.validation :refer :all]
-            [toshtogo.util.core :refer [uuid ppstr debug parse-datetime ensure-seq]])
+            [toshtogo.util.core :refer [uuid ppstr debug parse-datetime ensure-seq]]
+            [toshtogo.server.logging :refer :all])
   (:import [java.io InputStream]
            [org.postgresql.util PSQLException]))
 
@@ -104,7 +105,7 @@
           true               (job-types query)))
 
 (defroutes api-routes
-  (context "/api" {:keys [persistence body check-idempotent!]}
+  (context "/api" {:keys [persistence api body check-idempotent!]}
     (context "/trees" []
              (GET "/:tree-id" [tree-id]
                   (resp/response (get-tree persistence (uuid tree-id)))))
@@ -120,16 +121,12 @@
             (check-idempotent!
              :create-job job-id
              #(do
-               (new-root-job! persistence
-                                  (-> body
-                                      :agent
-                                      (validated Agent))
-                                  (-> body
-                                      (assoc :job_id job-id)
-                                      (dissoc :agent)
-                                      normalise-job-req
-                                      (validated JobRequest)))
-                (job-redirect job-id))
+               (new-root-job! api
+                              (-> body
+                                  (assoc :job_id job-id)
+                                  normalise-job-req
+                                  (validated JobRequest)))
+               (job-redirect job-id))
              #(job-redirect job-id))))
 
         (GET "/" []
@@ -143,9 +140,9 @@
               (let [job-id (uuid job-id)]
                 (case action
                   "pause"
-                  (resp/response (pause-job! persistence job-id (body :agent)))
+                  (resp/response (pause-job! api job-id))
                   "retry"
-                  (resp/response (new-contract! persistence (contract-req job-id)))
+                  (resp/response (new-contract! api (contract-req job-id)))
                   )))))
 
     (context "/commitments" []
@@ -153,10 +150,9 @@
         (let [commitment-id (uuid (body :commitment_id))]
           (check-idempotent!
            :create-commitment commitment-id
-           #(if-let [commitment (request-work! persistence
+           #(if-let [commitment (request-work! api
                                                commitment-id
-                                               (normalise-search-params (:query body))
-                                               (body :agent))]
+                                               (normalise-search-params (:query body)))]
               (commitment-redirect commitment-id)
               {:status 204})
            #(commitment-redirect commitment-id))))
@@ -166,17 +162,13 @@
           (let [commitment-id (uuid commitment-id)]
             (check-idempotent!
              :complete-commitment commitment-id
-             #(do (complete-work! persistence commitment-id
+             #(do (complete-work! api commitment-id
                                   (-> body
                                       (update :outcome keyword)
                                       (update :contract_due parse-datetime)
                                       (update :existing_job_dependencies (fn [dep-job-id] (map uuid dep-job-id)))
                                       (update :dependencies (fn [deps] (map normalise-job-req deps)))
-                                      (dissoc :agent)
-                                      (validated JobResult))
-                                  (-> body
-                                      :agent
-                                      (validated Agent)))
+                                      (validated JobResult)))
                   (commitment-redirect commitment-id))
              #(commitment-redirect commitment-id))))
 
@@ -206,17 +198,21 @@
            (GET "/jobs/:job-id" [job-id] (html-resource "job.html")))
 
 
-(defn app [db & {:keys [debug] :or {debug false}}]
+(defn app [db & {:keys [debug ^Logger logger]
+                 :or {debug false}}]
   (routes
     (handler/site site-routes)
     (-> (handler/api api-routes)
-        wrap-dependencies
+        (wrap-dependencies logger)
         (wrap-if debug wrap-print-request)
         (wrap-db-transaction db)
+        (wrap-logging logger)
         (wrap-retry-on-exceptions PSQLException)
         wrap-json-body
         wrap-body-hash
         wrap-json-response
         (wrap-if debug wrap-print-response)
+        wrap-cors
+        (wrap-logging logger)
         (wrap-json-exception)
-        wrap-cors)))
+        (wrap-logging logger))))

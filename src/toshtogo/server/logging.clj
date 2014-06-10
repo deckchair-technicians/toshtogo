@@ -1,0 +1,104 @@
+(ns toshtogo.server.logging
+  (:import (java.util Map))
+  (:require [clojure.stacktrace :refer [print-cause-trace]]
+            [schema.core :as sch]
+            [schema.macros :as schm]
+
+            [toshtogo.util.core :refer [exception-as-map]]
+            [toshtogo.server.validation :refer [JobRecord JobResult Agent validated]]))
+
+; ----------------------------------------------
+; Event schemas and construcors
+; ----------------------------------------------
+
+(defn event-type= [event-type]
+  (fn [event]
+    (= (:event_type event) event-type)))
+
+(def CommitmentDetails
+  {:commitment_id sch/Uuid
+   :job_id        sch/Uuid
+   :job_type      sch/Keyword
+   :job_name      sch/Str
+   :request_body  Map
+   :agent         Agent})
+
+(def LoggingEvent
+  ;TODO: Better as a macro?
+  (sch/conditional
+    (event-type= :server_error)
+    {:event_type          (sch/eq :server_error)
+     :event_data          {:stacktrace sch/Str}
+
+     ;TODO: Should be (sch/recursive LoggingEvent) but schema can't handle it
+     :events_before_error [Map]}
+
+    (event-type= :new_job)
+    {:event_type (sch/eq :new_job)
+     :event_data JobRecord}
+
+    (event-type= :commitment_started)
+    {:event_type (sch/eq :commitment_started)
+     :event_data CommitmentDetails}
+
+    (event-type= :commitment_result)
+    {:event_type (sch/eq :commitment_result)
+     :event_data CommitmentDetails}))
+
+(defn new-job-event
+  [job]
+  {:event_type :new_job
+   :event_data job})
+
+(defn commitment-details [contract agent-details]
+  (assoc (select-keys contract [:job_id :commitment_id :job_type :job_name :request_body])
+    :agent agent-details))
+
+(defn commitment-started-event
+  [commitment-id contract agent-details ]
+  {:event_type :commitment_started
+   :event_data (commitment-details (assoc contract :commitment_id commitment-id) agent-details)})
+
+(defn commitment-result-event
+  [contract agent-details result]
+  {:event_type :commitment_result
+   :event_data (assoc (commitment-details contract agent-details)
+                 :result result)})
+
+(schm/defn error-event
+  [exception rolled-back-events]
+
+  {:event_type          :server_error
+   :event_data          (exception-as-map exception)
+   :events_before_error rolled-back-events})
+
+; ----------------------------------------------
+; Loggers
+; ----------------------------------------------
+
+(defprotocol Logger
+  (log [this event] "Event is a toshtogo.server.logging.LoggingEvent"))
+
+(schm/defn safe-log
+  "Tries to log events, catches exceptions and prints stack trace."
+  [logger & events ]
+  (doseq [event events]
+    (try
+      (log logger event)
+      (catch Exception logging-exception
+        (print-cause-trace logging-exception)))))
+
+(extend-protocol Logger
+  nil
+  (log [this event]
+    nil))
+
+(defrecord ValidatingLogger [decorated]
+  Logger
+  (log [this event]
+    (log (:decorated this) (validated event LoggingEvent))))
+
+(defrecord DeferredLogger [log-seq-atom]
+  Logger
+  (log [this event]
+    (swap! (:log-seq-atom this) #(conj % event))))

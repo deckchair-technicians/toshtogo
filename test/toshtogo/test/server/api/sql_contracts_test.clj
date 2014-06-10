@@ -2,26 +2,23 @@
   (:require [midje.sweet :refer :all]
             [clojure.java.jdbc :as sql]
             [clojure.string :as str]
-            [toshtogo.server.util.middleware :refer [sql-deps]]
             [toshtogo.util.core :refer [uuid uuid-str debug]]
             [toshtogo.test.server.api.util :refer [job-req]]
             [toshtogo.server.core :refer [dev-db]]
             [toshtogo.client.util :as util]
-            [toshtogo.server.persistence.protocol :refer :all]
+            [toshtogo.server.persistence.protocol :refer [success get-job get-contracts contract-req]]
             [toshtogo.server.api :refer :all]
             [toshtogo.test.functional.test-support :refer :all]))
 
 (background (before :contents @migrated-dev-db))
 
-(def agent-details (util/agent-details "savagematt" "toshtogo"))
+(defn given-job-exists [api id job-type & deps]
+  (new-root-job! api (job-req id {:some-data (uuid)} job-type :dependencies deps)))
 
-(defn given-job-exists [persistence id job-type & deps]
-  (new-root-job! persistence agent-details (job-req id {:some-data (uuid)} job-type :dependencies deps)))
-
-(defn given-job-succeeded [persistence job-id]
-  (let [job      (get-job persistence job-id)
-        contract (request-work! persistence (uuid) {:job_id job-id} agent-details)]
-    (complete-work! persistence (contract :commitment_id) (success {:response "success"}) agent-details)))
+(defn given-job-succeeded [api job-id]
+  (let [job      (get-job api job-id)
+        contract (request-work! api (uuid) {:job_id job-id})]
+    (complete-work! api (contract :commitment_id) (success {:response "success"}))))
 
 (fact "Gets contracts by filters "
   (sql/with-db-transaction
@@ -30,10 +27,10 @@
          id-two                         (uuid)
          job-type-one                   (uuid-str) ;so we can run against a dirty database
          job-type-two                   (uuid-str)
-         {:keys [_ persistence]} (sql-deps cnxn)]
+         {:keys [api persistence]} (deps cnxn)]
 
-     (given-job-exists persistence id-two job-type-two)
-     (given-job-exists persistence id-one job-type-one)
+     (given-job-exists api id-two job-type-two)
+     (given-job-exists api id-one job-type-one)
 
      (get-contracts persistence {:outcome :waiting :job_type job-type-one})
      => (contains (contains {:job_id id-one})))))
@@ -44,26 +41,26 @@
    (let [job-id    (uuid)
          job-type   (uuid-str)        ;so we can run against a dirty database
          commitment-id (uuid)
-         {:keys [_ persistence]} (sql-deps cnxn)]
+         {:keys [api]} (deps cnxn)]
 
-     (given-job-exists persistence job-id job-type)
+     (given-job-exists api job-id job-type)
 
      (fact "Can't create contract when job is waiting"
-       (new-contract! persistence (contract-req job-id))
+       (new-contract! api (contract-req job-id))
        => (throws IllegalStateException
                   (str "Job " job-id " has a waiting contract. Can't create a new one.")))
 
      (fact "Can't create contract when job is running"
-       (request-work! persistence commitment-id {:job_id job-id} agent-details )
+       (request-work! api commitment-id {:job_id job-id})
        => truthy
 
-       (new-contract! persistence (contract-req job-id))
+       (new-contract! api (contract-req job-id))
        => (throws IllegalStateException
                   (str "Job " job-id " has a running contract. Can't create a new one.")))
 
      (fact "Can't create contract when job has succeeded"
-        (complete-work! persistence commitment-id (success {:response "success"}) agent-details)
+        (complete-work! api commitment-id (success {:response "success"}))
 
-       (new-contract! persistence (contract-req job-id))
+       (new-contract! api (contract-req job-id))
        => (throws IllegalStateException
                   (str "Job " job-id " has been completed. Can't create further contracts"))))))
