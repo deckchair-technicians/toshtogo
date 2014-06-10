@@ -12,7 +12,7 @@
             [toshtogo.server.logging :refer [error-event safe-log]]
             [toshtogo.server.validation :refer [validated Agent]]
 
-            [toshtogo.util.core :refer [debug ppstr cause-trace exception-as-map]]
+            [toshtogo.util.core :refer [debug ppstr cause-trace exception-as-map with-sys-out]]
             [toshtogo.util.json :as json]
             [toshtogo.util.hashing :refer [murmur!]]
             [toshtogo.util.io :refer [byte-array-input! byte-array-output!]])
@@ -50,14 +50,14 @@
 
 (defn wrap-dependencies
   "Adds protocol implementations for services"
-  [handler logger]
+  [handler]
   (fn [req]
     (let [cnxn (req :cnxn)
           body-hash (req :body-hash)
           check-idempotent* (partial check-idempotent! cnxn body-hash)]
       (handler (-> req
                    (assoc :check-idempotent! check-idempotent*)
-                   (merge (sql-deps cnxn logger (get-in req [:body :agent])))
+                   (merge (sql-deps cnxn (:logger req) (get-in req [:body :agent])))
                    (update :body #(dissoc % :agent)))))))
 
 (defn- retry*
@@ -124,25 +124,29 @@
   (fn [request]
     (handler (update request :body json/decode))))
 
-(defn wrap-logging
-  "Adds a DeferredLogger to request as :logger.
+(defn wrap-logging-transaction
+  "Adds a DeferredLogger to request as :logger, which collects log events in an atom.
 
-  If request succeeds, sends contents of DeferredLogger to logger.
+  If request succeeds, sends contents of DeferredLogger to a logger produced by logger-factory.
 
-  Rethrows exceptions in wrapped handler, after logging an error event. Event map contains :events_before_error-
-  the log events before the error happened, which will not be logged independently. This is useful to diagnose
+  If the handler throws an exception, all log events up to that point will be logged in a
+  single :server_error logging event  in :events_before_error. This is useful to diagnose
   what the server was doing just before an exception occured.
 
-  Catches exceptions with logging and prints cause trace, so log failures don't bring down the application."
-  [handler logger]
+  If the logging itself throws an exception, prints cause trace, so log failures don't bring
+  down the application."
+  [handler logger-factory]
+  (assert (fn? logger-factory) "Logger factory should be a function")
+
   (fn [req]
-    (let [log-events (atom [])
+    (let [logger (logger-factory)
+          log-events (atom [])
           deferred-logger (ValidatingLogger. (DeferredLogger. log-events))]
       (try
         (let [resp (handler (assoc req :logger deferred-logger))]
           (apply safe-log logger @log-events)
           resp)
-        (catch Exception e
+        (catch Throwable e
           (safe-log logger (error-event e @log-events))
           (throw e))))))
 

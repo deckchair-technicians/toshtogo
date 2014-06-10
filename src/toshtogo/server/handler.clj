@@ -198,21 +198,22 @@
            (GET "/jobs/:job-id" [job-id] (html-resource "job.html")))
 
 
-(defn app [db & {:keys [debug ^Logger logger]
-                 :or {debug false}}]
+(defn app [db & {:keys [debug logger-factory]
+                 :or {debug false
+                      logger-factory (constantly nil)}}]
   (routes
     (handler/site site-routes)
     (-> (handler/api api-routes)
-        (wrap-dependencies logger)
+        wrap-dependencies
         (wrap-if debug wrap-print-request)
         (wrap-db-transaction db)
-        (wrap-logging logger)
+        (wrap-logging-transaction logger-factory)
         (wrap-retry-on-exceptions PSQLException)
         wrap-json-body
         wrap-body-hash
         wrap-json-response
         (wrap-if debug wrap-print-response)
         wrap-cors
-        (wrap-logging logger)
+        (wrap-logging-transaction logger-factory)
         (wrap-json-exception)
-        (wrap-logging logger))))
+        (wrap-logging-transaction logger-factory))))

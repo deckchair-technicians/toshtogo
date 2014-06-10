@@ -14,7 +14,8 @@
              :password    "postgres"})
 
 (defn dev-app [& {:keys [debug] :or {debug false}}]
-  (app dev-db :debug debug :logger (if debug (SysLogger.) nil)))
+  (app dev-db :debug debug :logger-factory (if debug (constantly (SysLogger.))
+                                                     (constantly nil))))
 
 (def dev-app-instance (dev-app :debug true))
 
