@@ -3,6 +3,7 @@
             [schema.coerce :as coer]
             [schema.utils :as utils]
             [schema.macros :as macros]
+            [clojure.walk :refer [postwalk]]
             [midje.checking.core :refer [as-data-laden-falsehood]]
             [clj-time.core :refer [now minutes seconds millis plus minus after? interval within?]]
             [clojure.pprint :refer [pprint]]
@@ -138,23 +139,31 @@
           (for [s item-schemas]
             (list (sch/explain (:schema s)) (:name s))))))))
 
-(defn match [schema]
-  (sch/start-walker
-    (fn [s]
-      (let [walk (sch/walker (cond
-                               (map? s)
-                               (assoc s sch/Any sch/Any)
+(defn strict [schema]
+  (with-meta schema {:toshtogo.test.midje-schema/strict true}))
 
-                               (not (satisfies? sch/Schema s))
-                               (is s)
+(defn strict? [schema]
+  (:toshtogo.test.midje-schema/strict (meta schema)))
+
+(defn match [root-schema]
+  (sch/start-walker
+    (fn [schema]
+      (let [strictness-atom (atom nil)
+             walk (sch/walker (cond
+                               (and (map? schema)
+                                    (not @strictness-atom))
+                               (assoc schema sch/Any sch/Any)
+
+                               (not (satisfies? sch/Schema schema))
+                               (is schema)
 
                                :else
-                               s))]
-        (fn [x]
-          (if-let [coercer (:coercer (meta s))]
-            (walk (coercer x))
-            (walk x)))))
-    schema))
+                               schema))]
+        (fn [actual-value]
+          (if-let [coercer (:coercer (meta schema))]
+            (walk (coercer actual-value))
+            (walk actual-value)))))
+    root-schema))
 
 (defn check [schema x]
   (-> x
