@@ -17,8 +17,6 @@
   (app dev-db :debug debug :logger-factory (if debug (constantly (SysLogger.))
                                                      (constantly nil))))
 
-(def dev-app-instance (dev-app :debug true))
-
 (defn -main [& {debug "-debug"}]
   (run-migrations! dev-db)
   (run-jetty (dev-app :debug (= "yes" debug)) {:port 3001}))
