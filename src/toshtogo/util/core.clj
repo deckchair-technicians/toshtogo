@@ -1,14 +1,25 @@
 (ns toshtogo.util.core
-  (:import (java.util UUID Map Set)
-           (java.util.concurrent TimeoutException)
-           (clojure.lang PersistentTreeMap PersistentTreeSet))
   (:require
     [clojure.math.numeric-tower :refer [expt]]
     [clj-time.core :refer [after? now plus millis interval]]
     [clj-time.format :as tf]
     [clojure.pprint :refer [pprint]]
     [clojure.stacktrace :as stacktrace]
-    [clojure.walk :refer [prewalk]]))
+    [clojure.walk :refer [prewalk]])
+  (:import (java.util UUID Map Set)
+           (java.util.concurrent TimeoutException)
+           (clojure.lang PersistentTreeMap PersistentTreeSet)))
+
+(def sout (agent nil))
+
+(defmacro with-sys-out
+  "WARNING: Do not put long-running operations in body. They will lock other operations that
+  also want to use sout.
+
+  All operations using *out* will be atomic with other operations
+  that use the sout agent"
+  [& body]
+  `(send-off sout (fn [_#] ~@body)))
 
 (defn assoc-not-nil
   ([m key val]
@@ -36,19 +47,24 @@
     (some #(% x) preds)))
 
 (defn no-debug
-  ([msg x] x)
+  ([_msg x] x)
   ([x] x))
 
 (defn debug
-  ([msg x]
-   (do (println msg) (debug x)))
   ([x]
-   (do
+   (debug nil x))
+
+  ([msg x]
+   (with-sys-out
+     (when msg (println msg))
+
      (if (any-pred list? seq? vector? map?)
        (try (pprint x)
             (catch Throwable e (throw (RuntimeException. (str "could not pprint " x) e))))
-       (println x))
-     x)))
+
+       (println x)))
+
+   x))
 
 
 (defn parse-datetime [s]
@@ -111,7 +127,7 @@
   [func & {:keys [interval interval-fn timeout max-retries error-fn]
            :or {interval 10 error-fn nil}}]
   (let [error-fn (or error-fn (constantly nil))
-        interval-fn (if interval-fn interval-fn (fn [i] interval))
+        interval-fn (if interval-fn interval-fn (fn [_] interval))
         started (now)
         elapsed-time (fn [] (interval started (now)))
         timeout-time (when timeout (plus (now) (millis timeout)))
