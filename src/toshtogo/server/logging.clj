@@ -5,7 +5,7 @@
             [schema.macros :as schm]
             [clojure.pprint :refer [pprint]]
 
-            [toshtogo.util.core :refer [exception-as-map]]
+            [toshtogo.util.core :refer [exception-as-map with-sys-out]]
             [toshtogo.server.validation :refer [JobRecord JobResult Agent validated]]))
 
 ; ----------------------------------------------
@@ -92,14 +92,15 @@
 
 (extend-protocol Logger
   nil
-  (log [this event]
+  (log [_this _event]
     nil))
 
 (defrecord SysLogger []
   Logger
-  (log [this event]
-    (println)
-    (pprint event)))
+  (log [_this event]
+    (with-sys-out
+      (println)
+      (pprint event))))
 
 (defrecord ValidatingLogger [decorated]
   Logger
