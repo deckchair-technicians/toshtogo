@@ -1,4 +1,4 @@
-(defproject savagematt/toshtogo "0.5.16-SNAPSHOT"
+(defproject savagematt/toshtogo "0.5.16"
 
   :description "An asynchronous job manager"
 
