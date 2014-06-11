@@ -86,8 +86,8 @@
   (fn [contract]
     (try
       (func contract)
-      (catch Exception e
-        (error (cause-trace e))))))
+      (catch Throwable t
+        (error (cause-trace t))))))
 
 (defn do-work! [client job-type-or-query func]
   (future
@@ -104,8 +104,8 @@
           (try
             (complete-work! client commitment-id result)
 
-            (catch Exception e
+            (catch Throwable t
               (complete-work! client commitment-id (error (str "Problem sending result:\n" result
-                                                               "\nException:\n" (cause-trace e)) )))))
+                                                               "\nException:\n" (cause-trace t)) )))))
         {:contract contract
          :result   result}))))
