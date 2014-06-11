@@ -63,3 +63,27 @@
   (get-contracts        [this params])
 
   (get-job-types [this]))
+
+(defn- assoc-dependencies
+  [persistence job]
+  (when job
+    (assoc job :dependencies (get-jobs persistence {:dependency_of_job_id (job :job_id)}))))
+
+(defn- merge-dependencies [contract persistence]
+  (when contract
+    (assoc contract :dependencies (get-jobs persistence {:dependency_of_job_id (contract :job_id)}))))
+
+(defn get-tree [persistence tree-id]
+          (let [params {:tree_id tree-id
+                        :fields  [:jobs.job_id :jobs.job_name :jobs.job_type :outcome]}]
+            {:root_job (first (get-jobs persistence {:root_of_tree_id tree-id
+                                                                 :fields          [:jobs.job_id]}))
+             :jobs     (get-jobs persistence params)
+             :links    (get-dependency-links persistence params)}))
+
+(defn get-job [persistence job-id]
+         (assoc-dependencies persistence (first (get-jobs persistence {:job_id job-id}))))
+
+(defn get-contract [persistence params]
+              (cond-> (first (get-contracts persistence params))
+                      (params :with-dependencies) (merge-dependencies persistence)))

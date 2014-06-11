@@ -185,7 +185,7 @@
 
 (defn normalise-contract [contract]
   (-> contract
-      (mp/update :outcome keyword)
+      (mp/update-each [:outcome :job_type] keyword)
       fix-contract-outcome
       (mp/update :request_body json/decode)))
 

@@ -12,27 +12,6 @@
             [toshtogo.util.json :as json])
   (:import [toshtogo.util OptimisticLockingException]))
 
-(defn job-record [tree-id job-id job-name job-type agent-id body notes fungibility-group-id]
-  {:home_tree_id         tree-id
-   :job_id               job-id
-   :job_name             job-name
-   :job_type             job-type
-   :requesting_agent     agent-id
-   :job_created          (now)
-   :request_body         (database-representation body)
-   :fungibility_group_id fungibility-group-id
-   :notes                notes})
-
-(defn to-job-record [job]
-  (-> job
-      (dissoc :dependencies
-              :existing_job_dependencies
-              :parent_job_id
-              :fungible_under_parent
-              :should-funge
-              :contract_due)
-      (mp/update :request_body json/encode)))
-
 (defn collect-tags [job row]
   (if-not (contains? row :tag)
     (or job row)
@@ -60,7 +39,7 @@
   (-> job
       (dissoc :tag)
       (dissoc :job_id_2 :job_id_3 :job_id_4 :commitment_contract :outcome_id)
-      (mp/update :outcome keyword)
+      (mp/update-each [:outcome :job_type] keyword)
       (fix-job-outcome)
       (mp/update-each [:request_body :result_body] #(json/decode %))))
 

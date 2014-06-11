@@ -5,19 +5,24 @@
             [clojure.walk :refer [postwalk]]
             [swiss.arrows :refer :all]
             [flatland.useful.map :refer [update]]
-            [toshtogo.util.json :refer [encode]]
+            [toshtogo.util.json :as json]
             [toshtogo.util.core :refer [assoc-not-nil uuid ppstr debug]]
-            [toshtogo.server.persistence.protocol :refer :all]
+            [toshtogo.server.logging :refer :all]
+            [toshtogo.server.persistence.protocol :as persistence]
             [toshtogo.server.preprocessing :refer [normalise-job-tree replace-fungible-jobs-with-existing-job-ids collect-dependencies collect-new-jobs]]))
 
-(defn- assoc-dependencies
-  [persistence job]
-  (when job
-    (assoc job :dependencies (get-jobs persistence {:dependency_of_job_id (job :job_id)}))))
+(defprotocol Api
+  (new-contract! [this contract-req])
+  (new-jobs! [this jobs])
+  (new-dependencies! [this parent-job-or-contract]
+                     "Assumes job-or-contract already exists. Navigates the dependency tree,
+                     creating new jobs and dependencies as required.")
+  (new-root-job! [this job])
+  (process-result! [this contract result])
+  (request-work! [this commitment-id job-query])
+  (complete-work! [this commitment-id result])
+  (pause-job! [this job-id]))
 
-(defn- merge-dependencies [contract persistence]
-  (when contract
-    (assoc contract :dependencies (get-jobs persistence {:dependency_of_job_id (contract :job_id)}))))
 
 (defn- dependency-outcomes
   "This is incredibly inefficient"
@@ -26,148 +31,149 @@
   (reduce (fn [outcomes dependency]
             (cons (dependency :outcome) outcomes))
           #{}
-          (get-jobs persistence (dependencies-of job-id))))
+          (persistence/get-jobs persistence (persistence/dependencies-of job-id))))
 
-(defn get-job [persistence job-id]
-  (assoc-dependencies persistence (first (get-jobs persistence {:job_id job-id}))))
+(defn to-job-record [job-request]
+  (-> job-request
+      (dissoc :dependencies
+              :existing_job_dependencies
+              :parent_job_id
+              :fungible_under_parent
+              :should-funge
+              :contract_due)
+      (update :request_body json/encode)))
 
-(defn get-contract [persistence params]
-  (cond-> (first (get-contracts persistence params))
-          (params :with-dependencies) (merge-dependencies persistence)))
+(defn api [persistence logger agent-details]
+  (reify Api
+    (new-contract! [_ contract-req]
+      (let [job-id (contract-req :job_id)
+            contract-due (or (:contract_due contract-req) (minus (now) (seconds 5)))
+            last-contract (persistence/get-contract persistence {:job_id job-id :latest_contract true})
+            new-contract-ordinal (if last-contract (inc (last-contract :contract_number)) 1)
+            last-contract-outcome (:outcome last-contract)]
 
-(defn new-contract! [persistence contract-req]
-  (let [job-id                (contract-req :job_id)
-        contract-due          (or (:contract_due contract-req) (minus (now) (seconds 5)))
-        last-contract         (get-contract persistence {:job_id job-id :latest_contract true})
-        new-contract-ordinal   (if last-contract (inc (last-contract :contract_number)) 1)
-        last-contract-outcome (:outcome last-contract)]
+        (case last-contract-outcome
+          :waiting
+          (throw (IllegalStateException.
+                   (str "Job " job-id " has a waiting contract. Can't create a new one.")))
 
-    (case last-contract-outcome
-      :waiting
-      (throw (IllegalStateException.
-               (str "Job " job-id " has a waiting contract. Can't create a new one.")))
+          :running
+          (throw (IllegalStateException.
+                   (str "Job " job-id " has a running contract. Can't create a new one.")))
 
-      :running
-      (throw (IllegalStateException.
-               (str "Job " job-id " has a running contract. Can't create a new one.")))
+          :success
+          (throw (IllegalStateException.
+                   (str "Job " job-id " has been completed. Can't create further contracts")))
 
-      :success
-      (throw (IllegalStateException.
-               (str "Job " job-id " has been completed. Can't create further contracts")))
+          (persistence/insert-contract! persistence job-id new-contract-ordinal contract-due))))
 
-      (insert-contract! persistence job-id new-contract-ordinal contract-due))))
+    (new-jobs! [this jobs]
+      (let [job-records (map to-job-record jobs)]
 
-(defn new-jobs! [persistence jobs]
-  (insert-jobs! persistence jobs)
-  (doseq [job jobs]
-    (new-contract! persistence (contract-req (job :job_id) (job :contract_due)))))
+        (doseq [ev (map new-job-event job-records)]
+          (log logger ev))
 
-(defn new-dependencies!
-      "Assumes job-or-contract already exists. Navigates the dependency tree,
-      creating new jobs and dependencies as required."
-  [persistence agent-details parent-job-or-contract]
-  (let [agent-id (:agent_id (agent! persistence agent-details))
-        parent-job-or-contract (-> parent-job-or-contract
-                                  (normalise-job-tree agent-id)
-                                 (replace-fungible-jobs-with-existing-job-ids persistence))
+        (persistence/insert-jobs! persistence job-records)
+        (doseq [job jobs]
+          (new-contract! this (persistence/contract-req (job :job_id) (job :contract_due))))))
 
-        dependency-records (collect-dependencies parent-job-or-contract)
-        new-jobs (collect-new-jobs parent-job-or-contract)]
+    (new-dependencies!
+      [this parent-job-or-contract]
+      (let [agent-id (:agent_id (persistence/agent! persistence agent-details))
+            parent-job-or-contract (-> parent-job-or-contract
+                                       (normalise-job-tree agent-id)
+                                       (replace-fungible-jobs-with-existing-job-ids persistence))
 
-    (new-jobs! persistence new-jobs)
+            dependency-records (collect-dependencies parent-job-or-contract)
+            new-jobs (collect-new-jobs parent-job-or-contract)]
 
-    (doseq [dependency-record dependency-records]
-      (insert-dependency! persistence
-                          dependency-record))))
+        (new-jobs! this new-jobs)
 
-(defn new-root-job! [persistence agent-details job]
-  (let [job (-> job
-              (assoc :home_tree_id (uuid))
-              (normalise-job-tree (:agent_id (agent! persistence agent-details))))]
+        (doseq [dependency-record dependency-records]
+          (persistence/insert-dependency! persistence
+                              dependency-record))))
 
-    (insert-tree! persistence (:home_tree_id job) (:job_id job))
-    (new-jobs! persistence [job])
+    (new-root-job! [this job]
+      (let [job (-> job
+                    (assoc :home_tree_id (uuid))
+                    (normalise-job-tree (:agent_id (persistence/agent! persistence agent-details))))]
 
-    (new-dependencies! persistence agent-details job)))
+        (persistence/insert-tree! persistence (:home_tree_id job) (:job_id job))
+        (new-jobs! this [job])
 
-(defn process-result! [persistence contract result agent-details]
-  (let [job-id (contract :job_id)]
-    (case (:outcome result)
-      :success
-      nil
+        (new-dependencies! this job)))
 
-      :more-work
-      (do
-        ;Create new contract for parent job, which will be
-        ;ready for work when dependencies complete
-        (new-contract! persistence (contract-req job-id))
+    (process-result! [this contract result]
+      (let [job-id (contract :job_id)]
+        (case (:outcome result)
+          :success
+          nil
 
-        (new-dependencies!
-          persistence
-          agent-details
-          (-> contract
-               (assoc :dependencies (result :dependencies))
-               (assoc :existing_job_dependencies (result :existing_job_dependencies)))))
+          :more-work
+          (do
+            ;Create new contract for parent job, which will be
+            ;ready for work when dependencies complete
+            (new-contract! this (persistence/contract-req job-id))
 
-      :try-later
-      (new-contract! persistence (contract-req job-id (result :contract_due)))
+            (new-dependencies!
+              this
+              (-> contract
+                  (assoc :dependencies (result :dependencies))
+                  (assoc :existing_job_dependencies (result :existing_job_dependencies)))))
 
-      :error
-      nil
+          :try-later
+          (new-contract! this (persistence/contract-req job-id (result :contract_due)))
 
-      :cancelled
-      nil)))
+          :error
+          nil
 
-(defn get-tree [persistence tree-id]
-  (let [params {:tree_id tree-id
-                :fields  [:jobs.job_id :jobs.job_name :jobs.job_type :outcome]}]
-    {:root_job (first (get-jobs persistence {:root_of_tree_id tree-id
-                                             :fields          [:jobs.job_id]}))
-     :jobs     (get-jobs persistence params)
-     :links    (get-dependency-links persistence params)}))
+          :cancelled
+          nil)))
 
-(defn complete-work!
-  [persistence commitment-id result agent-details]
-  (let [contract (get-contract persistence {:commitment_id commitment-id})]
+    (request-work! [_ commitment-id job-query]
+      (when-let [contract (persistence/get-contract
+                            persistence
+                            (merge
+                              {:ready_for_work true
+                               :order-by       [:job_created]}
+                              job-query))]
+        (log logger (commitment-started-event commitment-id contract agent-details))
 
-    (assert contract (str "Could not find commitment '" commitment-id "'"))
+        (persistence/insert-commitment! persistence commitment-id (contract :contract_id) agent-details)
 
-    (case (contract :outcome)
-      :running
-      (do
-        (insert-result! persistence commitment-id result)
-        (process-result! persistence contract result agent-details))
+        (persistence/get-contract persistence {:commitment_id     commitment-id
+                                   :with-dependencies true})))
 
-      :cancelled
-      nil
+    (complete-work! [this commitment-id result]
+      (let [contract (persistence/get-contract persistence {:commitment_id commitment-id})]
 
-      (throw (IllegalStateException. (str "Contract in state '" (name (contract :outcome)) "' is not expecting a result. Contract\n" (ppstr contract) "\nResult:\n" (ppstr result)))))
+        (assert contract (str "Could not find commitment '" commitment-id "'"))
 
-    nil))
+        (case (contract :outcome)
+          :running
+          (do
+            (log logger (commitment-result-event contract agent-details result))
+            (persistence/insert-result! persistence commitment-id result)
+            (process-result! this contract result))
 
-(defn request-work! [persistence commitment-id job-query agent-details]
-  (when-let [contract (get-contract
-                       persistence
-                       (merge
-                        {:ready_for_work true
-                         :order-by [:job_created]}
-                        job-query))]
-    (insert-commitment! persistence commitment-id (contract :contract_id) agent-details)
+          :cancelled
+          nil
 
-    (get-contract persistence {:commitment_id     commitment-id
-                               :with-dependencies true})))
+          (throw (IllegalStateException. (str "Contract in state '" (name (contract :outcome)) "' is not expecting a result. Contract\n" (ppstr contract) "\nResult:\n" (ppstr result)))))
 
-(defn pause-job! [persistence job-id agent-details]
-  (let [job (get-job persistence job-id)]
-    (assert job (str "no job " job-id))
+        nil))
 
-    (when (= :waiting (:outcome job))
-      (let [commitment-id (uuid)]
-        (insert-commitment! persistence commitment-id (job :contract_id) agent-details)
-        (complete-work! persistence commitment-id (cancelled) agent-details)))
+    (pause-job! [this job-id]
+      (let [job (persistence/get-job persistence job-id)]
+        (assert job (str "no job " job-id))
 
-    (when (= :running (:outcome job))
-      (complete-work! persistence (:commitment_id job) (cancelled) agent-details)))
+        (when (= :waiting (:outcome job))
+          (let [commitment-id (uuid)]
+            (persistence/insert-commitment! persistence commitment-id (job :contract_id) agent-details)
+            (complete-work! this commitment-id (persistence/cancelled))))
 
-  (doseq [dependency  (get-jobs persistence {:dependency_of_job_id job-id})]
-    (pause-job! persistence (dependency :job_id) agent-details)))
+        (when (= :running (:outcome job))
+          (complete-work! this (:commitment_id job) (persistence/cancelled))))
+
+      (doseq [dependency (persistence/get-jobs persistence {:dependency_of_job_id job-id})]
+        (pause-job! this (dependency :job_id))))))

@@ -1,24 +1,26 @@
 (ns toshtogo.server.util.middleware
   (:require [clojure.java.jdbc :as sql]
             [net.cgrand.enlive-html :as html]
+            [schema.core :as sch]
             [clojure.stacktrace :refer [print-cause-trace]]
             [clojure.pprint :refer [pprint]]
+            [clojure.string :refer [upper-case]]
             [ring.middleware.json :as ring-json]
             [flatland.useful.map :refer [update]]
             [toshtogo.server.util.idempotentput :refer [check-idempotent!]]
             [toshtogo.server.persistence.sql :refer [sql-persistence]]
-            [toshtogo.util.core :refer [debug ppstr cause-trace]]
+            [toshtogo.server.api :refer [api]]
+            [toshtogo.server.logging :refer [error-event safe-log]]
+            [toshtogo.server.validation :refer [validated Agent]]
+
+            [toshtogo.util.core :refer [debug ppstr cause-trace exception-as-map with-sys-out]]
             [toshtogo.util.json :as json]
             [toshtogo.util.hashing :refer [murmur!]]
             [toshtogo.util.io :refer [byte-array-input! byte-array-output!]])
   (:import [java.io ByteArrayInputStream]
-           (clojure.lang ExceptionInfo)))
+           (clojure.lang ExceptionInfo)
+           (toshtogo.server.logging ValidatingLogger DeferredLogger)))
 
-
-(defn sql-deps [cnxn]
-  (let [persistence (sql-persistence cnxn)]
-
-    {:persistence persistence}))
 
 (defn wrap-body-hash
   [handler]
@@ -40,6 +42,13 @@
     (sql/with-db-transaction [cnxn db]
                              (handler (assoc req :cnxn cnxn)))))
 
+(defn sql-deps
+  [cnxn logger agent-details]
+  (let [persistence (sql-persistence cnxn)]
+    {:persistence persistence
+     :agent       (validated agent-details (sch/maybe Agent))
+     :api         (api persistence logger agent-details)}))
+
 (defn wrap-dependencies
   "Adds protocol implementations for services"
   [handler]
@@ -49,7 +58,8 @@
           check-idempotent* (partial check-idempotent! cnxn body-hash)]
       (handler (-> req
                    (assoc :check-idempotent! check-idempotent*)
-                   (merge (sql-deps cnxn)))))))
+                   (merge (sql-deps cnxn (:logger req) (get-in req [:body :agent])))
+                   (update :body #(dissoc % :agent)))))))
 
 (defn- retry*
   ([retries-left exception-types f]
@@ -68,25 +78,32 @@
       (retry* 3 exception-types #(handler req))
       )))
 
+(defn request-summary [req]
+  (str (upper-case (name (:request-method req))) " " (:uri req)))
+
 (defn wrap-print-response
   [handler & messages]
   (fn [req]
     (let [resp (handler req)]
-      (println)
-      (println "Response")
-      (when messages (println messages))
-      (println "---------------------------")
-      (pprint resp)
+      (with-sys-out
+        (println)
+        (println (str "Response [" (request-summary req) "]"))
+        (when messages (println messages))
+        (println "---------------------------")
+        (pprint resp))
+
       resp)))
 
 (defn wrap-print-request
   [handler & messages]
   (fn [req]
-    (println)
-    (println "Request")
-    (when messages (println messages))
-    (println "---------------------------")
-    (pprint req)
+    (with-sys-out
+      (println)
+      (println (str "Request [" (request-summary req) "]"))
+      (when messages (println messages))
+      (println "---------------------------")
+      (pprint req))
+
     (handler req)))
 
 (defn json-response [resp]
@@ -111,11 +128,35 @@
   (fn [request]
     (handler (update request :body json/decode))))
 
+(defn wrap-logging-transaction
+  "Adds a DeferredLogger to request as :logger, which collects log events in an atom.
+
+  If request succeeds, sends contents of DeferredLogger to a logger produced by logger-factory.
+
+  If the handler throws an exception, all log events up to that point will be logged in a
+  single :server_error logging event  in :events_before_error. This is useful to diagnose
+  what the server was doing just before an exception occured.
+
+  If the logging itself throws an exception, prints cause trace, so log failures don't bring
+  down the application."
+  [handler logger-factory]
+  (assert (fn? logger-factory) "Logger factory should be a function")
+
+  (fn [req]
+    (let [logger (logger-factory)
+          log-events (atom [])
+          deferred-logger (ValidatingLogger. (DeferredLogger. log-events))]
+      (try
+        (let [resp (handler (assoc req :logger deferred-logger))]
+          (apply safe-log logger @log-events)
+          resp)
+        (catch Throwable e
+          (safe-log logger (error-event e @log-events))
+          (throw e))))))
+
+
 (defn exception-response [e status-code]
-  (json-response {:body   (json/encode {:stacktrace (cause-trace e)
-                                        :message    (.getMessage e)
-                                        :class      (.getName (class e))
-                                        :ex-data    (ex-data e)})
+  (json-response {:body   (json/encode (exception-as-map e))
                   :status status-code}))
 
 (defn wrap-json-exception

@@ -2,6 +2,8 @@
   (:import (clojure.lang Keyword)
            (org.joda.time DateTime))
   (:require [schema.core :as s]
+            [schema.macros :as macros]
+            [toshtogo.util.schema :as toshtogo-schema]
             [toshtogo.util.core :refer [uuid?]]))
 
 (defn validated [thing schema]
@@ -11,7 +13,6 @@
                      :data   thing
                      :errors errors}))
     thing))
-
 
 (def JobRequest
   {:job_type                                   s/Keyword
@@ -24,14 +25,14 @@
    (s/optional-key :contract_due)              DateTime
    (s/optional-key :notes)                     s/Str
    (s/optional-key :existing_job_dependencies) [s/Uuid]
-   (s/optional-key :dependencies)              [(s/recursive #'JobRequest)]})
+   (s/optional-key :dependencies)              [(toshtogo-schema/recursive #'JobRequest)]})
 
 (def JobResult
   {:outcome                                    (s/enum :success :error :cancelled :try-later :more-work)
    (s/optional-key :result)                    (s/pred map? "should be a map")
    (s/optional-key :error)                     s/Str
    (s/optional-key :existing_job_dependencies) [s/Uuid]
-   (s/optional-key :dependencies)              [(s/recursive #'JobRequest)]
+   (s/optional-key :dependencies)              [JobRequest]
    (s/optional-key :contract_due)              DateTime})
 
 (def JobRecord

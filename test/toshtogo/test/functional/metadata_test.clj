@@ -1,7 +1,6 @@
 (ns toshtogo.test.functional.metadata-test
   (:require [midje.sweet :refer :all]
             [clojure.java.jdbc :as sql]
-            [toshtogo.server.util.middleware :refer [sql-deps]]
             [toshtogo.server.core :refer [dev-db]]
             [toshtogo.util.core :refer [uuid-str uuid]]
             [toshtogo.test.functional.test-support :refer :all]
