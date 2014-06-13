@@ -72,11 +72,13 @@
          (throw e))))))
 
 (defn wrap-retry-on-exceptions
+  "Coupled to wrap-logging-transaction through :log-events"
   [handler & exception-types]
   (let [exception-types (set exception-types)]
     (fn [req]
-      (retry* 3 exception-types #(handler req))
-      )))
+      (retry* 3 exception-types (fn []
+                                  (reset! (:log-events req) nil)
+                                  (handler req))))))
 
 (defn request-summary [req]
   (str (upper-case (name (:request-method req))) " " (:uri req)))
@@ -147,7 +149,8 @@
           log-events (atom [])
           deferred-logger (ValidatingLogger. (DeferredLogger. log-events))]
       (try
-        (let [resp (handler (assoc req :logger deferred-logger))]
+        (let [resp (handler (assoc req :logger deferred-logger
+                                       :log-events log-events))]
           (apply safe-log logger @log-events)
           resp)
         (catch Throwable e

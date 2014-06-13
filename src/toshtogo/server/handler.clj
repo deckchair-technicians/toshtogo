@@ -207,8 +207,8 @@
         wrap-dependencies
         (wrap-if debug wrap-print-request)
         (wrap-db-transaction db)
-        (wrap-logging-transaction logger-factory)
         (wrap-retry-on-exceptions PSQLException)
+        (wrap-logging-transaction logger-factory)
         wrap-json-body
         wrap-body-hash
         wrap-json-response
