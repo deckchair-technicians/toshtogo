@@ -133,10 +133,9 @@
           service (start-service (fn [_] (if (< @count 2)
                                            (do
                                              (swap! count inc)
-                                             (throw (RuntimeException. "Intermittent exception")))
+                                             (throw (AssertionError. "Intermittent exception")))
                                            (deliver got-past-exceptions "got here")))
                                  :error-handler (constantly nil))]
-
       (deref got-past-exceptions 200 "service stopped at exception")
       => #(not= "service stopped at exception" %)
 
