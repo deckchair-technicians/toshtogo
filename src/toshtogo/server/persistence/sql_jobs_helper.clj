@@ -9,8 +9,7 @@
             [toshtogo.util.core :refer [uuid debug assoc-not-nil]]
             [toshtogo.util.deterministic-representation :refer [database-representation]]
             [toshtogo.util.hsql :as hsql]
-            [toshtogo.util.json :as json])
-  (:import [toshtogo.util OptimisticLockingException]))
+            [toshtogo.util.json :as json]))
 
 (defn collect-tags [job row]
   (if-not (contains? row :tag)
