@@ -35,7 +35,7 @@
   :ring {:handler toshtogo.server.core/dev-app-instance :reload-paths ["src"]}
 
   ;:jvm-opts ["-agentpath:/Applications/YourKit_Java_Profiler_2013_build_13082.app/bin/mac/libyjpagent.jnilib"]
-  :aot [toshtogo.util.OptimisticLockingException
+  :aot [toshtogo.server.util.UniqueConstraintException
         toshtogo.client.senders.SenderException
         toshtogo.client.senders.RecoverableException
         toshtogo.client.BadRequestException]

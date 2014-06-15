@@ -20,7 +20,7 @@
             [toshtogo.util.core :refer [uuid ppstr debug parse-datetime ensure-seq]]
             [toshtogo.server.logging :refer :all])
   (:import [java.io InputStream]
-           [org.postgresql.util PSQLException]))
+           [toshtogo.server.util UniqueConstraintException]))
 
 (defn redirect
       "CORS requires 200 responses for PUT and POST. So we
@@ -207,7 +207,7 @@
         wrap-dependencies
         (wrap-if debug wrap-print-request)
         (wrap-db-transaction db)
-        (wrap-retry-on-exceptions PSQLException)
+        (wrap-retry-on-exceptions UniqueConstraintException)
         (wrap-logging-transaction logger-factory)
         wrap-json-body
         wrap-body-hash
