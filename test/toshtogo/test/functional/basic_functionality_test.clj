@@ -1,4 +1,4 @@
-(ns toshtogo.test.functional.functional-test
+(ns toshtogo.test.functional.basic-functionality-test
   (:require [midje.sweet :refer :all]
             [clj-time.core :refer [now minutes seconds millis plus minus after? interval within?]]
             [ring.adapter.jetty :refer [run-jetty]]
@@ -10,8 +10,7 @@
             [toshtogo.util.core :refer [uuid uuid-str debug]]
             [toshtogo.test.midje-schema :refer :all]
             [toshtogo.test.functional.test-support :refer :all])
-  (:import (java.util UUID)
-           (toshtogo.client BadRequestException)))
+  (:import (toshtogo.client BadRequestException)))
 
 (background (before :contents @migrated-dev-db))
 
