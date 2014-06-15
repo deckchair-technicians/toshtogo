@@ -1,7 +1,7 @@
 (ns toshtogo.server.util.idempotentput
   (:require [honeysql.helpers :refer :all]
             [toshtogo.util.hsql :as hsql]
-            [toshtogo.util.sql :as sql]))
+            [toshtogo.server.util.sql :as sql]))
 
 (defn put-is-identical?
   [previous-put hash-1 hash-2]

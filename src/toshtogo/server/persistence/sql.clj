@@ -11,7 +11,7 @@
             [toshtogo.server.persistence.sql-jobs-helper :refer :all]
             [toshtogo.server.persistence.sql-contracts-helper :refer :all]
             [toshtogo.server.validation :refer [JobRecord DependencyRecord validated]]
-            [toshtogo.util.sql :as ttsql]
+            [toshtogo.server.util.sql :as ttsql]
             [toshtogo.util.hsql :as hsql]))
 
 (defn sql-persistence [cnxn]
