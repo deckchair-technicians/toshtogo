@@ -4,8 +4,7 @@
            [java.net UnknownHostException InetAddress])
   (:require [trptcolin.versioneer.core :as version]
             [swiss.arrows :refer :all]
-            [flatland.useful.map :refer [map-vals]]
-            [toshtogo.util.core :refer [retry-until-success exponential-backoff]]))
+            [flatland.useful.map :refer [map-vals]]))
 
 (defn hostname
   []
