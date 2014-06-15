@@ -11,9 +11,8 @@
             [toshtogo.util.core :refer [ppstr]]
             )
   (:import [java.sql Timestamp BatchUpdateException]
-           (org.joda.time DateTime)
-           (org.postgresql.util PSQLException)
-           (clojure.lang Keyword)))
+           [org.joda.time DateTime]
+           [clojure.lang Keyword]))
 
 
 (defmulti fix-type-> class)
