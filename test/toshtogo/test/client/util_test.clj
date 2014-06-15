@@ -3,7 +3,6 @@
            (java.util.concurrent ExecutionException))
   (:require [midje.sweet :refer :all]
             [flatland.useful.map :refer [into-map]]
-            [toshtogo.util.core :refer [retry-until-success]]
             [toshtogo.client.util :refer [throw-500 merge-dependency-results]]))
 
 (fact "throw-500 works"
