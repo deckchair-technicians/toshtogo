@@ -24,17 +24,21 @@
 (def localhost {:type :http :base-url "http://localhost:3000"})
 
 (def client-config in-process)
-(def client (ttc/client client-config
-                        :error-fn (fn [e] (pprint (cause-trace e)))
-                        :debug false
-                        :timeout 1000
-                        :system "client-test"
-                        :version "0.0"))
-(def no-retry-client (ttc/client client-config
-                        :should-retry false
-                        :debug false
-                        :system "client-test"
-                        :version "0.0"))
+
+(defn test-client [& {:as opts}]
+  (apply ttc/client
+         client-config
+         (->> opts
+             (merge {:error-fn (fn [e] (pprint (cause-trace e)))
+                     :debug    false
+                     :timeout  1000
+                     :system   "client-test"
+                     :version  "0.0"})
+             (mapcat identity))))
+
+(def client (test-client))
+
+(def no-retry-client (test-client :should-retry false))
 
 (defn return-success [job] (success {:result 1}))
 
