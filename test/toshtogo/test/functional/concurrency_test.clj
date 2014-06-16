@@ -28,14 +28,19 @@
                       (swap! thread-results #(cons job-returned %)))
                     (catch Throwable e
                       (swap! thread-results #(cons (.getMessage e) %))))
+
                   (when (= num-threads (count @thread-results))
                     (deliver test-complete true))))
 
 
         (deliver barrier nil)
 
-        (fact "all requests completed"
-              (deref test-complete 20000 false) => truthy)
+        (fact "all request-work! calls completed (but may have thrown exceptions)"
+              (deref test-complete 10000 false) => truthy)
 
-        (fact "no requests failed"
-              @thread-results => (matches [{sch/Any sch/Any}]))))
+        (fact "no requests threw exceptions"
+              @thread-results => (matches [{sch/Any sch/Any}]))
+
+        (fact "all jobs were requested"
+              (:data (get-jobs client {:job_type job-type}))
+              => (matches [{:outcome :running}]))))
