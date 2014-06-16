@@ -25,11 +25,11 @@
                   (try
                     (let [the-client (test-client :should-retry false :timeout nil)
                           job-returned (:request_body (request-work! the-client job-type))]
-                      (swap! thread-results #(cons job-returned %))
-                      (when (= num-threads (count @thread-results))
-                        (deliver test-complete true)))
+                      (swap! thread-results #(cons job-returned %)))
                     (catch Throwable e
-                      (swap! thread-results #(cons (.getMessage e) %))))))
+                      (swap! thread-results #(cons (.getMessage e) %))))
+                  (when (= num-threads (count @thread-results))
+                    (deliver test-complete true))))
 
 
         (deliver barrier nil)
