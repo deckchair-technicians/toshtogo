@@ -1,5 +1,4 @@
 (ns toshtogo.server.api
-  (:import (java.util UUID))
   (:require [clj-time.core :refer [now minus seconds]]
             [clojure.pprint :refer [pprint]]
             [clojure.walk :refer [postwalk]]
@@ -8,8 +7,10 @@
             [toshtogo.util.json :as json]
             [toshtogo.util.core :refer [assoc-not-nil uuid ppstr debug]]
             [toshtogo.server.logging :refer :all]
-            [toshtogo.server.persistence.protocol :as persistence]
-            [toshtogo.server.preprocessing :refer [normalise-job-tree replace-fungible-jobs-with-existing-job-ids collect-dependencies collect-new-jobs]]))
+            [toshtogo.server.persistence.protocol :as pers]
+            [toshtogo.server.preprocessing :refer [normalise-job-tree replace-fungible-jobs-with-existing-job-ids collect-dependencies collect-new-jobs]])
+  (:import [java.util UUID]
+           [toshtogo.server.util UniqueConstraintException]))
 
 (defprotocol Api
   (new-contract! [this contract-req])
@@ -31,7 +32,7 @@
   (reduce (fn [outcomes dependency]
             (cons (dependency :outcome) outcomes))
           #{}
-          (persistence/get-jobs persistence (persistence/dependencies-of job-id))))
+          (pers/get-jobs persistence (pers/dependencies-of job-id))))
 
 (defn to-job-record [job-request]
   (-> job-request
@@ -48,7 +49,7 @@
     (new-contract! [_ contract-req]
       (let [job-id (contract-req :job_id)
             contract-due (or (:contract_due contract-req) (minus (now) (seconds 5)))
-            last-contract (persistence/get-contract persistence {:job_id job-id :latest_contract true})
+            last-contract (pers/get-contract persistence {:job_id job-id :latest_contract true})
             new-contract-ordinal (if last-contract (inc (last-contract :contract_number)) 1)
             last-contract-outcome (:outcome last-contract)]
 
@@ -65,7 +66,7 @@
           (throw (IllegalStateException.
                    (str "Job " job-id " has been completed. Can't create further contracts")))
 
-          (persistence/insert-contract! persistence job-id new-contract-ordinal contract-due))))
+          (pers/insert-contract! persistence job-id new-contract-ordinal contract-due))))
 
     (new-jobs! [this jobs]
       (let [job-records (map to-job-record jobs)]
@@ -73,13 +74,13 @@
         (doseq [ev (map new-job-event job-records)]
           (log logger ev))
 
-        (persistence/insert-jobs! persistence job-records)
+        (pers/insert-jobs! persistence job-records)
         (doseq [job jobs]
-          (new-contract! this (persistence/contract-req (job :job_id) (job :contract_due))))))
+          (new-contract! this (pers/contract-req (job :job_id) (job :contract_due))))))
 
     (new-dependencies!
       [this parent-job-or-contract]
-      (let [agent-id (:agent_id (persistence/agent! persistence agent-details))
+      (let [agent-id (:agent_id (pers/agent! persistence agent-details))
             parent-job-or-contract (-> parent-job-or-contract
                                        (normalise-job-tree agent-id)
                                        (replace-fungible-jobs-with-existing-job-ids persistence))
@@ -90,15 +91,15 @@
         (new-jobs! this new-jobs)
 
         (doseq [dependency-record dependency-records]
-          (persistence/insert-dependency! persistence
+          (pers/insert-dependency! persistence
                               dependency-record))))
 
     (new-root-job! [this job]
       (let [job (-> job
                     (assoc :home_tree_id (uuid))
-                    (normalise-job-tree (:agent_id (persistence/agent! persistence agent-details))))]
+                    (normalise-job-tree (:agent_id (pers/agent! persistence agent-details))))]
 
-        (persistence/insert-tree! persistence (:home_tree_id job) (:job_id job))
+        (pers/insert-tree! persistence (:home_tree_id job) (:job_id job))
         (new-jobs! this [job])
 
         (new-dependencies! this job)))
@@ -113,7 +114,7 @@
           (do
             ;Create new contract for parent job, which will be
             ;ready for work when dependencies complete
-            (new-contract! this (persistence/contract-req job-id))
+            (new-contract! this (pers/contract-req job-id))
 
             (new-dependencies!
               this
@@ -122,7 +123,7 @@
                   (assoc :existing_job_dependencies (result :existing_job_dependencies)))))
 
           :try-later
-          (new-contract! this (persistence/contract-req job-id (result :contract_due)))
+          (new-contract! this (pers/contract-req job-id (result :contract_due)))
 
           :error
           nil
@@ -145,7 +146,7 @@
                                    :with-dependencies true})))
 
     (complete-work! [this commitment-id result]
-      (let [contract (persistence/get-contract persistence {:commitment_id commitment-id})]
+      (let [contract (pers/get-contract persistence {:commitment_id commitment-id})]
 
         (assert contract (str "Could not find commitment '" commitment-id "'"))
 
@@ -153,7 +154,7 @@
           :running
           (do
             (log logger (commitment-result-event contract agent-details result))
-            (persistence/insert-result! persistence commitment-id result)
+            (pers/insert-result! persistence commitment-id result)
             (process-result! this contract result))
 
           :cancelled
@@ -164,16 +165,16 @@
         nil))
 
     (pause-job! [this job-id]
-      (let [job (persistence/get-job persistence job-id)]
+      (let [job (pers/get-job persistence job-id)]
         (assert job (str "no job " job-id))
 
         (when (= :waiting (:outcome job))
           (let [commitment-id (uuid)]
-            (persistence/insert-commitment! persistence commitment-id (job :contract_id) agent-details)
-            (complete-work! this commitment-id (persistence/cancelled))))
+            (pers/insert-commitment! persistence commitment-id (job :contract_id) agent-details)
+            (complete-work! this commitment-id (pers/cancelled))))
 
         (when (= :running (:outcome job))
-          (complete-work! this (:commitment_id job) (persistence/cancelled))))
+          (complete-work! this (:commitment_id job) (pers/cancelled))))
 
-      (doseq [dependency (persistence/get-jobs persistence {:dependency_of_job_id job-id})]
+      (doseq [dependency (pers/get-jobs persistence {:dependency_of_job_id job-id})]
         (pause-job! this (dependency :job_id))))))
