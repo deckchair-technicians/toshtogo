@@ -32,8 +32,9 @@
              (merge {:error-fn (fn [e] (pprint (cause-trace e)))
                      :debug    false
                      :timeout  1000
-                     :system   "client-test"
-                     :version  "0.0"})
+                     :system   "tests"
+                     :version  "0.0"
+                     :should-retry true})
              (mapcat identity))))
 
 (def client (test-client))
