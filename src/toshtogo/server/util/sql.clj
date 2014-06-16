@@ -24,6 +24,10 @@
 
          (throw e#)))))
 
+(defn execute! [cnxn sql-params]
+  (with-exception-conversion
+    (sql/execute! cnxn sql-params)))
+
 (defn insert! [cnxn table & records]
   #_(println "Insert" table (ppstr records))
   (with-exception-conversion

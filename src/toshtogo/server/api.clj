@@ -131,19 +131,22 @@
           :cancelled
           nil)))
 
-    (request-work! [_ commitment-id job-query]
-      (when-let [contract (persistence/get-contract
-                            persistence
-                            (merge
-                              {:ready_for_work true
-                               :order-by       [:job_created]}
-                              job-query))]
-        (log logger (commitment-started-event commitment-id contract agent-details))
+    (request-work! [this commitment-id job-query]
+      (let [insert-and-get (fn [contract]
+                             (when (pers/insert-commitment! persistence commitment-id (:contract_id contract) agent-details)
+                               (log logger (commitment-started-event commitment-id contract agent-details))
 
-        (persistence/insert-commitment! persistence commitment-id (contract :contract_id) agent-details)
+                               (pers/get-contract persistence {:commitment_id     commitment-id
+                                                               :with-dependencies true})))
 
-        (persistence/get-contract persistence {:commitment_id     commitment-id
-                                   :with-dependencies true})))
+            modified-query (-> job-query
+                               (assoc :ready_for_work true)
+                               (update :order-by #(or % [:job_created])))]
+
+        (->> (pers/get-contracts persistence modified-query)
+             (map insert-and-get)
+             (filter (comp not nil?))
+             first)))
 
     (complete-work! [this commitment-id result]
       (let [contract (pers/get-contract persistence {:commitment_id commitment-id})]

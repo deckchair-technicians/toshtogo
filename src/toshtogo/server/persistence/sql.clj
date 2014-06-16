@@ -12,7 +12,8 @@
             [toshtogo.server.persistence.sql-contracts-helper :refer :all]
             [toshtogo.server.validation :refer [JobRecord DependencyRecord validated]]
             [toshtogo.server.util.sql :as ttsql]
-            [toshtogo.util.hsql :as hsql]))
+            [toshtogo.util.hsql :as hsql])
+  (:import [toshtogo.server.util UniqueConstraintException]))
 
 (defn sql-persistence [cnxn]
   (reify Persistence
@@ -54,13 +55,19 @@
       (assert contract-id "no contract-id")
       (assert commitment-id "no commitment-id")
 
-      (ttsql/insert!
-        cnxn
-        :agent_commitments
-        (commitment-record
-          commitment-id
-          contract-id
-          (agent! this agent-details))))
+      (ttsql/execute! cnxn ["savepoint before_insert"])
+
+      (try
+        (ttsql/insert! cnxn :agent_commitments
+          (commitment-record
+            commitment-id
+            contract-id
+            (agent! this agent-details)))
+        true
+
+        (catch UniqueConstraintException _
+          (ttsql/execute! cnxn ["rollback to before_insert"])
+          false)))
 
     (upsert-heartbeat! [this commitment-id]
       (let [heartbeat-time (now)]
