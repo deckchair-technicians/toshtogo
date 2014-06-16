@@ -75,8 +75,9 @@
       (throw e))))
 
 (defn wrap-retry-sender [decorated opts]
-  (if (= false (:should-retry opts))
+  (if-not (:should-retry opts)
     decorated
+
     (let [retry-opts (-> opts
                          (update :exponential-backoff #(or % 5000))
                          (update :error-fn #(immediately-throw % (fn [e] (not (instance? RecoverableException e))))))]
