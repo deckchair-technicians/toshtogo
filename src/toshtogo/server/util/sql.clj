@@ -17,12 +17,12 @@
 (defmacro with-exception-conversion [& body]
   `(try
      ~@body
-     (catch PSQLException e
-       (case (.getSQLState e)
-         23505
-         (throw (UniqueConstraintException. e))
+     (catch SQLException e#
+       (case (.getSQLState e#)
+         "23505"
+         (throw (UniqueConstraintException. e#))
 
-         (throw e)))))
+         (throw e#)))))
 
 (defn insert! [cnxn table & records]
   #_(println "Insert" table (ppstr records))
