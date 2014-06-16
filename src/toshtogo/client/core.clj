@@ -42,7 +42,7 @@ opts are:\n
   \n
   :debug boolean set this to true to send requests and responses to stdout"
   [client-opts & {:keys [agent-details error-fn timeout debug should-retry]
-                  :or {agent-details {:hostname (hostname) :system_name "unknown" :system_version "unknown"}}
+                  :or {agent-details {:hostname @hostname :system_name "unknown" :system_version "unknown"}}
                   :as opts}]
 
   (let [sender          (sender client-opts agent-details)

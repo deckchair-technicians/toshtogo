@@ -6,16 +6,16 @@
             [swiss.arrows :refer :all]
             [flatland.useful.map :refer [map-vals]]))
 
-(defn hostname
-  []
-  (try
-    (.getHostName (InetAddress/getLocalHost))
-    (catch UnknownHostException e
-      (throw (RuntimeException.
-               (str
-                 "Can't get hostname. POSSIBLE FIX: http://stackoverflow.com/a/16361018. "
-                 "\nException was:"
-                 (.getMessage e)))))))
+(def hostname
+  (delay
+    (try
+      (.getHostName (InetAddress/getLocalHost))
+      (catch UnknownHostException e
+        (throw (RuntimeException.
+                 (str
+                   "Can't get hostname. POSSIBLE FIX: http://stackoverflow.com/a/16361018. "
+                   "\nException was:"
+                   (.getMessage e))))))))
 
 (defn dependency-merger [left right]
   (if (sequential? right)
@@ -61,7 +61,7 @@
   META-INF or [maven-artifact].version environment variable set by lein\n
   in the repl."
   [maven-group maven-artifact]
-  {:hostname       (hostname)
+  {:hostname       @hostname
    :system_name    maven-artifact
    :system_version (version/get-version maven-group maven-artifact)})
 
