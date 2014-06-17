@@ -145,7 +145,7 @@
   (assert (fn? logger-factory) "Logger factory should be a function")
 
   (fn [req]
-    (let [logger (logger-factory)
+    (let [logger (ValidatingLogger. (logger-factory))
           log-events (atom [])
           deferred-logger (ValidatingLogger. (DeferredLogger. log-events))]
       (try
