@@ -11,18 +11,26 @@
 
 (background (before :contents @migrated-dev-db))
 
-(defn logging-client []
+(defn logging-client
+  "Creates an app (not HTTP) client. App is configured with a logger that
+  logs to a list of log events inside log-attom.
+
+  Returns [log-atom log-client]"
+  []
   (let [logs-atom (atom [])
         logger (DeferredLogger. logs-atom)
+        logging-app (dev-app :debug false :logger-factory (constantly logger))
         log-client (test-client :should-retry false
-                                :client-config {:type :app :app (dev-app :debug false :logger-factory (constantly logger))})]
+                                :client-config {:type :app :app logging-app})]
 
     [logs-atom log-client]))
 
-(defn consume-logs [logs-atom]
+(defn consume-logs
+  "Returns contents of log-atom and resets it to an empty list"
+  [logs-atom]
   (let [logs @logs-atom]
-    (reset! logs-atom nil)
-    logs))
+    (reset! logs-atom [])
+    (or logs [])))
 
 (let [[logs-atom log-client] (logging-client)
       job-id (uuid)
@@ -35,7 +43,7 @@
                                       :event_data {:job_id job-id
                                                    :job_type job-type}}])))
 
-  (fact "Putting job with different content throws an exception"
+  (fact "Putting job with different content throws an idempotency exception"
         (put-job! log-client job-id (job-req {:not "the same"} job-type))
         => (throws BadRequestException))
 
