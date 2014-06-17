@@ -47,40 +47,40 @@
 
           (get-tree client tree-id)
           => (matches {:root_job {:job_id parent-job-id}
-                       :jobs     (in-any-order {:job_id   parent-job-id
-                                          :job_name       "a (parent)"
-                                          :job_type       "parent_job_type"
-                                          :outcome        :no-contract}
+                       :jobs     (in-any-order [{:job_id   parent-job-id
+                                                 :job_name "a (parent)"
+                                                 :job_type "parent_job_type"
+                                                 :outcome  :no-contract}
 
-                                         {:job_id   child-1-job-id
-                                          :job_name "b (child 1)"
-                                          :job_type "child_job_type"
-                                          :outcome  :no-contract}
+                                                {:job_id   child-1-job-id
+                                                 :job_name "b (child 1)"
+                                                 :job_type "child_job_type"
+                                                 :outcome  :no-contract}
 
-                                         {:job_id   child-2-job-id
-                                          :job_name "c (child 2)"
-                                          :job_type "child_job_type"
-                                          :outcome  :no-contract}
+                                                {:job_id   child-2-job-id
+                                                 :job_name "c (child 2)"
+                                                 :job_type "child_job_type"
+                                                 :outcome  :no-contract}
 
-                                         {:job_id   grandchild-job-id
-                                          :job_name "d (grandchild)"
-                                          :job_type "grandchild_job_type"
-                                          :outcome  :no-contract}
+                                                {:job_id   grandchild-job-id
+                                                 :job_name "d (grandchild)"
+                                                 :job_type "grandchild_job_type"
+                                                 :outcome  :no-contract}
 
-                                         {:job_id   job-in-a-different-home-tree
-                                          :job_name "e (other job)"
-                                          :job_type "job_in_different_home_tree"
-                                          :outcome  :no-contract})
+                                                {:job_id   job-in-a-different-home-tree
+                                                 :job_name "e (other job)"
+                                                 :job_type "job_in_different_home_tree"
+                                                 :outcome  :no-contract}])
 
 
-                       :links    (in-any-order {:parent_job_id parent-job-id
-                                          :child_job_id        child-1-job-id}
+                       :links    (in-any-order [{:parent_job_id parent-job-id
+                                                 :child_job_id  child-1-job-id}
 
-                                         {:parent_job_id parent-job-id
-                                          :child_job_id  child-2-job-id}
+                                                {:parent_job_id parent-job-id
+                                                 :child_job_id  child-2-job-id}
 
-                                         {:parent_job_id child-2-job-id
-                                          :child_job_id  grandchild-job-id}
+                                                {:parent_job_id child-2-job-id
+                                                 :child_job_id  grandchild-job-id}
 
-                                         {:parent_job_id parent-job-id
-                                          :child_job_id  job-in-a-different-home-tree})}))))
+                                                {:parent_job_id parent-job-id
+                                                 :child_job_id  job-in-a-different-home-tree}])}))))

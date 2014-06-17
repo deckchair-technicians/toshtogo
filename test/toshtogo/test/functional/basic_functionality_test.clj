@@ -262,8 +262,8 @@
 
         (get-job client job-id)
         => (matches {:request_body {:job "1"}
-                     :dependencies (in-any-order {:request_body {:job "1.1"}}
-                                                 {:request_body {:job "1.2"}})})))
+                     :dependencies (in-any-order [{:request_body {:job "1.1"}}
+                                                  {:request_body {:job "1.2"}}])})))
 
 (fact "Getting a non-existent job returns null"
       (get-job client (uuid)) => nil)

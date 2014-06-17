@@ -9,6 +9,8 @@
             [toshtogo.util.core :refer [uuid uuid-str debug]]
             [toshtogo.test.functional.test-support :refer :all]))
 
+(background (before :contents @migrated-dev-db))
+
 (defn report-to-atom [a]
   (fn [e] (swap! a #(cons e %))))
 

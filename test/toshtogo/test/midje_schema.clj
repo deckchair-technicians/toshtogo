@@ -53,7 +53,7 @@
                                :walker (sch/subschema-walker s)})
                     item-schemas)))
 
-(defn in-any-order [& schemas]
+(defn in-any-order [schemas & {:keys [extras-ok] :as opts}]
   (reify sch/Schema
     (walker [this]
       (let [item-schemas (build-schemas schemas)
@@ -69,7 +69,9 @@
                 out
 
                 ; more items than schemas
-                (err-conj out (macros/validation-error nil xs (list 'has-extra-elts? xs))))
+                (if extras-ok
+                  out
+                  (err-conj out (macros/validation-error nil xs (list 'has-extra-elts? xs)))))
 
               (if (empty? xs)
                 ; more schemas than items
@@ -86,7 +88,7 @@
                                  first)]
                   (recur (rest xs)
                          (remove #{match} remaining-item-schemas)
-                         (if match
+                         (if (or extras-ok match)
                            out
                            (err-conj out
                                      (macros/validation-error
@@ -96,12 +98,17 @@
                                               [x]))))))))))))
 
     (explain [this]
-      (let [item-schemas (build-schemas schemas)]
-        (vec
-          (for [s item-schemas]
-            (list (sch/explain (:schema s)) (:name s))))))))
+      (list 'in-any-order
+            opts
+            (doall
+              (map-indexed (fn [schema index]
+                             (list (sch/explain schema) (str "item " index)))
+                           schemas))))))
 
-(defn in-order [& schemas]
+(defn contains-items [schemas]
+  (in-any-order schemas :extras-ok true))
+
+(defn in-order [schemas]
   (reify sch/Schema
     (walker [this]
       (let [item-schemas (build-schemas schemas)
@@ -182,3 +189,8 @@
 
       (catch Throwable e
         (as-data-laden-falsehood {:notes [(with-out-str (print-cause-trace e))]})))))
+
+(defn contains-string [pred]
+  (sch/pred #(<= 0 (.indexOf % pred))
+            (str "contains '" pred "'")))
+
