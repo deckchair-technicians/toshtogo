@@ -27,7 +27,7 @@
 
 (defn test-client [& {:as opts}]
   (apply ttc/client
-         client-config
+         (or (:client-config opts) client-config)
          (->> opts
              (merge {:error-fn (fn [e] (pprint (cause-trace e)))
                      :debug    false

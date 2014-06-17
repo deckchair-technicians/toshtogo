@@ -13,9 +13,12 @@
              :user        "postgres"
              :password    "postgres"})
 
-(defn dev-app [& {:keys [debug] :or {debug false}}]
-  (app dev-db :debug debug :logger-factory (if debug (constantly (SysLogger.))
-                                                     (constantly nil))))
+(defn dev-app [& {:keys [debug logger-factory] :or {debug false}}]
+  (app dev-db
+       :debug debug
+       :logger-factory (or logger-factory
+                           (if debug (constantly (SysLogger.))
+                                     (constantly nil)))))
 
 (defn -main [& {debug "-debug"}]
   (run-migrations! dev-db)
