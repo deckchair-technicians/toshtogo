@@ -30,9 +30,11 @@
   (sch/conditional
     (event-type= :server_error)
     {:event_type          (sch/eq :server_error)
-     :event_data          {:stacktrace sch/Str}
-
-     :events_before_error [(toshtogo-schema/recursive #'LoggingEvent)]}
+     :event_data          {:stacktrace sch/Str
+                           :message    sch/Str
+                           :class      sch/Str
+                           :ex-data    sch/Any
+                           :events_before_error [(toshtogo-schema/recursive #'LoggingEvent)]}}
 
     (event-type= :new_job)
     {:event_type (sch/eq :new_job)
@@ -71,8 +73,7 @@
   [exception rolled-back-events]
 
   {:event_type          :server_error
-   :event_data          (exception-as-map exception)
-   :events_before_error rolled-back-events})
+   :event_data          (assoc (exception-as-map exception) :events_before_error rolled-back-events)})
 
 ; ----------------------------------------------
 ; Loggers
