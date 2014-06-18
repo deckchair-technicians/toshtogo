@@ -4,11 +4,11 @@
   (:require [schema.core :as s]
             [schema.macros :as macros]
             [toshtogo.util.schema :as toshtogo-schema]
-            [toshtogo.util.core :refer [uuid?]]))
+            [toshtogo.util.core :refer [uuid? ensure-seq]]))
 
 (defn validated [thing schema]
   (if-let [errors (s/check schema thing)]
-    (throw (ex-info (str "Validation failure" (str (first errors)))
+    (throw (ex-info (str "Validation failure- " (str (first (ensure-seq errors))))
                     {:cause  :bad-request
                      :data   thing
                      :errors errors}))
