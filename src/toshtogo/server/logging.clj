@@ -2,6 +2,7 @@
   (:import (java.util Map))
   (:require [clojure.stacktrace :refer [print-cause-trace]]
             [schema.core :as sch]
+            [clojure.string :as s]
             [schema.macros :as schm]
             [clojure.pprint :refer [pprint]]
 
@@ -30,10 +31,12 @@
   (sch/conditional
     (event-type= :server_error)
     {:event_type          (sch/eq :server_error)
-     :event_data          {:stacktrace sch/Str
-                           :message    sch/Str
-                           :class      sch/Str
-                           :ex_data    sch/Any
+     :event_data          {:stacktrace          sch/Str
+                           :message             sch/Str
+                           :class               sch/Str
+                           :ex_data             sch/Any
+                           :http_method         sch/Str
+                           :url                 sch/Str
                            :events_before_error (sch/maybe [(toshtogo-schema/recursive #'LoggingEvent)])}}
 
     (event-type= :new_job)
@@ -70,10 +73,13 @@
                  :result result)})
 
 (schm/defn error-event
-  [exception rolled-back-events]
+  [exception rolled-back-events request]
 
   {:event_type          :server_error
-   :event_data          (assoc (exception-as-map exception) :events_before_error rolled-back-events)})
+   :event_data          (assoc (exception-as-map exception)
+                          :events_before_error rolled-back-events
+                          :url                 (:uri request)
+                          :http_method         (s/upper-case (name (:request-method request))))})
 
 ; ----------------------------------------------
 ; Loggers

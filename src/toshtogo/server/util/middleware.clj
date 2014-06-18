@@ -154,7 +154,7 @@
           (apply safe-log logger @log-events)
           resp)
         (catch Throwable e
-          (safe-log logger (error-event e @log-events))
+          (safe-log logger (error-event e @log-events req))
           (throw e))))))
 
 
