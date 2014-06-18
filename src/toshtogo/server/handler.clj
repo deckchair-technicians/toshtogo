@@ -208,7 +208,7 @@
         (wrap-if debug wrap-print-request)
         (wrap-db-transaction db)
         (wrap-clear-logs-before-handling)
-        (wrap-retry-on-exceptions UniqueConstraintException)
+        (wrap-retry-on-exceptions 3 UniqueConstraintException)
         (wrap-logging-transaction logger-factory)
         wrap-json-body
         wrap-body-hash

@@ -72,10 +72,10 @@
          (throw e))))))
 
 (defn wrap-retry-on-exceptions
-  [handler & exception-types]
+  [handler retry-count & exception-types]
   (let [exception-types (set exception-types)]
     (fn [req]
-      (retry* 3 exception-types (fn []
+      (retry* retry-count exception-types (fn []
                                   (handler req))))))
 
 (defn request-summary [req]
