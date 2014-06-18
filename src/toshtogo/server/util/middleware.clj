@@ -72,12 +72,10 @@
          (throw e))))))
 
 (defn wrap-retry-on-exceptions
-  "Coupled to wrap-logging-transaction through :log-events"
   [handler & exception-types]
   (let [exception-types (set exception-types)]
     (fn [req]
       (retry* 3 exception-types (fn []
-                                  (reset! (:log-events req) nil)
                                   (handler req))))))
 
 (defn request-summary [req]
@@ -157,6 +155,10 @@
           (safe-log logger (error-event e @log-events req))
           (throw e))))))
 
+(defn wrap-clear-logs-before-handling [handler]
+  (fn [req]
+    (reset! (:log-events req) nil)
+    (handler req)))
 
 (defn exception-response [e status-code]
   (json-response {:body   (json/encode (exception-as-map e))
