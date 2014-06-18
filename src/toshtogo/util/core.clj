@@ -176,4 +176,4 @@
   {:stacktrace (cause-trace e)
    :message    (.getMessage e)
    :class      (.getName (class e))
-   :ex-data    (ex-data e)})
+   :ex_data    (ex-data e)})

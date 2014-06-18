@@ -8,7 +8,7 @@
 
 (defn validated [thing schema]
   (if-let [errors (s/check schema thing)]
-    (throw (ex-info "Validation failure"
+    (throw (ex-info (str "Validation failure" (str (first errors)))
                     {:cause  :bad-request
                      :data   thing
                      :errors errors}))

@@ -33,8 +33,8 @@
      :event_data          {:stacktrace sch/Str
                            :message    sch/Str
                            :class      sch/Str
-                           :ex-data    sch/Any
-                           :events_before_error [(toshtogo-schema/recursive #'LoggingEvent)]}}
+                           :ex_data    sch/Any
+                           :events_before_error (sch/maybe [(toshtogo-schema/recursive #'LoggingEvent)])}}
 
     (event-type= :new_job)
     {:event_type (sch/eq :new_job)
