@@ -32,35 +32,47 @@
     (reset! logs-atom [])
     (or logs [])))
 
-(let [[logs-atom log-client] (logging-client)
-      job-id (uuid)
-      job-type (keyword (uuid-str))]
-  (put-job! log-client job-id (job-req {} job-type))
+(let [[logs-atom log-client] (logging-client)]
+  (let [job-id (uuid)
+        job-type (keyword (uuid-str))]
+    (put-job! log-client job-id (job-req {} job-type)) => truthy
 
-  (fact "New job is logged"
-        (consume-logs logs-atom)
-        => (matches (contains-items [{:event_type :new_job
-                                      :event_data {:job_id job-id
-                                                   :job_type job-type}}])))
+    (fact "New job is logged"
+          (consume-logs logs-atom)
+          => (matches (contains-items [{:event_type :new_job
+                                        :event_data {:job_id   job-id
+                                                     :job_type job-type}}])))
 
-  (fact "Putting job with different content throws an idempotency exception"
-        (put-job! log-client job-id (job-req {:not "the same"} job-type))
-        => (throws BadRequestException))
+    (fact "Putting job with different content throws an idempotency exception"
+          (put-job! log-client job-id (job-req {:not "the same"} job-type))
+          => (throws BadRequestException))
 
-  (fact "Server error is logged"
-        (consume-logs logs-atom)
-        => (matches (contains-items [{:event_type :server_error
-                                      :event_data {:stacktrace (contains-string "Previous put for create-job")}}])))
+    (fact "Server error is logged"
+          (consume-logs logs-atom)
+          => (matches (contains-items [{:event_type :server_error
+                                        :event_data {:stacktrace (contains-string "Previous put for create-job")}}])))
 
-  (fact "Job completes successfully"
-    @(do-work! log-client {:job_id job-id} return-success)
-    => truthy)
+    (fact "Job completes successfully"
+          @(do-work! log-client {:job_id job-id} return-success)
+          => truthy)
 
-  (fact "Commitment start and end is logged"
-        (consume-logs logs-atom)
-        => (matches (contains-items [{:event_type :commitment_started
-                                      :event_data {:job_id job-id}}
+    (fact "Commitment start and end is logged"
+          (consume-logs logs-atom)
+          => (matches (contains-items [{:event_type :commitment_started
+                                        :event_data {:job_id job-id}}
 
-                                     {:event_type :commitment_result
-                                      :event_data {:job_id job-id
-                                                   :result {:outcome :success}}}]))))
+                                       {:event_type :commitment_result
+                                        :event_data {:job_id job-id
+                                                     :result {:outcome :success}}}]))))
+
+  (let [job-id (uuid)]
+    (put-job! log-client job-id (job-req {} (uuid-str))) => truthy
+    @(do-work! log-client {:job_id job-id} return-error)
+    => truthy
+
+    (fact "Job errors are logged"
+          (consume-logs logs-atom)
+          => (matches (contains-items [{:event_type :commitment_result
+                                        :event_data {:job_id job-id
+                                                     :result {:outcome :error
+                                                              :error   "something went wrong"}}}])))))
