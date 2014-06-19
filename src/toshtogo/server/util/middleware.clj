@@ -143,16 +143,21 @@
   (assert (fn? logger-factory) "Logger factory should be a function")
 
   (fn [req]
-    (let [logger (ValidatingLogger. (logger-factory))
+    (let [last-logged-exception (or (:last-logged-exception req) (atom nil))
+          logger (ValidatingLogger. (logger-factory))
           log-events (atom [])
           deferred-logger (ValidatingLogger. (DeferredLogger. log-events))]
       (try
-        (let [resp (handler (assoc req :logger deferred-logger
-                                       :log-events log-events))]
+        (let [resp (handler (assoc req
+                              :last-logged-exception last-logged-exception
+                              :logger deferred-logger
+                              :log-events log-events))]
           (apply safe-log logger @log-events)
           resp)
         (catch Throwable e
-          (safe-log logger (error-event e @log-events req))
+          (when (not= e @last-logged-exception)
+            (reset! last-logged-exception e)
+            (safe-log logger (error-event e @log-events req)))
           (throw e))))))
 
 (defn wrap-clear-logs-before-handling [handler]
