@@ -37,7 +37,7 @@
                            :ex_data             sch/Any
                            :http_method         sch/Str
                            :url                 sch/Str
-                           :events_before_error (sch/maybe [(toshtogo-schema/recursive #'LoggingEvent)])}}
+                           :rolled_back_events (sch/maybe [(toshtogo-schema/recursive #'LoggingEvent)])}}
 
     (event-type= :new_job)
     {:event_type (sch/eq :new_job)
@@ -77,7 +77,7 @@
 
   {:event_type          :server_error
    :event_data          (assoc (exception-as-map exception)
-                          :events_before_error rolled-back-events
+                          :rolled_back_events rolled-back-events
                           :url                 (:uri request)
                           :http_method         (s/upper-case (name (:request-method request))))})
 
