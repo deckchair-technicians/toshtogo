@@ -10,6 +10,7 @@
             [toshtogo.server.util.idempotentput :refer [check-idempotent!]]
             [toshtogo.server.persistence.sql :refer [sql-persistence]]
             [toshtogo.server.api :refer [api]]
+            [toshtogo.server.util.sql :refer [with-exception-conversion]]
             [toshtogo.server.logging :refer [error-event safe-log]]
             [toshtogo.server.validation :refer [validated Agent]]
 
@@ -39,8 +40,9 @@
     request map under the :cnxn key."
   [handler db]
   (fn [req]
-    (sql/with-db-transaction [cnxn db]
-                             (handler (assoc req :cnxn cnxn)))))
+    (with-exception-conversion
+      (sql/with-db-transaction [cnxn db]
+                               (handler (assoc req :cnxn cnxn))))))
 
 (defn sql-deps
   [cnxn logger agent-details]

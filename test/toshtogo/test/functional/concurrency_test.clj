@@ -46,3 +46,66 @@
         (fact "all jobs were requested"
               (:data (get-jobs client {:job_type job-type}))
               => (matches [{:outcome :running}]))))
+
+
+(facts "If lots of agents are requesting FUNGIBLE work at the same time, no errors escape from the server due to clashes"
+       (let [job-type (uuid-str)
+
+             fungible-job-type (uuid-str)
+             fungibility-group-id (uuid)
+
+             num-threads 10
+             barrier (promise)
+
+             threads-waiting (atom 0)
+             all-threads-ready (promise)
+
+             thread-results (atom [])
+             test-complete (promise)
+
+             dep (-> (job-req {} fungible-job-type)
+                     (fungibility-group fungibility-group-id))
+             add-fungible-dependency (add-dependencies dep)]
+
+         (doseq [i (range num-threads)]
+           (future (try
+                     (let [job-id       (uuid)
+                           the-client   (test-client :should-retry false :timeout nil)]
+
+                       (put-job! the-client job-id (job-req {:job_num i} job-type))
+
+                       (let [job-returned (request-work! the-client {:job_id job-id})]
+
+                         (assert job-returned "no job returned")
+
+                         (swap! threads-waiting inc)
+                         (when (= num-threads @threads-waiting)
+                           (deliver all-threads-ready true))
+
+                         @barrier
+
+                         (swap! thread-results #(cons (complete-work! the-client
+                                                                      (:commitment_id job-returned)
+                                                                      add-fungible-dependency)
+                                                      %))))
+                     (catch Throwable e
+                       (swap! thread-results #(cons (.getMessage e) %))))
+
+                   (when (= num-threads (count @thread-results))
+                     (deliver test-complete true))))
+
+
+         (fact "all threads get to barrier"
+               (deref all-threads-ready 10000 false) => truthy)
+
+         (deliver barrier nil)
+
+         (fact "all calls completed (but may have thrown exceptions)"
+               (deref test-complete 10000 false) => truthy)
+
+         (fact "no requests threw exceptions"
+               @thread-results => (matches [{sch/Any sch/Any}]))
+
+         (fact "Only one fungible job was created"
+               (:data (get-jobs client {:job_type fungible-job-type}))
+               => #(= 1 (count % )))))
