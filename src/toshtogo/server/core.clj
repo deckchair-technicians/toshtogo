@@ -4,7 +4,8 @@
             [toshtogo.server.logging :refer :all]
             [ring.adapter.jetty :refer [run-jetty]]
             [watchtower.core :as watcher])
-  (:import [toshtogo.server.logging SysLogger])
+  (:import [toshtogo.server.logging SysLogger]
+           [org.eclipse.jetty.server Server])
   (:gen-class))
 
 (def dev-db {:classname   "org.postgresql.Driver" ; must be in classpath
@@ -20,9 +21,13 @@
                            (if debug (constantly (SysLogger.))
                                      (constantly nil)))))
 
-(defn -main [& {debug "-debug"}]
+(defn start! [debug port join?]
   (run-migrations! dev-db)
-  (run-jetty (dev-app :debug (= "yes" debug)) {:port 3001}))
+  (let [^Server server (run-jetty (dev-app :debug debug) {:port port :join? join?})]
+    (fn [] (.stop server))))
+
+(defn -main [& {debug "-debug"}]
+  (start! (= "yes" debug) 3001 true))
 
 (defn reload-templates! [files]
   (require 'toshtogo.server.handler :reload-all))

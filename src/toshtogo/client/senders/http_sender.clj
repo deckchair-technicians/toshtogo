@@ -8,7 +8,7 @@
             [toshtogo.client.senders.protocol :refer :all])
   (:import (java.io InputStream)
            (java.lang Exception)
-           (toshtogo.client.senders RecoverableException)
+           (toshtogo.client RecoverableException)
            (java.util.concurrent ExecutionException))  )
 
 (defmulti ensure-str class)

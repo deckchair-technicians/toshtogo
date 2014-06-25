@@ -5,8 +5,9 @@
             [toshtogo.util.json :as json]
             [toshtogo.client.util :refer [nil-on-404 throw-500 throw-400]]
             [toshtogo.client.senders.protocol :refer :all])
-  (:import (toshtogo.client BadRequestException)
-           (toshtogo.client.senders RecoverableException)))
+  (:import [toshtogo.client BadRequestException]
+           [toshtogo.client RecoverableException]
+           [java.net ConnectException]))
 
 (defn wrapper [decorated map-fn]
   (reify
@@ -64,6 +65,13 @@
       [decorated]
   (wrapper decorated (fn [sender resp] (throw-400 resp))))
 
+(defn wrap-throw-recoverable-exception-on-connect-exception
+      [decorated]
+  (wrapper decorated (fn [sender resp]
+                       (if (instance? ConnectException (:error resp))
+                         (throw (RecoverableException. (str "Service unavailable- " (.getMessage (:error resp)))))
+                         resp))))
+
 (defn immediately-throw
       "Calls f (presumably for logging), then throws the exception
       if it passes the predicate"
@@ -93,6 +101,7 @@
   (-> sender
       wrap-throw-500
       wrap-throw-400
+      wrap-throw-recoverable-exception-on-connect-exception
       (wrap-retry-sender opts)
       wrap-nil-404
       wrap-json-decode-body
