@@ -2,32 +2,24 @@
   (:require [org.httpkit.client :as http]
             [cemerick.url :refer [url]]
             [clojure.string :as str]
+            [clojure.stacktrace :refer [print-cause-trace]]
             [flatland.useful.map :refer [update]]
             [toshtogo.util.json :as tjson]
             [toshtogo.util.core :refer [debug]]
             [toshtogo.client.senders.protocol :refer :all])
   (:import (java.io InputStream)
            (java.lang Exception)
-           (toshtogo.client RecoverableException)
            (java.util.concurrent ExecutionException))  )
 
 (defmulti ensure-str class)
 (defmethod ensure-str :default [x] (str x))
 (defmethod ensure-str InputStream [x] (slurp x))
 
-(defn throw-recoverable-exception [promise]
-  (try
-    @promise
-    (catch Exception e
-      (if (instance? ExecutionException e)
-        (throw (RecoverableException. (.getCause e)))
-        (throw (RecoverableException. e)))))                                      )
-
 (defn post [[url body]]
-  (throw-recoverable-exception (http/post url body)))
+  @(http/post url body))
 
 (defn put [[url body]]
-  (throw-recoverable-exception (http/put url body)))
+  @(http/put url body))
 
 (defn http-sender [agent-details base-path]
   (assert agent-details)

@@ -14,7 +14,7 @@
     (.close socket)
     port))
 
-(facts "Agent recovers if the server goes away and comes back again"
+(facts "Server outage recovery"
       (let [job-id (uuid)
             job-type (uuid-str)
             app-client (test-client :client-config in-process :timeout nil :should-retry false)
