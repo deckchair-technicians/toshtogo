@@ -19,8 +19,9 @@
             [toshtogo.util.hashing :refer [murmur!]]
             [toshtogo.util.io :refer [byte-array-input! byte-array-output!]])
   (:import [java.io ByteArrayInputStream]
-           (clojure.lang ExceptionInfo)
-           (toshtogo.server.logging ValidatingLogger DeferredLogger)))
+           [clojure.lang ExceptionInfo]
+           [toshtogo.server.logging ValidatingLogger DeferredLogger]
+           [org.postgresql.util PSQLException]))
 
 
 (defn wrap-body-hash
@@ -176,8 +177,13 @@
   (fn [request]
     (try (handler request)
          (catch Throwable e
-           (if (= :bad-request (-> e ex-data :cause))
+           (case (-> e ex-data :cause)
+             :bad-request
              (exception-response e 400)
+
+             :database-unavailable
+             (exception-response e 503)
+
              (exception-response e 500))))))
 
 (defn wrap-if [handler pred middleware & args]

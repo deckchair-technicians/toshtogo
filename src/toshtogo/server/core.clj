@@ -14,8 +14,10 @@
              :user        "postgres"
              :password    "postgres"})
 
-(defn dev-app [& {:keys [debug logger-factory] :or {debug false}}]
-  (app dev-db
+(defn dev-app [& {:keys [debug logger-factory db]
+                  :or {debug false
+                       db dev-db}}]
+  (app db
        :debug debug
        :logger-factory (or logger-factory
                            (if debug (constantly (SysLogger.))

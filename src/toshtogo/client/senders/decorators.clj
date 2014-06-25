@@ -69,7 +69,14 @@
       [decorated]
   (wrapper decorated (fn [sender resp]
                        (if (instance? ConnectException (:error resp))
-                         (throw (RecoverableException. (str "Service unavailable- " (.getMessage (:error resp)))))
+                         (throw (RecoverableException. (str "HTTP connection failure" (.getMessage (:error resp)))))
+                         resp))))
+
+(defn wrap-throw-recoverable-exception-on-503
+      [decorated]
+  (wrapper decorated (fn [sender resp]
+                       (if (= 503 (:status resp))
+                         (throw (RecoverableException. (str resp)))
                          resp))))
 
 (defn immediately-throw
@@ -99,6 +106,7 @@
 
 (defn wrap-decoration [sender & {:keys [should-retry error-fn timeout debug] :or {debug false} :as opts}]
   (-> sender
+      wrap-throw-recoverable-exception-on-503
       wrap-throw-500
       wrap-throw-400
       wrap-throw-recoverable-exception-on-connect-exception

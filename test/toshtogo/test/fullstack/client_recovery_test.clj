@@ -3,7 +3,7 @@
             [toshtogo.test.functional.test-support :refer [test-client localhost in-process return-success]]
             [toshtogo.client.protocol :refer :all]
             [toshtogo.util.core :refer [uuid-str uuid]]
-            [toshtogo.server.core :refer [start!]]
+            [toshtogo.server.core :refer [start! dev-app dev-db]]
             [toshtogo.client.agent :refer [start-service job-consumer]])
   (:import [java.net ServerSocket]
            [toshtogo.client RecoverableException]))
@@ -54,3 +54,25 @@
                 => (contains {:outcome :success}))
 
           (stop-server))))
+
+
+(defn should-be-recoverable-error [db]
+  (let [client-error (promise)
+        app-client (test-client :client-config {:type :app :app (dev-app :debug false :db db)}
+                                :error-fn (fn [e]
+                                            (deliver client-error e))
+                                :timeout nil)
+        put-job-result (future (put-job! app-client (uuid) (job-req {} :some-job-type)))]
+
+    (fact "Client receives a recoverable error"
+          (deref client-error 1000 "no error received")
+          => #(instance? RecoverableException %))
+
+    (future-cancel put-job-result)))
+
+(facts "Database failure recovery"
+       (let [non-existent-db (assoc dev-db :subname "//localhost:5432/nonexistent")
+             wrong-port (assoc dev-db :subname (str "//localhost:" (available-port) "/some-database"))]
+         (should-be-recoverable-error non-existent-db)
+         (should-be-recoverable-error wrong-port)
+         ))

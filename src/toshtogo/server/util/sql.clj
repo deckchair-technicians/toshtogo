@@ -22,6 +22,18 @@
          "23505"
          (throw (UniqueConstraintException. e#))
 
+         "08004"
+         (throw (ex-info (str "Database unavailable- " (.getMessage e#))
+                         {:cause  :database-unavailable
+                          :sql-state    (.getSQLState e#)}
+                         e#))
+
+         "3D000"
+         (throw (ex-info (str "Database does not exist" (.getMessage e#))
+                         {:cause  :database-unavailable
+                          :sql-state    (.getSQLState e#)}
+                         e#))
+
          (throw e#)))))
 
 (defn execute! [cnxn sql-params]
