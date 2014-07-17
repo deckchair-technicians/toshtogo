@@ -151,17 +151,32 @@
           log-events (atom [])
           deferred-logger (ValidatingLogger. (DeferredLogger. log-events))]
       (try
+        ; Attach a deferred logger to the request that will buffer events for
+        ; Logging later. Then call the next handler
         (let [resp (handler (assoc req
                               :last-logged-exception last-logged-exception
                               :logger deferred-logger
                               :log-events log-events))]
+          ; If the handler succeeds, log the events from the deferred logger
+          ; to a real logger created by logger-factory
           (safe-log logger @log-events)
           resp)
         (catch Throwable e
-          (when (not= e @last-logged-exception)
-            (reset! last-logged-exception e)
-            (safe-log logger [(error-event e @log-events req)]))
-          (throw e))))))
+               ; If handler throws an exception, log the exception.
+               ;
+               ; We check whether another wrap-logging-transaction further down the stack
+               ; has already logged the exception, so we can nest wrap-logging-transaction
+               ; without worrying about double-logging
+               ;
+               ; The exception event includes the log events buffered by the deferred logger
+               ; (which we attached to the request above). These events have presumably been
+               ; rolled back now, but it's useful to see on the exception event what we were
+               ; doing before the exception occured.
+               ;
+               (when (not= e @last-logged-exception)
+                 (reset! last-logged-exception e)
+                 (safe-log logger [(error-event e @log-events req)]))
+               (throw e))))))
 
 (defn wrap-clear-logs-before-handling [handler]
   (fn [req]
