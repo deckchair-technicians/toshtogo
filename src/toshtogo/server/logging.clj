@@ -3,7 +3,6 @@
   (:require [clojure.stacktrace :refer [print-cause-trace]]
             [schema.core :as sch]
             [clojure.string :as s]
-            [schema.macros :as schm]
             [clojure.pprint :refer [pprint]]
 
             [toshtogo.util.schema :as toshtogo-schema]
@@ -72,7 +71,7 @@
    :event_data (assoc (commitment-details contract agent-details)
                  :result result)})
 
-(schm/defn error-event
+(defn error-event
   [exception rolled-back-events request]
 
   {:event_type          :server_error
@@ -88,7 +87,7 @@
 (defprotocol Logger
   (log [this event] "Event is a toshtogo.server.logging.LoggingEvent"))
 
-(schm/defn safe-log
+(defn safe-log
   "Tries to log events, catches exceptions and prints stack trace."
   [logger & events ]
   (doseq [event events]
