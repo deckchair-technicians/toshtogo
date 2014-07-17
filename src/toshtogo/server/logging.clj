@@ -89,7 +89,7 @@
 
 (defn safe-log
   "Tries to log events, catches exceptions and prints stack trace."
-  [logger & events ]
+  [logger events]
   (doseq [event events]
     (try
       (log logger event)

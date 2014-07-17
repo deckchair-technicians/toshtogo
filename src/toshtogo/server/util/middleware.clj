@@ -155,12 +155,12 @@
                               :last-logged-exception last-logged-exception
                               :logger deferred-logger
                               :log-events log-events))]
-          (apply safe-log logger @log-events)
+          (safe-log logger @log-events)
           resp)
         (catch Throwable e
           (when (not= e @last-logged-exception)
             (reset! last-logged-exception e)
-            (safe-log logger (error-event e @log-events req)))
+            (safe-log logger [(error-event e @log-events req)]))
           (throw e))))))
 
 (defn wrap-clear-logs-before-handling [handler]
