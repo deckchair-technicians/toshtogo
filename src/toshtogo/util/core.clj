@@ -118,6 +118,8 @@
            (future-cancel f#)
            (throw (TimeoutException. ~message)))))))
 
+(def default-interval 1000)
+
 (defn retry-until-success*
   ":interval        pause between retries, in millis
    :interval-fn     function that takes an integer for # of retries and return the # of millis to pause
@@ -125,18 +127,18 @@
    :error-fn        function to pass errors to
    :immediate-throw a sequence of exception classes that short-circuit retry cycle"
   [func & {:keys [interval interval-fn timeout max-retries error-fn]
-           :or {interval 10 error-fn nil}}]
-  (let [error-fn (or error-fn (constantly nil))
-        interval-fn (if interval-fn interval-fn (fn [_] interval))
-        started (now)
-        elapsed-time (fn [] (interval started (now)))
-        timeout-time (when timeout (plus (now) (millis timeout)))
-        timeout-expired? (fn [] (and timeout-time (after? (now) timeout-time)))
+           :or {interval default-interval error-fn nil}}]
+  (let [error-fn            (or error-fn (constantly nil))
+        interval-fn         (if interval-fn interval-fn (fn [_] interval))
+        started             (now)
+        elapsed-time        (fn [] (interval started (now)))
+        timeout-time        (when timeout (plus (now) (millis timeout)))
+        timeout-expired?    (fn [] (and timeout-time (after? (now) timeout-time)))
         max-tries-exceeded? (fn [attempt-number] (and max-retries (>= attempt-number max-retries)))]
 
     (with-timeout timeout "Giving up on retry"
                   (loop [attempt-number 1
-                        [result exception] (or-exception func)]
+                         [result exception] (or-exception func)]
                     (if (not exception)
                       result
                       (if (or (timeout-expired?) (max-tries-exceeded? attempt-number))

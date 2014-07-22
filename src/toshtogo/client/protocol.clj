@@ -95,8 +95,8 @@
       (let [commitment-id (contract :commitment_id)
              heartbeat-fn! #(heartbeat! client commitment-id)
             wrapped-fn (-> func
-                           (wrap-exception-handling)
-                           (wrap-heartbeating heartbeat-fn!))
+                           (wrap-heartbeating heartbeat-fn!)
+                           (wrap-exception-handling))
             ; This may take some time to return
             result (wrapped-fn contract)]
 
