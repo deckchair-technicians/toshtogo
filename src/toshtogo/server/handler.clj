@@ -207,14 +207,15 @@
         wrap-dependencies
         (wrap-if debug wrap-print-request)
         (wrap-db-transaction db)
-        (wrap-clear-logs-before-handling)
+        (wrap-clear-logs-before-handling) ; Only log events from the final retry
         (wrap-retry-on-exceptions 3 UniqueConstraintException)
-        (wrap-logging-transaction logger-factory)
+        (wrap-logging-transaction logger-factory) ; Log events on DB commit. On exception, log exception event, including log event that didn't commit
         wrap-json-body
         wrap-body-hash
         wrap-json-response
         (wrap-if debug wrap-print-response)
         wrap-cors
-        (wrap-logging-transaction logger-factory)
+        (wrap-logging-transaction logger-factory) ; Log the exception before wrap-json-exception throws it away
         (wrap-json-exception)
-        (wrap-logging-transaction logger-factory))))
+        (wrap-logging-transaction logger-factory) ; Log exceptions from wrap-json-exception
+        )))
