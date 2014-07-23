@@ -29,14 +29,14 @@
   ;TODO: Better as a macro?
   (sch/conditional
     (event-type= :server_error)
-    {:event_type          (sch/eq :server_error)
-     :event_data          {:stacktrace          sch/Str
-                           :message             sch/Str
-                           :class               sch/Str
-                           :ex_data             sch/Any
-                           :http_method         sch/Str
-                           :url                 sch/Str
-                           :rolled_back_events (sch/maybe [(toshtogo-schema/recursive #'LoggingEvent)])}}
+    {:event_type (sch/eq :server_error)
+     :event_data {:stacktrace         sch/Str
+                  :message            sch/Str
+                  :class              sch/Str
+                  :ex_data            sch/Any
+                  :http_method        sch/Str
+                  :url                sch/Str
+                  :rolled_back_events (sch/maybe [(toshtogo-schema/recursive #'LoggingEvent)])}}
 
     (event-type= :new_job)
     {:event_type (sch/eq :new_job)
@@ -49,7 +49,11 @@
     (event-type= :commitment_result)
     {:event_type (sch/eq :commitment_result)
      :event_data (assoc CommitmentDetails
-                   :result JobResult)}))
+                   :result JobResult)}
+
+    (event-type= :request)
+    {:event_type (sch/eq :request)
+     :event_data sch/Any}))
 
 (defn new-job-event
   [job]
@@ -61,7 +65,7 @@
     :agent agent-details))
 
 (defn commitment-started-event
-  [commitment-id contract agent-details ]
+  [commitment-id contract agent-details]
   {:event_type :commitment_started
    :event_data (commitment-details (assoc contract :commitment_id commitment-id) agent-details)})
 
@@ -73,12 +77,11 @@
 
 (defn error-event
   [exception rolled-back-events request]
-
-  {:event_type          :server_error
-   :event_data          (assoc (exception-as-map exception)
-                          :rolled_back_events rolled-back-events
-                          :url                 (:uri request)
-                          :http_method         (s/upper-case (name (:request-method request))))})
+  {:event_type :server_error
+   :event_data (assoc (exception-as-map exception)
+                 :rolled_back_events rolled-back-events
+                 :url (:uri request)
+                 :http_method (s/upper-case (name (:request-method request))))})
 
 ; ----------------------------------------------
 ; Loggers

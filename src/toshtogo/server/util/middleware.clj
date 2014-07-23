@@ -131,6 +131,11 @@
   (fn [request]
     (handler (update request :body json/decode))))
 
+(defn log-request [handler]
+  (fn [request]
+    (safe-log (:logger request) {:event_type :request :event_data (:body request)} )
+    (handler request)))
+
 (defn wrap-logging-transaction
   "Adds a DeferredLogger to request as :logger, which collects log events in an atom.
 

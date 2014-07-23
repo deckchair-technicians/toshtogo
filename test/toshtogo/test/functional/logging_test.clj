@@ -85,7 +85,7 @@
     => truthy
 
     (fact "If client sends badly formed result, we get a server error and a commitment result"
-          (consume-logs logs-atom)
+          (remove #(= :request (:event_type %)) (consume-logs logs-atom))
           => (matches (in-order [{:event_type :commitment_started}
 
                                  {:event_type :server_error
