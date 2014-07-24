@@ -97,7 +97,15 @@
     (try
       (log logger event)
       (catch Exception logging-exception
-        (print-cause-trace logging-exception)))))
+        (println)
+        (println "Exception during logging! Printing to stdout and continuing")
+        (when (ex-data logging-exception)
+          (println "ex-data")
+          (clojure.pprint/pprint (ex-data logging-exception))
+          (println "Stack-trace:"))
+        (print-cause-trace logging-exception)
+        (println)
+        ))))
 
 (extend-protocol Logger
   nil

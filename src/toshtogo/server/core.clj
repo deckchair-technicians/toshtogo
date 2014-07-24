@@ -8,15 +8,15 @@
            [org.eclipse.jetty.server Server])
   (:gen-class))
 
-(def dev-db {:classname   "org.postgresql.Driver" ; must be in classpath
+(def dev-db {:classname   "org.postgresql.Driver"           ; must be in classpath
              :subprotocol "postgresql"
              :subname     "//localhost:5432/toshtogo"
              :user        "postgres"
              :password    "postgres"})
 
 (defn dev-app [& {:keys [debug logger-factory db]
-                  :or {debug false
-                       db dev-db}}]
+                  :or   {debug false
+                         db    dev-db}}]
   (app db
        :debug debug
        :logger-factory (or logger-factory
@@ -40,6 +40,6 @@
   ; Reload this namespace and its templates when one of the templates changes.
   (when-not (= (System/getenv "RING_ENV") "production")
     (watcher/watcher ["src"]
-                     (watcher/rate 50) ; poll every 50ms
+                     (watcher/rate 50)                      ; poll every 50ms
                      (watcher/file-filter (watcher/extensions :html))
                      (watcher/on-change reload-templates!))))

@@ -13,6 +13,7 @@
             [flatland.useful.map :refer [update update-each map-keys]]
 
 
+            [toshtogo.server.heartbeat.core :refer [start-monitoring!]]
             [toshtogo.server.util.middleware :refer :all]
             [toshtogo.server.persistence.protocol :refer :all]
             [toshtogo.server.api :refer :all]
@@ -198,6 +199,13 @@
            (GET "/jobs/:job-id" [job-id] (html-resource "job.html")))
 
 
+(defn start-heartbeat-monitor!
+  ([toshtogo-client]
+   (start-heartbeat-monitor! toshtogo-client 60))
+  ([toshtogo-client interval-seconds]
+   (println "start-heartbeat-monitor")
+   (start-monitoring! toshtogo-client interval-seconds)))
+
 (defn app [db & {:keys [debug logger-factory]
                  :or {debug false
                       logger-factory (constantly nil)}}]
@@ -210,6 +218,7 @@
         (wrap-clear-logs-before-handling) ; Only log events from the final retry
         (wrap-retry-on-exceptions 3 UniqueConstraintException)
         (wrap-logging-transaction logger-factory) ; Log events on DB commit. On exception, log exception event, including log event that didn't commit
+        log-request
         wrap-json-body
         wrap-body-hash
         wrap-json-response

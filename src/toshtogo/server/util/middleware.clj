@@ -133,7 +133,7 @@
 
 (defn log-request [handler]
   (fn [request]
-    (safe-log (:logger request) {:event_type :request :event_data (:body request)} )
+    (safe-log (:logger request) [{:event_type :request :event_data (:body request)}])
     (handler request)))
 
 (defn wrap-logging-transaction
