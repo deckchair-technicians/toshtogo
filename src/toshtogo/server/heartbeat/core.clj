@@ -75,4 +75,5 @@
   (.scheduleWithFixedDelay pool f interval-seconds interval-seconds TimeUnit/SECONDS))
 
 (defn start-monitoring! [toshtogo-client interval-seconds max-ttl]
+  (println "start-monitoring!")
   (schedule #(check-heartbeats! toshtogo-client max-ttl) interval-seconds))

@@ -203,8 +203,9 @@
   ([toshtogo-client]
    (start-heartbeat-monitor! toshtogo-client 60))
   ([toshtogo-client interval-seconds]
-   (println "start-heartbeat-monitor")
-   (start-monitoring! toshtogo-client interval-seconds)))
+   (start-heartbeat-monitor! toshtogo-client interval-seconds 60))
+  ([toshtogo-client interval-seconds max-ttl]
+   (start-monitoring! toshtogo-client interval-seconds max-ttl)))
 
 (defn app [db & {:keys [debug logger-factory]
                  :or {debug false
