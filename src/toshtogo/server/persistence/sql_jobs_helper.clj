@@ -1,6 +1,5 @@
 (ns toshtogo.server.persistence.sql-jobs-helper
   (:require [flatland.useful.map :as mp]
-            [pallet.map-merge :refer [merge-keys]]
             [clj-time.core :refer [now]]
             [clj-time.coerce :as tc]
             [honeysql.helpers :refer :all]

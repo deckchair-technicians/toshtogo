@@ -1,6 +1,5 @@
 (ns toshtogo.server.util.middleware
   (:require [clojure.java.jdbc :as sql]
-            [net.cgrand.enlive-html :as html]
             [schema.core :as sch]
             [clojure.stacktrace :refer [print-cause-trace]]
             [clojure.pprint :refer [pprint]]

@@ -3,7 +3,7 @@
            (java.util.concurrent ExecutionException))
   (:require [midje.sweet :refer :all]
             [flatland.useful.map :refer [into-map]]
-            [toshtogo.client.util :refer [throw-500 merge-dependency-results]]))
+            [toshtogo.client.util :refer [url-str throw-500 merge-dependency-results]]))
 
 (fact "throw-500 works"
       (throw-500 {:status 500}) => (throws SenderException)
@@ -32,3 +32,14 @@
                 :child_job_type (contains [{:dep0-value 0}
                                            {:dep1-value 1}
                                            {:dep2-value 2}])}))
+
+(fact "Url str can do basic url joining"
+
+      (let [base-url "http://www.google.com"]
+        (url-str base-url) => base-url
+        (url-str base-url "/foo") => (str base-url "/foo")
+        (url-str base-url "///foo") => (str base-url "/foo")
+        (url-str (str base-url "//") "//foo") => (str base-url "/foo")
+        (url-str base-url "/foo/" "/bar") => (str base-url "/foo/bar")
+
+        (url-str (str base-url "// ") " /foo " " ///bar ") => (str base-url "/foo/bar")))

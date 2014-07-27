@@ -87,3 +87,24 @@
      (if (= 404 (:status result#))
        nil
        result#)))
+
+(defn url-str
+  "Basic base-url to query joining. Returns a string"
+  [base-url & path-segments]
+  (str
+   (reduce
+    (fn [url segment]
+      (let [stripped-url (->> url
+                              (clojure.string/trim)
+                              (reverse)
+                              (drop-while #(= \/ %))
+                              (reverse)
+                              (apply str))
+
+            stripped-segment (->> segment
+                                  (clojure.string/trim)
+                                  (drop-while #(= \/ %))
+                                  (apply str))]
+        (str stripped-url "/" stripped-segment)))
+    base-url
+    path-segments)))

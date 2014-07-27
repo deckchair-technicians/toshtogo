@@ -1,15 +1,22 @@
 (ns toshtogo.client.senders.http-sender
   (:require [org.httpkit.client :as http]
-            [cemerick.url :refer [url]]
-            [clojure.string :as str]
-            [clojure.stacktrace :refer [print-cause-trace]]
+
+            [clojure
+             [string :as str]
+             [stacktrace :refer [print-cause-trace]]]
+
             [flatland.useful.map :refer [update]]
-            [toshtogo.util.json :as tjson]
-            [toshtogo.util.core :refer [debug]]
+
+            [toshtogo.util
+             [json :as tjson]
+             [core :refer [debug]]]
+
+            [toshtogo.client
+             [util :refer [url-str]]]
+
             [toshtogo.client.senders.protocol :refer :all])
-  (:import (java.io InputStream)
-           (java.lang Exception)
-           (java.util.concurrent ExecutionException))  )
+
+  (:import [java.io InputStream]))
 
 (defmulti ensure-str class)
 (defmethod ensure-str :default [x] (str x))
@@ -27,7 +34,7 @@
 
   (letfn [(url-of
             [location]
-            (str (url base-path location)))
+            (url-str base-path location))
 
           (url-and-body
             [location message]
