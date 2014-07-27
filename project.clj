@@ -12,6 +12,7 @@
                  [cheshire "5.3.0"]
                  [compojure "1.1.6"]
                  [ring/ring-jetty-adapter "1.2.1"]
+                 [ring-mock "0.1.5"]
                  [ring/ring-json "0.2.0"]
                  [http-kit "2.1.16"]
 
@@ -39,8 +40,7 @@
         toshtogo.client.BadRequestException]
 
   :profiles {:dev {:dependencies [[javax.servlet/servlet-api "2.5"]
-                                  [midje "1.6.2"]
-                                  [ring-mock "0.1.5"]]
+                                  [midje "1.6.2"]]
 
                    :plugins      [[lein-midje "3.1.0"]
                                   [lein-ring "0.8.8"]
