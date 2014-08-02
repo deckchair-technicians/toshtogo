@@ -4,38 +4,38 @@
             [toshtogo.client.protocol :refer :all]))
 
 (fact "Merging child jobs"
-      ((wrap-merge-dependency-results identity) {:request_body {:parent_field 1}
-                                         :dependencies [{:job_type    :child_job_1
-                                                         :result_body {:child_field_1 2}}
+  ((wrap-merge-dependency-results identity) {:request_body {:parent_field 1}
+                                             :dependencies [{:job_type    :child_job_1
+                                                             :result_body {:child_field_1 2}}
 
-                                                        {:job_type    :child_job_2
-                                                         :result_body {:child_field_2 3}}]})
-      => (contains {:request_body {:parent_field 1
-                                   :child_job_1  {:child_field_1 2}
-                                   :child_job_2  {:child_field_2 3}}})
+                                                            {:job_type    :child_job_2
+                                                             :result_body {:child_field_2 3}}]})
+  => (contains {:request_body {:parent_field 1
+                               :child_job_1  {:child_field_1 2}
+                               :child_job_2  {:child_field_2 3}}})
 
-      ((wrap-merge-dependency-results identity) {:request_body {:parent_field 1}
-                                         :dependencies []})
-      => {:request_body {:parent_field 1}
-          :dependencies []})
+  ((wrap-merge-dependency-results identity) {:request_body {:parent_field 1}
+                                             :dependencies []})
+  => {:request_body {:parent_field 1}
+      :dependencies []})
 
 (fact "Merging dependency results with no dependencies"
-      ((wrap-merge-dependency-results identity) {:request_body {:parent_field 1}
-                                         :dependencies []})
-      => {:request_body {:parent_field 1}
-          :dependencies []})
+  ((wrap-merge-dependency-results identity) {:request_body {:parent_field 1}
+                                             :dependencies []})
+  => {:request_body {:parent_field 1}
+      :dependencies []})
 
 (fact "Merging multiple dependency results of the same type"
-      ((wrap-merge-dependency-results identity :merge-multiple [:same_job_type])
-       {:request_body {:parent_field 1}
-        :dependencies [{:job_type    :same_job_type
-                        :result_body {:child_field_1 2}}
+  ((wrap-merge-dependency-results identity :merge-multiple [:same_job_type])
+   {:request_body {:parent_field 1}
+    :dependencies [{:job_type    :same_job_type
+                    :result_body {:child_field_1 2}}
 
-                       {:job_type    :same_job_type
-                        :result_body {:child_field_2 3}}]})
-      => (contains {:request_body {:parent_field 1
-                                   :same_job_type [{:child_field_1 2}
-                                                   {:child_field_2 3}]}}))
+                   {:job_type    :same_job_type
+                    :result_body {:child_field_2 3}}]})
+  => (contains {:request_body {:parent_field  1
+                               :same_job_type [{:child_field_1 2}
+                                               {:child_field_2 3}]}}))
 
 (fact "Adding missing dependencies"
       (let [dependency-builders [[:child_1_type #(job-req {:child_1_field (:parent_field %)} :child_1_type)]
