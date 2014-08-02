@@ -8,26 +8,27 @@
             [honeysql.format :as hsf]
             [honeysql.core :as hsc]
             [honeysql.helpers :refer :all]
-            [toshtogo.util.core :refer [ppstr]]
-            )
+            [toshtogo.util
+             [core :refer [ppstr]]
+             [json :as json]]
+            [toshtogo.server.util.sql :refer [clj->sql]])
   (:import [java.sql Timestamp BatchUpdateException]
            [org.joda.time DateTime]
-           [clojure.lang Keyword]))
+           [clojure.lang Keyword]
+           [org.postgresql.util PGobject]))
 
-
-(defmulti fix-type-> class)
-(defmethod fix-type-> DateTime [v] (to-timestamp v))
-(defmethod fix-type-> Keyword [v] (name v))
-(defmethod fix-type-> :default [v] v)
-
-(defmulti fix-type<- class)
-(defmethod fix-type<- Timestamp [v] (from-sql-date v))
-(defmethod fix-type<- :default [v] v)
+(defmulti sql->clj class)
+(defmethod sql->clj Timestamp [v] (from-sql-date v))
+(defmethod sql->clj PGobject [o]
+  (if (= "json" (.getType o))
+    (json/decode (.getValue o))
+    (keyword (.getValue o))))
+(defmethod sql->clj :default [v] v)
 
 (defn flatten-data [columns data]
   (->> data
        (map #(map (fn [column] (column %)) columns))
-       (map #(map fix-type-> %))))
+       (map #(map clj->sql %))))
 
 (defn- query* [cnxn sql-params]
   (try
@@ -38,9 +39,9 @@
 (defn query
       "sql-map is a honey-sql query map"
   [cnxn sql-map & {:keys [params]}]
-  (let [sql-params (map fix-type-> (hsf/format sql-map :params params))]
+  (let [sql-params (map clj->sql (hsf/format sql-map :params params))]
     (->> (query* cnxn sql-params)
-         (map (fn [record] (mp/map-vals record fix-type<-))))))
+         (map (fn [record] (mp/map-vals record sql->clj))))))
 
 (defn single
       "sql-map is a honey-sql query map"
