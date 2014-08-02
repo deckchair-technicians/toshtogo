@@ -1,5 +1,6 @@
 (ns toshtogo.client.middleware
   (:require [clojure.pprint :refer [pprint]]
+            [flatland.useful.map :refer [update]]
             [toshtogo.client.util :refer [merge-dependency-results]]
             [toshtogo.client.protocol :refer :all]))
 
@@ -56,3 +57,19 @@
 (defn wrap-extract-request [handler]
   (fn [job]
     (handler (:request_body job))))
+
+(defn wrap-map-request [handler f]
+  (fn [request]
+    (handler (f request))))
+
+(defn wrap-map-result [handler f]
+  (fn [job]
+    (let [resp (handler job)]
+      (if (= :success (:outcome resp))
+        (update resp :result f)
+        resp))))
+
+(defn wrap-mapping [handler request-fn result-fn]
+  (-> handler
+      (wrap-map-request request-fn)
+      (wrap-map-result result-fn)))
