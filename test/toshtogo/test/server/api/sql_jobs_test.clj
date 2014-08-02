@@ -8,6 +8,7 @@
             [toshtogo.server.core :refer [dev-db]]
             [toshtogo.util.core :refer [uuid uuid-str debug]]
             [toshtogo.client.util :as util]
+            [toshtogo.client.protocol :refer [success add-dependencies]]
             [toshtogo.test.functional.test-support :refer :all]
             [toshtogo.server.api :refer :all]))
 

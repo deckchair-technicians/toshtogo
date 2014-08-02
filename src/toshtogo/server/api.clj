@@ -6,6 +6,7 @@
             [flatland.useful.map :refer [update]]
             [toshtogo.util.json :as json]
             [toshtogo.util.core :refer [assoc-not-nil uuid ppstr debug]]
+            [toshtogo.client.protocol :refer [cancelled]]
             [toshtogo.server.logging :refer :all]
             [toshtogo.server.persistence.protocol :as pers]
             [toshtogo.server.preprocessing :refer [normalise-job-tree replace-fungible-jobs-with-existing-job-ids collect-dependencies collect-new-jobs]])
@@ -174,10 +175,10 @@
         (when (= :waiting (:outcome job))
           (let [commitment-id (uuid)]
             (pers/insert-commitment! persistence commitment-id (job :contract_id) agent-details)
-            (complete-work! this commitment-id (pers/cancelled))))
+            (complete-work! this commitment-id (cancelled))))
 
         (when (= :running (:outcome job))
-          (complete-work! this (:commitment_id job) (pers/cancelled))))
+          (complete-work! this (:commitment_id job) (cancelled))))
 
       (doseq [dependency (pers/get-jobs persistence {:dependency_of_job_id job-id})]
         (pause-job! this (dependency :job_id))))))

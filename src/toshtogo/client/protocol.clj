@@ -1,7 +1,38 @@
 (ns toshtogo.client.protocol
-  (:require [flatland.useful.map :refer [update]]
-            [toshtogo.util.core :refer [debug uuid cause-trace assoc-not-nil ensure-seq]]
-            [toshtogo.server.persistence.protocol :as server-protocol]))
+  (:require [clj-time.core :refer [now]]
+            [flatland.useful.map :refer [update]]
+            [toshtogo.util.core :refer [debug uuid cause-trace assoc-not-nil ensure-seq]]))
+
+(defn success [response-body]
+  {:outcome :success
+   :result  response-body})
+
+(defn error [error-text]
+  {:outcome :error
+   :error   error-text})
+
+(defn cancelled []
+  {:outcome :cancelled})
+
+(defn add-dependencies
+  "Dependency can either be a (job-req) or the :job_id of an existing job"
+  [dependency & dependencies]
+  (let [all-deps (concat [dependency] dependencies)
+        new-job-dependencies (filter map? all-deps)
+        existing-job-dependencies (filter (comp not map?) all-deps)]
+    (cond-> {:outcome :more-work}
+            (not (empty? new-job-dependencies)) (assoc :dependencies new-job-dependencies)
+            (not (empty? existing-job-dependencies)) (assoc :existing_job_dependencies existing-job-dependencies))))
+
+(defn try-later
+  ([]
+   (try-later (now)))
+  ([contract-due]
+   {:outcome       :try-later
+    :contract_due contract-due})
+  ([contract-due error-text]
+   (assoc (try-later contract-due)
+     :error error-text)))
 
 (defn job-req
   ([body job-type & {:keys [dependencies notes tags]}]
@@ -37,12 +68,6 @@
 
 (defn with-tags [job-req tags]
   (assoc job-req :tags tags))
-
-(def success server-protocol/success)
-(def error server-protocol/error)
-(def cancelled server-protocol/cancelled)
-(def add-dependencies server-protocol/add-dependencies)
-(def try-later server-protocol/try-later)
 
 (defprotocol Client
   (put-job! [this job-id job-req])

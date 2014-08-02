@@ -5,8 +5,10 @@
             [toshtogo.util.core :refer [uuid uuid-str debug]]
             [toshtogo.test.server.api.util :refer [job-req]]
             [toshtogo.server.core :refer [dev-db]]
-            [toshtogo.client.util :as util]
-            [toshtogo.server.persistence.protocol :refer [success get-job get-contracts contract-req]]
+            [toshtogo.client
+             [protocol :refer [success]]
+             [util :as util]]
+            [toshtogo.server.persistence.protocol :refer [contract-req get-job get-contracts ]]
             [toshtogo.server.api :refer :all]
             [toshtogo.test.functional.test-support :refer :all]))
 
