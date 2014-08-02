@@ -169,6 +169,10 @@
                                       (update :contract_due parse-datetime)
                                       (update :existing_job_dependencies (fn [dep-job-id] (map uuid dep-job-id)))
                                       (update :dependencies (fn [deps] (map normalise-job-req deps)))
+                                      ; Convert error strings into maps
+                                      (update :error (fn [e] (if (string? e)
+                                                               {:stacktrace e}
+                                                               e)))
                                       (validated JobResult)))
                   (commitment-redirect commitment-id))
              #(commitment-redirect commitment-id))))

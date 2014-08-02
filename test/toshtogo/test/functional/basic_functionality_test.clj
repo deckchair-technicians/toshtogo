@@ -76,14 +76,17 @@
 
           (put-job! client job-id (job-req {:a-field "field value"} job-type))
 
-          (let [{:keys [contract result]} @(do-work! client job-type return-error)]
+          (let [{:keys [contract result]} @(do-work! client job-type
+                                                     (constantly (error {:message "something went wrong"})))]
             contract
             => (matches {:job_id job-id :request_body {:a-field "field value"}})
             result
-            => (matches {:outcome :error :error "something went wrong"}))
+            => (matches {:outcome :error
+                         :error {:message "something went wrong"}}))
 
           (get-job client job-id)
-          => (matches {:outcome :error :error "something went wrong"})))
+          => (matches {:outcome :error
+                       :error {:message "something went wrong"}})))
 
   (facts "Agent can schedule a job to start later"
          (when (= :app (:type client-config))
@@ -149,10 +152,14 @@
             contract
             => (matches {:job_id job-id :request_body {:a-field "field value"}})
             result
-            => (matches {:outcome :error :error #"WTF"}))
+            => (matches {:outcome :error
+                         :error   {:message    #"WTF"
+                                   :stacktrace #"WTF"}}))
 
           (get-job client job-id)
-          => (matches {:outcome :error :error #"WTF"})))
+          => (matches {:outcome :error
+                       :error   {:message    #"WTF"
+                                 :stacktrace #"WTF"}})))
 
   (facts "Heartbeats get stored, but only if they are more recent than the current heartbeat."
          (let [job-id (uuid)

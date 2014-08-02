@@ -9,7 +9,7 @@
             [toshtogo.server.util.idempotentput :refer [check-idempotent!]]
             [toshtogo.server.persistence.sql :refer [sql-persistence]]
             [toshtogo.server.api :refer [api]]
-            [toshtogo.server.util.sql :refer [with-exception-conversion]]
+            [toshtogo.server.util.sql :refer [with-exception-conversion execute!]]
             [toshtogo.server.logging :refer [error-event safe-log]]
             [toshtogo.server.validation :refer [validated Agent]]
 

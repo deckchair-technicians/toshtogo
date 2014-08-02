@@ -96,7 +96,7 @@
                                       (while (not (realized? (:shutdown-promise job)))
                                         ; keep spinning
                                         )
-                                      (error "shutdown-promise triggered"))
+                                      (error {:message "shutdown-promise triggered"}))
           service (start-service (job-consumer
                                   (constantly client)
                                   job-type
@@ -115,7 +115,8 @@
       (stop service)
 
       (get-job client job-id)
-      => (contains {:outcome :error :error "shutdown-promise triggered"})))
+      => (contains {:outcome :error
+                    :error   {:message "shutdown-promise triggered"}})))
 
   (fact "Stopping the service twice does not throw an exception"
     (let [service (start-service (job-consumer

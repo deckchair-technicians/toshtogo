@@ -17,7 +17,7 @@
          (let [commitment (do-work! client job-type (fn [job]
                                                       (deliver commitment-id (job :commitment_id))
                                                       (Thread/sleep 10000)
-                                                      (error "Should never return")))]
+                                                      (error {:message "Should never return"})))]
            (future-done? commitment) => falsey
 
            (heartbeat! client @commitment-id)

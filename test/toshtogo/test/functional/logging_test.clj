@@ -67,7 +67,7 @@
 
   (let [job-id (uuid)]
     (put-job! log-client job-id (job-req {} (uuid-str))) => truthy
-    @(do-work! log-client {:job_id job-id} return-error)
+    @(do-work! log-client {:job_id job-id} (constantly (error "something went wrong")))
     => truthy
 
     (fact "Job errors are logged"
@@ -75,7 +75,7 @@
           => (matches (contains-items [{:event_type :commitment_result
                                         :event_data {:job_id job-id
                                                      :result {:outcome :error
-                                                              :error   "something went wrong"}}}]))))
+                                                              :error   {:stacktrace "something went wrong"}}}}]))))
 
   (let [job-id (uuid)]
     (put-job! log-client job-id (job-req {} (uuid-str))) => truthy
@@ -94,4 +94,4 @@
                                  {:event_type :commitment_result
                                   :event_data {:job_id job-id
                                                :result {:outcome :error
-                                                        :error   (contains-string "not_valid_response")}}}])))))
+                                                        :error   {:stacktrace (contains-string "not_valid_response")}}}}])))))

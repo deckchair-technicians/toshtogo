@@ -57,7 +57,8 @@
         result => truthy
 
         (get-job non-error-logging-client job-id)
-        => (matches {:error (sch/both #"not-a" #"valid response")})))
+        => (matches {:error {:message #"Problem sending result"
+                             :result {:not-a "valid response"}}})))
 
 
 (fact "Idempotency exceptions are marked as client errors"

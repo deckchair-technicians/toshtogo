@@ -49,7 +49,7 @@ function loadAndDisplayJob(): void
             if (job.result_body) {
                 response.JSONView(job.result_body);
             } else if (job.error) {
-                response.append("<textarea>" + job.error + "</textarea>");
+                response.JSONView(job.error);
             }
         }
     );

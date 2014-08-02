@@ -87,13 +87,14 @@
     (try
       (func contract)
       (catch Throwable t
-        (error (cause-trace t))))))
+        (error {:message    (.getMessage t)
+                :stacktrace (cause-trace t)})))))
 
 (defn do-work! [client job-type-or-query func]
   (future
     (when-let [contract (request-work! client job-type-or-query)]
       (let [commitment-id (contract :commitment_id)
-             heartbeat-fn! #(heartbeat! client commitment-id)
+            heartbeat-fn! #(heartbeat! client commitment-id)
             wrapped-fn (-> func
                            (wrap-heartbeating heartbeat-fn!)
                            (wrap-exception-handling))
@@ -105,7 +106,13 @@
             (complete-work! client commitment-id result)
 
             (catch Throwable t
-              (complete-work! client commitment-id (error (str "Problem sending result:\n" result
-                                                               "\nException:\n" (cause-trace t)) )))))
+              (try
+                (complete-work! client commitment-id
+                                (error {:message    (str "Problem sending result " (.getMessage t))
+                                        :result     result
+                                        :stacktrace (cause-trace t)}))
+                (catch Throwable t
+                  (clojure.stacktrace/print-cause-trace t)
+                  (throw t))))))
         {:contract contract
          :result   result}))))
