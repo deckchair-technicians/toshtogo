@@ -75,10 +75,6 @@
 
      service)))
 
-(defn wrap-assoc [handler key val & keyvals]
-  (fn [job]
-    (handler (apply assoc job key val keyvals))))
-
 (defn per-thread-singleton
       "Stolen from clojure.contrib.
 
@@ -124,7 +120,7 @@
         (fn [shutdown-promise]
           (let [client (per-thread-client-factory)
                 outcome (when-not (empty? (:data (get-jobs client query)))
-                          @(do-work! client query (-> handler
-                                                      (wrap-assoc :shutdown-promise shutdown-promise))))]
+                          @(do-work! client query (fn [job]
+                                                    (handler (assoc job :shutdown-promise shutdown-promise)))))]
             (when-not outcome
               (Thread/sleep sleep-on-no-work-ms))))))
