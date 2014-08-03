@@ -29,7 +29,10 @@
   (apply ttc/client
          (or (:client-config opts) client-config)
          (->> opts
-             (merge {:error-fn (fn [e] (pprint (cause-trace e)))
+             (merge {:error-fn (fn [e]
+                                 (println)
+                                 (println "Client threw exception")
+                                 (pprint (cause-trace e)))
                      :debug    false
                      :timeout  1000
                      :system   "tests"
