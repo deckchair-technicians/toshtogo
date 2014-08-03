@@ -191,19 +191,16 @@
                                  (.getMessage original-exception))
                 :stacktrace (cause-trace original-exception)})))))
 
-(defn do-work! [client job-type-or-query func]
+(defn do-work! [client job-type-or-query handler-fn]
   (future
     (when-let [contract (request-work! client job-type-or-query)]
       (let [commitment-id (contract :commitment_id)
             heartbeat-fn! #(heartbeat! client commitment-id)
-            wrapped-fn (-> func
+            wrapped-fn (-> handler-fn
                            (wrap-heartbeating heartbeat-fn!)
                            (wrap-exception-handling))
             ; This may take some time to return
             result (wrapped-fn contract)
-            result (if (= :cancelled (result :outcome))
-                     ; No need to submit cancelled result to server- server already knows
-                     result
-                     (safely-submit-result! client commitment-id result))]
+            result (safely-submit-result! client commitment-id result)]
         {:contract contract
          :result   result}))))

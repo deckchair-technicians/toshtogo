@@ -5,8 +5,10 @@
             [clj-time.core :refer [now minutes seconds millis plus minus after? interval within?]]
             [ring.adapter.jetty :refer [run-jetty]]
             [clojure.java.jdbc :as sql]
-            [toshtogo.client.core :as ttc]
-            [toshtogo.client.protocol :refer :all]
+            [toshtogo.client
+             [agent :refer [job-consumer]]
+             [core :as ttc]
+             [protocol :refer :all]]
             [toshtogo.util.core :refer [uuid uuid-str debug]]
             [schema.core :as sch]
             [toshtogo.test.midje-schema :refer :all]
@@ -26,8 +28,32 @@
      (catch Exception e#
        (throw (lift e#))))             )
 
+(defn handle [request]
+  (assoc request :something "abc"))
+
+(defn handler [dependency]
+  (-> handle
+      ; some wrapping
+      ))
+
 ; NB: don't use a client that logs to the console on error, or this will be a mess.
 (let [client-no-logging (test-client :error-fn (constantly nil) :debug false)]
+  (fact "accidentally passing job-consumer the handler builder instead of the handler results in an error response being
+  sent to toshtogo, rather than a client-side error (test case from real world use)"
+    (let [job-type (uuid-str)
+          job-id (uuid)
+          consumer (job-consumer (constantly client-no-logging)
+                                 job-type
+                                 handler)]
+
+      (put-job! client-no-logging job-id (job-req {:a-field "field value"} job-type))
+
+      (consumer nil)
+
+      (:error (get-job client-no-logging job-id))
+      => (matches {:message             #"Problem sending result. Result cannot be json encoded."
+                   :original_result_str String})))
+
   (fact "Sending an invalid job results in client exception (i.e. does not get stuck in retry loop)"
     (lift-exceptions (put-job! client-no-logging (uuid) {:not "a job"}))
     => (throws BadRequestException))
