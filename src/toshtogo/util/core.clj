@@ -179,3 +179,22 @@
    :message    (.getMessage e)
    :class      (.getName (class e))
    :ex_data    (ex-data e)})
+
+(defn handle-exception
+  "Returns a function which, on exception in root-fn, passes the exception and original arguments to each handler in turn.
+
+  If root-fn is (fn [a b c]), handlers must be (fn [exception-from-root-fn a b c]).
+
+  Returns the result of the first success, or throws the exception from the last handler."
+  [root-fn & handlers]
+  (reduce (fn [func handler]
+            (fn [& args]
+              (try
+                (apply func args)
+                (catch Throwable root-fn-exception
+                  (try
+                    (apply handler root-fn-exception args)
+                    (catch Throwable always-handle-root-fn-exception
+                      (throw root-fn-exception)))))))
+          root-fn
+          handlers))

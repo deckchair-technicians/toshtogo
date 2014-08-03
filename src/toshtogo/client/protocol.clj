@@ -3,7 +3,7 @@
   (:require [clojure.set :refer [rename-keys]]
             [clj-time.core :refer [now]]
             [flatland.useful.map :refer [update]]
-            [toshtogo.util.core :refer [ppstr debug uuid cause-trace assoc-not-nil ensure-seq]]))
+            [toshtogo.util.core :refer [ppstr debug uuid cause-trace assoc-not-nil ensure-seq handle-exception]]))
 
 (defn success [response-body]
   {:outcome :success
@@ -126,25 +126,6 @@
       (catch Throwable t
         (error (->error-response t))))))
 
-(defn first-success
-  "Returns a function which, on exception in root-fn, passes the exception and original arguments to each handler in turn.
-
-  If root-fn is (fn [a b c]), handlers must be (fn [exception-from-root-fn a b c]).
-
-  Returns the result of the first success, or throws the exception from the last handler."
-  [root-fn & handlers]
-  (reduce (fn [func handler]
-            (fn [& args]
-              (try
-                (apply func args)
-                (catch Throwable root-fn-exception
-                  (try
-                    (apply handler root-fn-exception args)
-                    (catch Throwable always-handle-root-fn-exception
-                      (throw root-fn-exception)))))))
-          root-fn
-          handlers))
-
 (defn complete-work-return-result! [client commitment-id result]
   (complete-work! client commitment-id result)
   result)
@@ -152,7 +133,7 @@
 (def safely-submit-result!
   "Catches exceptions when delivering a result back to the server (for example if the response is
    malformed). Makes heroic efforts to report as much context as possible."
-  (first-success
+  (handle-exception
     ; Try to send result
     (fn [client commitment-id result]
       (complete-work-return-result! client commitment-id result))
