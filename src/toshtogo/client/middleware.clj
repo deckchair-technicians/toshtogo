@@ -1,6 +1,8 @@
 (ns toshtogo.client.middleware
   (:require [clojure.pprint :refer [pprint]]
+            [org.httpkit.client :as http]
             [flatland.useful.map :refer [update]]
+            [toshtogo.util.json :as json]
             [toshtogo.client.util :refer [merge-dependency-results]]
             [toshtogo.client.protocol :refer :all]))
 
@@ -79,3 +81,55 @@
   (-> handler
       (wrap-map-request request-fn)
       (wrap-map-result result-fn)))
+
+(def is-redirect? #{301 302 303})
+
+(defn extract-location [response]
+  (assoc response :location (get-in response [:headers "location"])))
+
+(defn parse-response [response]
+  (let [content-type (get-in response [:headers :content-type])]
+    (if (and content-type (.startsWith content-type "application/json"))
+      (update response :body json/decode)
+      response)))
+
+(defn http-kit-request [request]
+  (http/request request nil))
+
+(defn encode-body [request]
+  (update request :body #(if (map? %)
+                          (json/encode %)
+                          %)))
+
+(defn wrap-http-request
+  "Wraps a toshtogo handler that returns an http request, executing the request
+
+   If request :body is a map, it will be json encoded and content-type will be set.
+
+   If the response status isn't as expected, (>= 399 % 200) by default, throws ExceptionInfo
+   with ex-data containing a helpful map of the request and response.
+
+  If the response succeeds, returns a map with request [:url :method :body :query-params :form-params]
+  and the full response."
+  [handler & {:keys [acceptable-response? client]
+              :or   {acceptable-response? #(>= 399 (:status %) 200)
+                     client          http-kit-request}}]
+  (fn [request]
+    (let [http-request (-> (handler request)
+                           (encode-body))
+          http-response (-> (client http-request)
+                            (deref)
+                            (extract-location)
+                            (parse-response)
+                            (select-keys [:status :body :headers]))
+          result {:request  (select-keys http-request [:url :method :body :query-params :form-params])
+                  :response http-response}]
+
+      (if (acceptable-response? http-response)
+        (success result)
+
+        (throw (ex-info (str "Response status from "
+                             (:method http-request) " " (:url http-request)
+                             " was " (:status http-response)
+                             " body " (with-out-str (clojure.pprint/pprint (:body http-response))))
+                        result))))))
