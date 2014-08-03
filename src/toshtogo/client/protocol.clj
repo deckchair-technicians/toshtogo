@@ -1,7 +1,9 @@
 (ns toshtogo.client.protocol
-  (:require [clj-time.core :refer [now]]
+  (:import [java.util.concurrent ExecutionException])
+  (:require [clojure.set :refer [rename-keys]]
+            [clj-time.core :refer [now]]
             [flatland.useful.map :refer [update]]
-            [toshtogo.util.core :refer [debug uuid cause-trace assoc-not-nil ensure-seq]]))
+            [toshtogo.util.core :refer [ppstr debug uuid cause-trace assoc-not-nil ensure-seq]]))
 
 (defn success [response-body]
   {:outcome :success
@@ -28,7 +30,7 @@
   ([]
    (try-later (now)))
   ([contract-due]
-   {:outcome       :try-later
+   {:outcome      :try-later
     :contract_due contract-due})
   ([contract-due error-text]
    (assoc (try-later contract-due)
@@ -106,14 +108,88 @@
         (cancelled)
         @work-future))))
 
+
+(defn ->error-response [e]
+  (let [ed (if (instance? ExecutionException e)
+             (ex-data (.getCause e))
+             (ex-data e))]
+    (merge
+      {:message    (.getMessage e)
+       :stacktrace (cause-trace e)}
+      (when ed {:ex_data ed}))))
+
 (defn wrap-exception-handling
   [func]
   (fn [contract]
     (try
       (func contract)
       (catch Throwable t
-        (error {:message    (.getMessage t)
-                :stacktrace (cause-trace t)})))))
+        (error (->error-response t))))))
+
+(defn first-success
+  "Returns a function which, on exception in root-fn, passes the exception and original arguments to each handler in turn.
+
+  If root-fn is (fn [a b c]), handlers must be (fn [exception-from-root-fn a b c]).
+
+  Returns the result of the first success, or throws the exception from the last handler."
+  [root-fn & handlers]
+  (reduce (fn [func handler]
+            (fn [& args]
+              (try
+                (apply func args)
+                (catch Throwable root-fn-exception
+                  (try
+                    (apply handler root-fn-exception args)
+                    (catch Throwable always-handle-root-fn-exception
+                      (throw root-fn-exception)))))))
+          root-fn
+          handlers))
+
+(defn complete-work-return-result! [client commitment-id result]
+  (complete-work! client commitment-id result)
+  result)
+
+(def safely-submit-result!
+  "Catches exceptions when delivering a result back to the server (for example if the response is
+   malformed). Makes heroic efforts to report as much context as possible."
+  (first-success
+    ; Try to send result
+    (fn [client commitment-id result]
+      (complete-work-return-result! client commitment-id result))
+
+    ; If we can't, send an error response including the exception and the original result we were sending
+    (fn [original-exception client commitment-id result]
+      (complete-work-return-result!
+        client commitment-id
+        (error (merge (->error-response original-exception)
+                      {:message (str "Problem sending result " (.getMessage original-exception))
+                       :original_result  result}))))
+
+    ; If that doesn't work, try stringifying the result in case it's a json serialisation problem
+    (fn [original-exception client commitment-id result]
+      (complete-work-return-result!
+        client commitment-id
+        (error (-> (->error-response original-exception)
+                   (assoc :message (str "Problem sending result. Result cannot be json encoded. " (.getMessage original-exception)))
+                   (assoc :original_result_str (ppstr result))))))
+
+    ; Or... is the ex-data the problem?
+    (fn [original-exception client commitment-id result]
+      (complete-work-return-result!
+        client commitment-id
+        (error (-> (->error-response original-exception)
+                   (assoc :message (str "Problem sending result. Either result or ex-data cannot be json encoded. " (.getMessage original-exception)))
+                   (assoc :original_result_str (ppstr result))
+                   (update :ex_data ppstr)
+                   (rename-keys {:ex_data :ex_data_str})))))
+
+    ; Give up....
+    (fn [original-exception client commitment-id result]
+      (complete-work-return-result!
+        client commitment-id
+        (error {:message    (str "Catastrophic problems sending result.  "
+                                 (.getMessage original-exception))
+                :stacktrace (cause-trace original-exception)})))))
 
 (defn do-work! [client job-type-or-query func]
   (future
@@ -124,20 +200,10 @@
                            (wrap-heartbeating heartbeat-fn!)
                            (wrap-exception-handling))
             ; This may take some time to return
-            result (wrapped-fn contract)]
-
-        (when (not (= :cancelled (result :outcome)))
-          (try
-            (complete-work! client commitment-id result)
-
-            (catch Throwable t
-              (try
-                (complete-work! client commitment-id
-                                (error {:message    (str "Problem sending result " (.getMessage t))
-                                        :result     result
-                                        :stacktrace (cause-trace t)}))
-                (catch Throwable t
-                  (clojure.stacktrace/print-cause-trace t)
-                  (throw t))))))
+            result (wrapped-fn contract)
+            result (if (= :cancelled (result :outcome))
+                     ; No need to submit cancelled result to server- server already knows
+                     result
+                     (safely-submit-result! client commitment-id result))]
         {:contract contract
          :result   result}))))
