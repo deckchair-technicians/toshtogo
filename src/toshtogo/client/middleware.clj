@@ -98,9 +98,11 @@
   (http/request request nil))
 
 (defn encode-body [request]
-  (update request :body #(if (map? %)
-                          (json/encode %)
-                          %)))
+  (if (map? (:body request))
+    (-> request
+        (update :body json/encode)
+        (update :headers #(assoc % "Content-Type" "application/json")))
+    request))
 
 (defn wrap-http-request
   "Wraps a toshtogo handler that returns an http request, executing the request
