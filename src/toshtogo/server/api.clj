@@ -48,10 +48,10 @@
 (defn api [persistence logger agent-details]
   (reify Api
     (new-contract! [_ contract-req]
-      (let [job-id (contract-req :job_id)
+      (let [job-id (:job_id contract-req)
             contract-due (or (:contract_due contract-req) (minus (now) (seconds 5)))
             last-contract (pers/get-contract persistence {:job_id job-id :latest_contract true})
-            new-contract-ordinal (if last-contract (inc (last-contract :contract_number)) 1)
+            new-contract-ordinal (if last-contract (inc (:contract_number last-contract)) 1)
             last-contract-outcome (:outcome last-contract)]
 
         (case last-contract-outcome
@@ -77,7 +77,7 @@
 
         (pers/insert-jobs! persistence job-records)
         (doseq [job jobs]
-          (new-contract! this (pers/contract-req (job :job_id) (job :contract_due))))))
+          (new-contract! this (pers/contract-req (:job_id job) (:contract_due job))))))
 
     (new-dependencies!
       [this parent-job-or-contract]
@@ -106,7 +106,7 @@
         (new-dependencies! this job)))
 
     (process-result! [this contract result]
-      (let [job-id (contract :job_id)]
+      (let [job-id (:job_id contract)]
         (case (:outcome result)
           :success
           nil
@@ -120,11 +120,11 @@
             (new-dependencies!
               this
               (-> contract
-                  (assoc :dependencies (result :dependencies))
-                  (assoc :existing_job_dependencies (result :existing_job_dependencies)))))
+                  (assoc :dependencies (:dependencies result))
+                  (assoc :existing_job_dependencies (:existing_job_dependencies result)))))
 
           :try-later
-          (new-contract! this (pers/contract-req job-id (result :contract_due)))
+          (new-contract! this (pers/contract-req job-id (:contract_due result)))
 
           :error
           nil
@@ -154,7 +154,7 @@
 
         (assert contract (str "Could not find commitment '" commitment-id "'"))
 
-        (case (contract :outcome)
+        (case (:outcome contract)
           :running
           (do
             (log logger (commitment-result-event contract agent-details result))
@@ -164,7 +164,7 @@
           :cancelled
           nil
 
-          (throw (IllegalStateException. (str "Contract in state '" (name (contract :outcome)) "' is not expecting a result. Contract\n" (ppstr contract) "\nResult:\n" (ppstr result)))))
+          (throw (IllegalStateException. (str "Contract in state '" (name (:outcome contract)) "' is not expecting a result. Contract\n" (ppstr contract) "\nResult:\n" (ppstr result)))))
 
         nil))
 
@@ -174,11 +174,11 @@
 
         (when (= :waiting (:outcome job))
           (let [commitment-id (uuid)]
-            (pers/insert-commitment! persistence commitment-id (job :contract_id) agent-details)
+            (pers/insert-commitment! persistence commitment-id (:contract_id job) agent-details)
             (complete-work! this commitment-id (cancelled))))
 
         (when (= :running (:outcome job))
           (complete-work! this (:commitment_id job) (cancelled))))
 
       (doseq [dependency (pers/get-jobs persistence {:dependency_of_job_id job-id})]
-        (pause-job! this (dependency :job_id))))))
+        (pause-job! this (:job_id dependency))))))
