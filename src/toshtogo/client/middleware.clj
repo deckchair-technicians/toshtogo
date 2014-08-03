@@ -54,6 +54,12 @@
       (println)
       response)))
 
+(defn wrap-assoc
+  "assocs keys and values onto the job/request and passes it down to handler"
+  [handler key val & keyvals]
+  (fn [job]
+    (handler (apply assoc job key val keyvals))))
+
 (defn wrap-extract-request [handler]
   (fn [job]
     (handler (:request_body job))))
