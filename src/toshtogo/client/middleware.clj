@@ -37,11 +37,12 @@
   will return an add-dependencies result with a list of job-reqs\n
   built by calling (dependency-fn (job :request_body)"
 
-  [handler dependency-builders]
-  (fn [job]
-    (if-let [missing-dependency-jobs (missing-dependencies (job :request_body) dependency-builders)]
+  [handler dependency-builders & {:keys [request-mapper]
+                                  :or {request-mapper :request_body}}]
+  (fn [job-or-request]
+    (if-let [missing-dependency-jobs (missing-dependencies (request-mapper job-or-request) dependency-builders)]
       (apply add-dependencies missing-dependency-jobs)
-      (handler job))))
+      (handler job-or-request))))
 
 (defn wrap-print-job [handler]
   (fn [job]
