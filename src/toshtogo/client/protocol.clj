@@ -108,7 +108,6 @@
         (cancelled)
         @work-future))))
 
-
 (defn ->error-response [e]
   (let [ed (if (instance? ExecutionException e)
              (ex-data (.getCause e))
@@ -119,10 +118,10 @@
       (when ed {:ex_data ed}))))
 
 (defn wrap-exception-handling
-  [func]
-  (fn [contract]
+  [handler]
+  (fn [job]
     (try
-      (func contract)
+      (handler job)
       (catch Throwable t
         (error (->error-response t))))))
 
