@@ -1,6 +1,5 @@
 (ns toshtogo.test.client.middleware-test
   (:require [midje.sweet :refer :all]
-            [org.httpkit.server :refer [run-server]]
             [flatland.useful.map :refer [update map-keys]]
             [toshtogo.util.json :as json]
             [toshtogo.test.midje-schema :refer :all]
@@ -60,49 +59,3 @@
     => {:outcome :success
         :result  {:parent_result 123}}
     ))
-
-(fact "wrap-http-request"
-  (let [echo-body (fn [{body :body}]
-                    (update (json/decode body) :headers #(map-keys % name)))
-        stop (run-server echo-body {:port 4455})]
-    (try
-      (let [wrapped-handler (-> identity
-                                (wrap-http-request))]
-
-        (fact "decodes json responses"
-          (wrapped-handler {:url    "http://localhost:4455"
-                            :method :get
-                            :body   (json/encode {:status  200
-                                                  :headers {"Content-Type" "application/json; "}
-                                                  :body    (json/encode {:a 123})})})
-          => (matches {:outcome :success
-                       :result  {:response {:body {:a 123}}}}))
-
-        (fact "keywordises headers"
-          (wrapped-handler {:url    "http://localhost:4455"
-                            :method :get
-                            :body   (json/encode {:status  200
-                                                  :headers {"Content-Type" "application/json;"}})})
-          => (matches {:outcome :success
-                       :result  {:response {:headers {:content-type "application/json;"}}}}))
-
-        (fact "encodes request body as json if it is a map"
-          (wrapped-handler {:url  "http://localhost:4455"
-                            :body {:status  200
-                                   :headers {"Content-Type" "application/json; "}
-                                   :body    (json/encode {:a 123})}})
-          => (matches {:outcome :success
-                       :result  {:response {:body {:a 123}}}}))
-
-        (fact "throws useful exception if response isn't acceptable"
-          (let [handler (-> identity
-                            (wrap-http-request :client (http-client :acceptable-response? (constantly false)))
-                            (wrap-exception-handling))]
-            (handler {:url  "http://localhost:4455"
-                      :body {:status  200
-                             :headers {"Content-Type" "application/json; "}
-                             :body    (json/encode {:a 123})}})
-            => (matches {:outcome :error
-                         :error   {:ex_data {:response {:body {:a 123}}}}}))))
-      (finally
-        (stop)))))
