@@ -38,7 +38,7 @@
   built by calling (dependency-fn (job :request_body)"
 
   [handler dependency-builders & {:keys [request-mapper]
-                                  :or {request-mapper :request_body}}]
+                                  :or   {request-mapper :request_body}}]
   (fn [job-or-request]
     (if-let [missing-dependency-jobs (missing-dependencies (request-mapper job-or-request) dependency-builders)]
       (apply add-dependencies missing-dependency-jobs)
@@ -104,6 +104,34 @@
         (update :headers #(assoc % "Content-Type" "application/json")))
     request))
 
+(defn http-client
+  "Returns a function which sends an http request.
+
+  If request is successful, returns the response
+
+  The function will encode and decode json requestes and responses.
+
+  It will throw a helpful ExceptionInfo on unacceptable responses, including the request and response."
+  [& {:keys [acceptable-response? client]
+      :or   {acceptable-response? #(>= 399 (:status %) 200)
+             client               http-kit-request}}]
+  (fn [request]
+    (let [response (-> (encode-body request)
+                       (client)
+                       (deref)
+                       (extract-location)
+                       (parse-response)
+                       (select-keys [:status :body :headers]))]
+
+      (if (acceptable-response? response)
+        response
+        (throw (ex-info (str "Response status from "
+                             (:method request) " " (:url request)
+                             " was " (:status response)
+                             " body " (with-out-str (clojure.pprint/pprint (:body response))))
+                        {:request  (select-keys request [:url :method :body :query-params :form-params])
+                         :response response}))))))
+
 (defn wrap-http-request
   "Wraps a toshtogo handler that returns an http request, executing the request
 
@@ -114,25 +142,10 @@
 
   If the response succeeds, returns a map with request [:url :method :body :query-params :form-params]
   and the full response."
-  [handler & {:keys [acceptable-response? client]
-              :or   {acceptable-response? #(>= 399 (:status %) 200)
-                     client          http-kit-request}}]
+  [handler & {:keys [client]
+              :or   {client (http-client)}}]
   (fn [request]
-    (let [http-request (-> (handler request)
-                           (encode-body))
-          http-response (-> (client http-request)
-                            (deref)
-                            (extract-location)
-                            (parse-response)
-                            (select-keys [:status :body :headers]))
-          result {:request  (select-keys http-request [:url :method :body :query-params :form-params])
-                  :response http-response}]
-
-      (if (acceptable-response? http-response)
-        (success result)
-
-        (throw (ex-info (str "Response status from "
-                             (:method http-request) " " (:url http-request)
-                             " was " (:status http-response)
-                             " body " (with-out-str (clojure.pprint/pprint (:body http-response))))
-                        result))))))
+    (let [request (handler request)
+          response (client request)]
+      (success {:request  (select-keys request [:url :method :body :query-params :form-params])
+                :response response}))))

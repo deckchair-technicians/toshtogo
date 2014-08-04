@@ -40,7 +40,8 @@
         toshtogo.client.BadRequestException]
 
   :profiles {:dev {:dependencies [[javax.servlet/servlet-api "2.5"]
-                                  [midje "1.6.2"]]
+                                  [midje "1.6.2"]
+                                  [http-kit.fake "0.2.1"]]
 
                    :plugins      [[lein-midje "3.1.0"]
                                   [lein-ring "0.8.8"]
