@@ -2,10 +2,12 @@
   (:require [schema.utils :refer :all]
             [cheshire.generate :as json-gen]
             [cheshire.core :as json]
-            [clj-time.format :as tf]
+            [clj-time
+             [core :as t]
+             [format :as tf]]
             [toshtogo.util.core :refer [debug]])
 
-  (:import (org.joda.time DateTime)
+  (:import (org.joda.time DateTime LocalDate DateMidnight)
            (com.fasterxml.jackson.core JsonGenerator)
            (java.io InputStream)
            (schema.utils ValidationError)))
@@ -14,6 +16,20 @@
   DateTime
   (fn [^DateTime d ^JsonGenerator jg]
     (.writeString jg (tf/unparse (tf/formatters :date-time) d))))
+
+(json-gen/add-encoder
+  DateMidnight
+  (fn [^DateMidnight d ^JsonGenerator jg]
+    (.writeString jg (tf/unparse (tf/formatters :date-time) d))))
+
+(json-gen/add-encoder
+ LocalDate
+ (fn [^LocalDate d ^JsonGenerator jg]
+   (.writeString
+    jg
+    (tf/unparse
+     (tf/formatters :date-time)
+     (t/date-time (t/year d) (t/month d) (t/day d))))))
 
 (json-gen/add-encoder
   ValidationError
