@@ -35,7 +35,8 @@
 
   It will throw a helpful ExceptionInfo on unacceptable responses, including the request and response."
   [& {:keys [acceptable-response? client]
-      :or   {acceptable-response? #(>= 399 (:status %) 200)
+      :or   {acceptable-response? #(and (number? (:status %))
+                                        (>= 399 (:status %) 200))
              client               http-kit-request}}]
   (fn [request]
     (let [response (-> (encode-body request)
