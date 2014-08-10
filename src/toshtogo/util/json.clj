@@ -1,10 +1,14 @@
 (ns toshtogo.util.json
   (:require [schema.utils :refer :all]
-            [cheshire.generate :as json-gen]
-            [cheshire.core :as json]
+
+            [cheshire
+             [core :As json]
+             [generate :as json-gen]]
+
             [clj-time
              [core :as t]
              [format :as tf]]
+
             [toshtogo.util.core :refer [debug]])
 
   (:import (org.joda.time DateTime LocalDate DateMidnight)
@@ -20,7 +24,7 @@
 (json-gen/add-encoder
   DateMidnight
   (fn [^DateMidnight d ^JsonGenerator jg]
-    (.writeString jg (tf/unparse (tf/formatters :date-time) d))))
+    (.writeString jg (tf/unparse (tf/formatters :date) d))))
 
 (json-gen/add-encoder
  LocalDate
@@ -28,7 +32,7 @@
    (.writeString
     jg
     (tf/unparse
-     (tf/formatters :date-time)
+     (tf/formatters :date)
      (t/date-time (t/year d) (t/month d) (t/day d))))))
 
 (json-gen/add-encoder
