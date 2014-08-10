@@ -2,7 +2,7 @@
   (:require [schema.utils :refer :all]
 
             [cheshire
-             [core :As json]
+             [core :as json]
              [generate :as json-gen]]
 
             [clj-time
