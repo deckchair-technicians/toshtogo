@@ -1,5 +1,6 @@
 (ns toshtogo.client.http
-  (:require [flatland.useful.map :refer [update]]
+  (:require [flatland.useful.map :refer [update map-keys]]
+            [clojure.walk :refer [postwalk]]
             [toshtogo.util.json :as json]
             [org.httpkit.client :as http]
             [toshtogo.client.protocol :refer [success]]))
@@ -9,11 +10,30 @@
 (defn extract-location [response]
   (assoc response :location (get-in response [:headers "location"])))
 
+
+(defn camel-or-train-to-kebab [^String s]
+  (-> s
+      (clojure.string/replace #"([a-z])([A-Z])"
+                              #(str (second %) \- (clojure.string/lower-case (second (next %)))))
+      (clojure.string/replace "_" "-")
+      (clojure.string/lower-case)))
+
+
+(defn normalise-keys [m]
+  (if (map? m)
+    (map-keys m #(-> %
+                     name
+                     camel-or-train-to-kebab
+                     keyword))
+    m))
+
 (defn parse-response [response]
   (let [content-type (or (get-in response [:headers :content-type])
                          (get-in response [:headers "Content-Type"]))]
     (if (and content-type (.startsWith content-type "application/json"))
-      (update response :body json/decode)
+      (update response :body #(->> %
+                                  json/decode
+                                  (postwalk normalise-keys)))
       response)))
 
 (defn http-kit-request [request]

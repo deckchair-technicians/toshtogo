@@ -16,12 +16,13 @@
                         :method :get}
                        {:status  200
                         :headers {"Content-Type" "application/json; "}
-                        :body    (json/encode {:a 123})}]
+                        :body    (json/encode {:a 123 :camelCase 345})}]
 
         (wrapped-handler {:url    "http://somewhere.localhost"
                           :method :get})
         => (matches {:outcome :success
-                     :result  {:response {:body {:a 123}}}})))
+                     :result  {:response {:body {:a          123
+                                                 :camel-case 345}}}})))
 
     (fact "encodes request body as json if it is a map"
       (let [request-received (atom nil)]
@@ -35,7 +36,7 @@
           (wrapped-handler {:url    "http://somewhere.localhost"
                             :method :post
                             :body   {:a 123}})
-          @request-received => (contains {:body (json/encode {:a 123})
+          @request-received => (contains {:body    (json/encode {:a 123})
                                           :headers (contains {"Content-Type" "application/json"})}))))
 
     (fact "throws useful exception if response isn't acceptable"
