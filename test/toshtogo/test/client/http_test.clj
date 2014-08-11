@@ -22,7 +22,7 @@
                           :method :get})
         => (matches {:outcome :success
                      :result  {:response {:body {:a          123
-                                                 :camel-case 345}}}})))
+                                                 :camel_case 345}}}})))
 
     (fact "encodes request body as json if it is a map"
       (let [request-received (atom nil)]

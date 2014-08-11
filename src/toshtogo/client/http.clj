@@ -14,8 +14,7 @@
 (defn camel-or-train-to-kebab [^String s]
   (-> s
       (clojure.string/replace #"([a-z])([A-Z])"
-                              #(str (second %) \- (clojure.string/lower-case (second (next %)))))
-      (clojure.string/replace "_" "-")
+                              #(str (second %) \_ (clojure.string/lower-case (second (next %)))))
       (clojure.string/lower-case)))
 
 
