@@ -1,5 +1,6 @@
 (ns toshtogo.test.client.middleware-test
   (:require [midje.sweet :refer :all]
+            [clj-time.core :as t]
             [flatland.useful.map :refer [update map-keys]]
             [toshtogo.util.json :as json]
             [toshtogo.test.midje-schema :refer :all]
@@ -59,3 +60,34 @@
     => {:outcome :success
         :result  {:parent_result 123}}
     ))
+
+(facts "Optionally retries at given frequency"
+  (let [handler (-> (fn [request]
+                      (clojure.pprint/pprint request)
+                      (clojure.pprint/pprint (:fail request))
+                      (if (:fail request)
+                        (error {})
+                        (success {})))
+                    (wrap-try-later)
+                    (wrap-extract-request))
+        error-request (job-req {:fail  true
+                                :retry {:until         (t/date-time 2014 8 8 6 0)
+                                        :every-minutes 10}}
+                               :some_job)
+        succesful-request (job-req {:fail  false
+                                    :retry {:until         (t/date-time 2014 8 8 6 0)
+                                            :every-minutes 10}}
+                                   :some_job)]
+    (fact "Returns successful requests"
+      (handler succesful-request)
+      => (matches (success {}))
+
+      (fact "On error, returns a try-later if we're before cutoff"
+        (handler error-request)
+        => (matches (try-later (t/date-time 2014 8 8 5 10)))
+        (provided (t/now) => (t/date-time 2014 8 8 5 0)))
+
+      (fact "Returns the error after a certain time"
+        (handler error-request)
+        => (matches (error {}))
+        (provided (t/now) => (t/date-time 2014 8 8 6 1))))))

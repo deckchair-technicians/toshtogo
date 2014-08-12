@@ -1,5 +1,6 @@
 (ns toshtogo.client.middleware
   (:require [clojure.pprint :refer [pprint]]
+            [clj-time.core :as t]
             [flatland.useful.map :refer [update]]
             [toshtogo.util.json :as json]
             [toshtogo.client.util :refer [merge-dependency-results]]
@@ -81,3 +82,18 @@
   (-> handler
       (wrap-map-request request-fn)
       (wrap-map-result result-fn)))
+
+; Try later
+
+(defn retry-response [retry-params error-response]
+  (if (t/after? (t/now) (:until retry-params))
+    error-response
+    (try-later (t/plus (t/now) (t/minutes (:every-minutes retry-params))))))
+
+(defn wrap-try-later [handler]
+  (fn [request]
+    (let [response (handler request)]
+      (if (and (= :error (:outcome response))
+               (:retry request))
+        (retry-response (:retry request) response)
+        response))))

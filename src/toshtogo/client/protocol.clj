@@ -9,9 +9,9 @@
   {:outcome :success
    :result  response-body})
 
-(defn error [error-text]
+(defn error [error-text-or-map]
   {:outcome :error
-   :error   error-text})
+   :error   error-text-or-map})
 
 (defn cancelled []
   {:outcome :cancelled})
