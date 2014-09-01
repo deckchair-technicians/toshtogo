@@ -130,9 +130,16 @@
   (fn [request]
     (handler (update request :body json/decode))))
 
+(defn should-log? [request]
+  (let [{:keys [request-method uri]} request]
+    (and (not= :get request-method)
+         (> 0 (.indexOf uri "heartbeat")))))
+
 (defn log-request [handler]
   (fn [request]
-    (safe-log (:logger request) [{:event_type :request :event_data (:body request)}])
+    (when (should-log? request)
+      (safe-log (:logger request) [{:event_type :request
+                                    :event_data (:body request)}]))
     (handler request)))
 
 (defn wrap-logging-transaction
