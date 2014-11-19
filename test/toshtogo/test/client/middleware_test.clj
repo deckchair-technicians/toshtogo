@@ -91,3 +91,19 @@
         (handler error-request)
         => (matches (error {}))
         (provided (t/now) => (t/date-time 2014 8 8 6 1))))))
+
+(facts "Can transform the final error with an arbitrary error handling function when using wrap-try-later middleware"
+  (let [handler (-> (fn [request]
+                      (error {}))
+
+                    (wrap-try-later :error-handler #(success (:error %)))
+                    (wrap-extract-request))
+
+        error-request (job-req {:retry {:until         (t/date-time 2014 8 8 6 0)
+                                        :every-minutes 10}}
+                               :some_job)]
+
+    (fact "Returns the error after a certain time"
+      (handler error-request)
+      => (matches (success {}))
+      (provided (t/now) => (t/date-time 2014 8 8 6 1)))))
