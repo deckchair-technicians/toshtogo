@@ -85,18 +85,19 @@
 
 ; Try later
 
-(defn retry-response [retry-params error-response error-handler]
-  (if (t/after? (t/now) (:until retry-params))
-    (error-handler error-response)
-    (try-later (t/plus (t/now) (t/minutes (:every-minutes retry-params))))))
+(defn retry-response [{:as request :keys [retry]}  error-response error-handler]
+  (if (t/after? (t/now) (:until retry))
+    (error-handler request error-response)
+    (try-later (t/plus (t/now) (t/minutes (:every-minutes retry))))))
 
 (defn wrap-try-later
-  "error-handler is a function which transforms the final error response. It
-   defaults to identity (i.e. just return the error to toshtogo)"
-  [handler & {:as opts :keys [error-handler] :or {error-handler identity}}]
+  "error-handler is a function which takes the request body and the error response
+   and returns a potentially transformed  response defaults to a function which just
+   returns the original error"
+  [handler & {:as opts :keys [error-handler] :or {error-handler (fn [req resp] resp)}}]
   (fn [request]
     (let [response (handler request)]
       (if (and (= :error (:outcome response))
                (:retry request))
-        (retry-response (:retry request) response error-handler)
+        (retry-response request response error-handler)
         response))))

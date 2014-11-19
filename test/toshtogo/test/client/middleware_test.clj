@@ -96,7 +96,7 @@
   (let [handler (-> (fn [request]
                       (error {}))
 
-                    (wrap-try-later :error-handler #(success (:error %)))
+                    (wrap-try-later :error-handler (fn [req resp] (success (:error resp))))
                     (wrap-extract-request))
 
         error-request (job-req {:retry {:until         (t/date-time 2014 8 8 6 0)
