@@ -60,3 +60,52 @@
 
         (get-job client job-id)
         => (contains {:outcome :success})))
+
+(fact "Retry nested job restarts all"
+  (let [job-id (uuid)
+        child-one-id (uuid)
+        parent-job-type (uuid-str)
+        child-job-type (uuid-str)]
+
+    (put-job!
+      client
+      job-id (job-req
+               {:a "field value"} parent-job-type
+               :dependencies [(-> (job-req {:b "child one"} child-job-type)
+                                  (with-job-id child-one-id))]))
+
+    (pause-job! client job-id)
+
+    (get-job client job-id)
+    => (contains {:outcome :cancelled})
+
+    (get-job client child-one-id)
+    => (contains {:outcome :cancelled})
+
+    (retry-job! client job-id)
+
+    (get-job client job-id)
+    => (contains {:outcome :waiting})
+
+    (get-job client child-one-id)
+    => (contains {:outcome :waiting})
+
+    @(do-work! client child-job-type
+               (constantly (error {:message "something went wrong"})))
+
+    (pause-job! client job-id)
+
+    (get-job client job-id)
+    => (contains {:outcome :cancelled})
+
+    (get-job client child-one-id)
+    => (contains {:outcome :error})
+
+    (retry-job! client job-id)
+
+    (get-job client job-id)
+    => (contains {:outcome :waiting})
+
+    (get-job client child-one-id)
+    => (contains {:outcome :waiting})))
+
