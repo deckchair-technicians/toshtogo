@@ -3,7 +3,7 @@
            (java.util.concurrent ExecutionException))
   (:require [midje.sweet :refer :all]
             [flatland.useful.map :refer [into-map]]
-            [toshtogo.client.util :refer [url-str throw-500 merge-dependency-results]]))
+            [toshtogo.client.util :refer [url-str throw-500 merge-dependency-results pick-highest-sequence-number]]))
 
 (fact "throw-500 works"
       (throw-500 {:status 500}) => (throws SenderException)
@@ -17,8 +17,20 @@
                                                 {:job_type    "dependency_two"
                                                  :result_body {:dep2-value 1}}]})
       => (just {:some-value  1
-                :dependency_one  {:dep1-value 1}
-                :dependency_two {:dep2-value 1}}))
+                "dependency_one"  {:dep1-value 1}
+                "dependency_two" {:dep2-value 1}}))
+
+(fact "We can specify a strategy to merge multiple dependency results"
+      (merge-dependency-results {:request_body {:some-value 1}
+                                 :dependencies [{:job_type    "type"
+                                                 :request_body {:sequence_number 2}
+                                                 :result_body {:result "highest sequence number"}}
+                                                {:job_type    "type"
+                                                 :request_body {:sequence_number 1}
+                                                 :result_body {:result "lowest sequence number"}}]}
+                                :job-type->merger {"type" pick-highest-sequence-number})
+      => (just {:some-value  1
+                "type"  {:result "highest sequence number"}}))
 
 (fact "Merge multiple dependency results into request where key already exists"
       (merge-dependency-results {:request_body {:some-value 1

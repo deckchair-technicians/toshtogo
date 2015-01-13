@@ -13,13 +13,22 @@
   Useful for making toshtogo agents agnostic to whether dependencies are provided\n
   directly in the :request_body, or by dependent jobs.\n
 
-  :merge-multiple is an optional keyword argument which takes a sequence\n
-  of job types for which a sequence of all dependencies with that job type will be\n
-  returned (as opposed to just the last dependency for each job type, which is the\n
-  default behaviour)"
-  [handler & {:keys [merge-multiple] :or {merge-multiple []}}]
+  :merge-multiple DEPRECATED. Use
+  :job-type->merger {:some-job-type concat-results-of-multiple-jobs}
+
+  :job-type->merger
+  A map from :job_type to a (fn [jobs]) which normal return the :result_body of the dependency.
+
+  Dependencies are grouped by job type and handed to the appropriate merge function.
+
+  If no function exists for a job type, the default is to return the result of the last or only job of this type."
+  [handler & {:keys [merge-multiple job-type->merger]
+              :or {merge-multiple []
+                   job-type->merger {}}}]
   (fn [job]
-    (handler (assoc job :request_body (merge-dependency-results job :merge-multiple merge-multiple)))))
+    (handler (assoc job :request_body (merge-dependency-results job
+                                                                :merge-multiple merge-multiple
+                                                                :job-type->merger job-type->merger)))))
 
 (defn check-dependency
   [request missing-dependency-job-reqs [check? job-req-builder]]

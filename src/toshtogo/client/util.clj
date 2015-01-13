@@ -24,32 +24,35 @@
       (concat left right))
     right))
 
+(defn pick-highest-sequence-number [jobs]
+  (->> jobs
+       (reduce (fn [job-a job-b]
+                 (if (> (get-in job-a [:request_body :sequence_number])
+                       (get-in job-b [:request_body :sequence_number]))
+                  job-a
+                  job-b)))
+       :result_body))
+
+(defn concat-results-of-multiple-jobs [jobs]
+  (map :result_body jobs))
+
+(def take-last-or-only-result-body
+  (comp :result_body last))
+
 (defn merge-dependency-results
-  "Takes a toshtogo job.
-
-  Builds a map of the :result_body of each child job in :dependencies, keyed by the
-  :job_type of the dependency.
-
-  Returns the result of merging this job into the parent job's :request_body.
-
-  Useful for making toshtogo agents agnostic to whether dependencies are provided
-  directly in the :request_body, or by dependent jobs.
-
-  If there are multiple dependencies of the same type, the last one will win, unless
-  the :job_type is specified in merge-multiple, which will cause all dependencies of that
-  type to be added as a sequence under their :job_type"
-  [job & {:keys [merge-multiple] :or {merge-multiple []}}]
-  (let [dependencies               (job :dependencies)
-        job-type-result-pairs      (map (fn [dep] [(keyword (:job_type dep)) (:result_body dep)]) dependencies)
-        multiple-value-deps        (-<> job-type-result-pairs
-                                       (group-by first <>)
-                                       (select-keys <> merge-multiple)
-                                       (flatland.useful.map/map-vals <> (fn [deps] (map second deps))))
-        single-value-deps          (-<> job-type-result-pairs
-                                       (mapcat identity <>)
-                                       (apply hash-map <>)
-                                       (apply dissoc <> merge-multiple))]
-    (apply merge (merge-with dependency-merger (job :request_body) multiple-value-deps) single-value-deps)))
+  [job & {:keys [merge-multiple job-type->merger]
+          :or {merge-multiple []
+               job-type->merger {}}}]
+  (let [job-type->merger (merge (zipmap merge-multiple (repeat concat-results-of-multiple-jobs))
+                                job-type->merger)
+        job-type->merged-dependencies (->> job
+                                           :dependencies
+                                           (group-by :job_type)
+                                           (map (fn [[job-type jobs]]
+                                                  (let [merger (job-type->merger job-type take-last-or-only-result-body)]
+                                                    [job-type (merger jobs)])))
+                                           (into {}))]
+    (merge-with dependency-merger (job :request_body) job-type->merged-dependencies)))
 
 (defn agent-details*
   "Returns a map containing :hostname :system_name :system_version.\n
