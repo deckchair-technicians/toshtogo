@@ -30,7 +30,8 @@
                                                  :result_body {:result "lowest sequence number"}}]}
                                 :job-type->merger {"type" pick-highest-sequence-number})
       => (just {:some-value  1
-                "type"  {:result "highest sequence number"}}))
+                "type"  {:result "highest sequence number"
+                         :sequence_number 2}}))
 
 (fact "Merge multiple dependency results into request where key already exists"
       (merge-dependency-results {:request_body {:some-value 1

@@ -24,14 +24,23 @@
       (concat left right))
     right))
 
-(defn pick-highest-sequence-number [jobs]
-  (->> jobs
-       (reduce (fn [job-a job-b]
-                 (if (> (get-in job-a [:request_body :sequence_number])
-                       (get-in job-b [:request_body :sequence_number]))
-                  job-a
-                  job-b)))
-       :result_body))
+(defn pick-highest-sequence-number
+  "Takes the job with the highest :sequence_number in :request_body.
+
+  Returns the :result_body from that job, with :sequence_number merged back into it, so that the dependency doesn't need
+  to know anything about sequence numbers (except to have a loose schema so the extra field in request doesn't cause an
+  error)"
+  [jobs]
+  (let [latest-job (->> jobs
+                         (reduce (fn [job-a job-b]
+                                   (if (> (get-in job-a [:request_body :sequence_number])
+                                          (get-in job-b [:request_body :sequence_number]))
+                                     job-a
+                                     job-b))))
+        sequence-number (get-in latest-job [:request_body :sequence_number])]
+    (-> latest-job
+        :result_body
+        (assoc :sequence_number sequence-number))))
 
 (defn concat-results-of-multiple-jobs [jobs]
   (map :result_body jobs))
