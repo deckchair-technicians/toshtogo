@@ -60,7 +60,7 @@
                                            (group-by :job_type)
                                            (map (fn [[job-type jobs]]
                                                   (let [merger (job-type->merger (keyword job-type) take-last-or-only-result-body)]
-                                                    [job-type (merger jobs)])))
+                                                    [(keyword job-type) (merger jobs)])))
                                            (into {}))]
     (merge-with dependency-merger (job :request_body) job-type->merged-dependencies)))
 

@@ -16,9 +16,9 @@
                                                  :result_body {:dep1-value 1}}
                                                 {:job_type    "dependency_two"
                                                  :result_body {:dep2-value 1}}]})
-      => (just {:some-value  1
-                "dependency_one"  {:dep1-value 1}
-                "dependency_two" {:dep2-value 1}}))
+      => (just {:some-value     1
+                :dependency_one {:dep1-value 1}
+                :dependency_two {:dep2-value 1}}))
 
 (fact "We can specify a strategy to merge multiple dependency results"
       (merge-dependency-results {:request_body {:some-value 1}
@@ -38,7 +38,7 @@
                                 :job-type->merger {"string-type" pick-highest-sequence-number
                                                    :keyword-type pick-highest-sequence-number})
       => (just {:some-value   1
-                "string-type" {:result          "highest sequence number"
+                :string-type  {:result          "highest sequence number"
                                :sequence_number 2}
                 :keyword-type {:result          "highest sequence number"
                                :sequence_number 2}}))
