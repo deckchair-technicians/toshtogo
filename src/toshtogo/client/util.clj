@@ -4,7 +4,7 @@
            [java.net UnknownHostException InetAddress])
   (:require [trptcolin.versioneer.core :as version]
             [swiss.arrows :refer :all]
-            [flatland.useful.map :refer [map-vals]]))
+            [flatland.useful.map :refer [map-vals map-keys]]))
 
 (def hostname
   (delay
@@ -52,13 +52,14 @@
   [job & {:keys [merge-multiple job-type->merger]
           :or {merge-multiple []
                job-type->merger {}}}]
-  (let [job-type->merger (merge (zipmap merge-multiple (repeat concat-results-of-multiple-jobs))
-                                job-type->merger)
+  (let [job-type->merger (-> (zipmap merge-multiple (repeat concat-results-of-multiple-jobs))
+                             (merge job-type->merger)
+                             (map-keys keyword))
         job-type->merged-dependencies (->> job
                                            :dependencies
                                            (group-by :job_type)
                                            (map (fn [[job-type jobs]]
-                                                  (let [merger (job-type->merger job-type take-last-or-only-result-body)]
+                                                  (let [merger (job-type->merger (keyword job-type) take-last-or-only-result-body)]
                                                     [job-type (merger jobs)])))
                                            (into {}))]
     (merge-with dependency-merger (job :request_body) job-type->merged-dependencies)))

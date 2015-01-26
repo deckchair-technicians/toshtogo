@@ -22,16 +22,26 @@
 
 (fact "We can specify a strategy to merge multiple dependency results"
       (merge-dependency-results {:request_body {:some-value 1}
-                                 :dependencies [{:job_type    "type"
+                                 :dependencies [{:job_type    "string-type"
                                                  :request_body {:sequence_number 2}
                                                  :result_body {:result "highest sequence number"}}
-                                                {:job_type    "type"
+                                                {:job_type    "string-type"
+                                                 :request_body {:sequence_number 1}
+                                                 :result_body {:result "lowest sequence number"}}
+
+                                                {:job_type    :keyword-type
+                                                 :request_body {:sequence_number 2}
+                                                 :result_body {:result "highest sequence number"}}
+                                                {:job_type    :keyword-type
                                                  :request_body {:sequence_number 1}
                                                  :result_body {:result "lowest sequence number"}}]}
-                                :job-type->merger {"type" pick-highest-sequence-number})
-      => (just {:some-value  1
-                "type"  {:result "highest sequence number"
-                         :sequence_number 2}}))
+                                :job-type->merger {"string-type" pick-highest-sequence-number
+                                                   :keyword-type pick-highest-sequence-number})
+      => (just {:some-value   1
+                "string-type" {:result          "highest sequence number"
+                               :sequence_number 2}
+                :keyword-type {:result          "highest sequence number"
+                               :sequence_number 2}}))
 
 (fact "Merge multiple dependency results into request where key already exists"
       (merge-dependency-results {:request_body {:some-value 1
