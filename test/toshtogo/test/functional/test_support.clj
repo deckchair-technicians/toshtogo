@@ -16,7 +16,15 @@
             [toshtogo.server.api :refer [api]]
             [toshtogo.util.core :refer [uuid uuid-str debug cause-trace]]
             [toshtogo.client.util :as client-util]
-            [toshtogo.server.migrations.run :refer [run-migrations!]]))
+            [toshtogo.server.migrations.run :refer [run-migrations!]])
+
+  (:import [java.net ServerSocket]))
+
+(defn available-port []
+  (let [socket (ServerSocket. 0)
+        port (.getLocalPort socket)]
+    (.close socket)
+    port))
 
 (def migrated-dev-db (delay (run-migrations! dev-db)))
 
