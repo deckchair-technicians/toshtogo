@@ -1,14 +1,21 @@
 (ns toshtogo.test.fullstack.heartbeat-detects-dead-clients
   (:require [midje.sweet :refer :all]
+
             [toshtogo.test.functional.test-support :refer [test-client localhost in-process return-success]]
-            [toshtogo.client.protocol :refer :all]
+
+            [toshtogo.client
+             [agent :refer [start-service job-consumer]]
+             [protocol :refer :all]]
+
             [toshtogo.util.core :refer [uuid-str uuid]]
-            [toshtogo.server.core :refer [start! dev-app dev-db]]
-            [toshtogo.server.heartbeat.core :refer [pool start-monitoring! check-heartbeats!]]
-            [toshtogo.client.agent :refer [start-service job-consumer]])
-  (:import [java.net ServerSocket]
-           [java.util.concurrent.ExecutorService]
-           [toshtogo.client RecoverableException]))
+
+            [toshtogo.server
+             [core :refer [start! dev-app dev-db]]]
+
+            [toshtogo.server.heartbeat
+             [core :refer [pool start-monitoring! check-heartbeats!]]])
+
+  (:import [java.net ServerSocket]))
 
 (defn available-port []
   (let [socket (ServerSocket. 0)

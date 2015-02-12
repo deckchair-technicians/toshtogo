@@ -5,8 +5,7 @@
             [toshtogo.util.core :refer [uuid-str uuid]]
             [toshtogo.server.core :refer [start! dev-app dev-db]]
             [toshtogo.client.agent :refer [start-service job-consumer]])
-  (:import [java.net ServerSocket]
-           [toshtogo.client RecoverableException]))
+  (:import [java.net ServerSocket]))
 
 (defn available-port []
   (let [socket (ServerSocket. 0)
@@ -42,8 +41,7 @@
           (fact "HTTP client encountered an error before server came up, as expected"
                 (realized? http-client-error) => truthy
                 (when (realized? http-client-error)
-                  @http-client-error
-                  => #(instance? RecoverableException %)))
+                  (:recoverable? (ex-data @http-client-error)) => truthy))
 
           (fact "complete-work! eventually returned affirmatively"
             (deref complete-work-result 2000 "DID NOT RESPOND")
@@ -65,8 +63,7 @@
         put-job-result (future (put-job! app-client (uuid) (job-req {} :some-job-type)))]
 
     (fact "Client receives a recoverable error"
-          (deref client-error 1000 "no error received")
-          => #(instance? RecoverableException %))
+      (:recoverable? (ex-data (deref client-error 1000 "no error received"))) => truthy)
 
     (future-cancel put-job-result)))
 
@@ -74,5 +71,4 @@
        (let [non-existent-db (assoc dev-db :subname "//localhost:5432/nonexistent")
              wrong-port (assoc dev-db :subname (str "//localhost:" (available-port) "/some-database"))]
          (should-be-recoverable-error non-existent-db)
-         (should-be-recoverable-error wrong-port)
-         ))
+         (should-be-recoverable-error wrong-port)))

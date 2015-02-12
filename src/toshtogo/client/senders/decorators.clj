@@ -5,8 +5,7 @@
             [toshtogo.util.json :as json]
             [toshtogo.client.util :refer [nil-on-404 throw-500 throw-400]]
             [toshtogo.client.senders.protocol :refer :all])
-  (:import [toshtogo.client RecoverableException]
-           [java.net ConnectException]))
+  (:import [java.net ConnectException]))
 
 (defn wrapper [decorated map-fn]
   (reify
@@ -68,14 +67,15 @@
       [decorated]
   (wrapper decorated (fn [sender resp]
                        (if (instance? ConnectException (:error resp))
-                         (throw (RecoverableException. (str "HTTP connection failure" (.getMessage (:error resp)))))
+                         (throw (ex-info (str "HTTP connection failure" (.getMessage (:error resp)))
+                                         {:recoverable? true}))
                          resp))))
 
 (defn wrap-throw-recoverable-exception-on-503
       [decorated]
   (wrapper decorated (fn [sender resp]
                        (if (= 503 (:status resp))
-                         (throw (RecoverableException. (str resp)))
+                         (throw (ex-info (str resp) {:recoverable? true}))
                          resp))))
 
 (defn immediately-throw
@@ -94,7 +94,7 @@
 
     (let [retry-opts (-> opts
                          (update :exponential-backoff #(or % 5000))
-                         (update :error-fn #(immediately-throw % (fn [e] (not (instance? RecoverableException e))))))]
+                         (update :error-fn #(immediately-throw % (fn [e] (not (:recoverable? (ex-data e)))))))]
       (reify Sender
         (POST! [this location message]
           (retry-until-success retry-opts (POST! decorated location message)))
