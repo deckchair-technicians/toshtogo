@@ -85,8 +85,12 @@
 (defn uuid? [x] (instance? UUID x))
 
 (defn cause-trace
+  "Finds the root cause exception and returns its stack trace as
+   string."
   [e]
-  (with-out-str (stacktrace/print-cause-trace e)))
+  (if-let [cause (.getCause e)]
+    (cause-trace cause)
+    (with-out-str (stacktrace/print-cause-trace e))))
 
 (defn exponential-backoff
   [max-wait-millis retry-count]
