@@ -44,5 +44,4 @@
 
                    :plugins      [[lein-midje "3.1.0"]
                                   [lein-ring "0.8.8"]
-                                  [lein-set-version "0.3.0"]
                                   [midje-junit-formatter "0.1.0-SNAPSHOT"]]}})
