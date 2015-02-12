@@ -1,7 +1,8 @@
 (ns toshtogo.client.util
-  (:import [java.net UnknownHostException InetAddress])
   (:require [trptcolin.versioneer.core :as version]
-            [flatland.useful.map :refer [map-vals map-keys]]))
+            [flatland.useful.map :refer [map-keys]])
+
+  (:import [java.net UnknownHostException InetAddress]))
 
 (def hostname
   (delay
