@@ -5,8 +5,7 @@
             [toshtogo.util.json :as json]
             [toshtogo.client.util :refer [nil-on-404 throw-500 throw-400]]
             [toshtogo.client.senders.protocol :refer :all])
-  (:import [toshtogo.client BadRequestException]
-           [toshtogo.client RecoverableException]
+  (:import [toshtogo.client RecoverableException]
            [java.net ConnectException]))
 
 (defn wrapper [decorated map-fn]

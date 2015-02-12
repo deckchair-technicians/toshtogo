@@ -1,6 +1,4 @@
 (ns toshtogo.test.functional.error-handling-test
-  (:import (toshtogo.client BadRequestException)
-           (java.util.concurrent ExecutionException))
   (:require [midje.sweet :refer :all]
             [clj-time.core :refer [now minutes seconds millis plus minus after? interval within?]]
             [ring.adapter.jetty :refer [run-jetty]]
@@ -12,7 +10,10 @@
             [toshtogo.util.core :refer [uuid uuid-str debug]]
             [schema.core :as sch]
             [toshtogo.test.midje-schema :refer :all]
-            [toshtogo.test.functional.test-support :refer :all]))
+            [toshtogo.test.functional.test-support :refer :all])
+
+  (:import (clojure.lang ExceptionInfo)
+           (java.util.concurrent ExecutionException)))
 
 (background (before :contents @migrated-dev-db))
 
@@ -56,7 +57,7 @@
 
   (fact "Sending an invalid job results in client exception (i.e. does not get stuck in retry loop)"
     (lift-exceptions (put-job! client-no-logging (uuid) {:not "a job"}))
-    => (throws BadRequestException))
+    => (throws ExceptionInfo "Bad Request"))
 
   (fact "Sending an invalid response results in client exception (i.e. does not get stuck in retry loop)"
     (let [job-id (uuid)
@@ -67,7 +68,7 @@
       contract => truthy
 
       (lift-exceptions (complete-work! client-no-logging (:commitment_id contract) {:not "a valid result"}))
-      => (throws BadRequestException)))
+      => (throws ExceptionInfo "Bad Request")))
 
 
   (fact "do-work! on client reports unhandled exceptions, including ex-data in the error response"
@@ -115,4 +116,4 @@
 
       (lift-exceptions (put-job! client-no-logging job-id
                                  (job-req {:a-field "DIFFERENT value"} (uuid-str))))
-      => (throws BadRequestException))))
+      => (throws ExceptionInfo "Bad Request"))))

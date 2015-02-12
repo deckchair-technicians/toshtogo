@@ -8,8 +8,7 @@
             [toshtogo.test.functional.test-support :refer [migrated-dev-db client]]
             [toshtogo.test.midje-schema :refer :all]
             [schema.core :as s])
-  (:import (java.util UUID)
-           (toshtogo.client BadRequestException)))
+  (:import (java.util UUID)))
 
 (background (before :contents @migrated-dev-db))
 

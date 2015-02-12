@@ -10,7 +10,7 @@
             [toshtogo.util.core :refer [uuid uuid-str debug]]
             [toshtogo.test.midje-schema :refer :all]
             [toshtogo.test.functional.test-support :refer :all])
-  (:import (toshtogo.client BadRequestException)))
+  (:import [clojure.lang ExceptionInfo]))
 
 (background (before :contents @migrated-dev-db))
 
@@ -33,7 +33,7 @@
           (put-job! no-retry-client job-id (job-req {:a-field "same content"} job-type))
 
           (put-job! no-retry-client job-id (job-req {:a-field "DIFFERENT CONTENT"} job-type))
-          => (throws BadRequestException)))
+          => (throws ExceptionInfo "Bad Request")))
 
   (fact "Work can only be requested once"
         (let [job-id (uuid)

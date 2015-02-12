@@ -2,7 +2,6 @@
   (:require [clj-time.core :refer [now minus seconds]]
             [clojure.pprint :refer [pprint]]
             [clojure.walk :refer [postwalk]]
-            [swiss.arrows :refer :all]
             [flatland.useful.map :refer [update]]
             [toshtogo.util.json :as json]
             [toshtogo.util.core :refer [assoc-not-nil uuid ppstr debug]]

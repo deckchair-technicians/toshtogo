@@ -6,7 +6,7 @@
             [toshtogo.util.core :refer [uuid uuid-str debug]]
             [toshtogo.test.midje-schema :refer :all]
             [toshtogo.test.functional.test-support :refer :all])
-  (:import [toshtogo.client BadRequestException]
+  (:import [clojure.lang ExceptionInfo]
            [toshtogo.server.logging DeferredLogger]))
 
 (background (before :contents @migrated-dev-db))
@@ -45,7 +45,7 @@
 
     (fact "Putting job with different content throws an idempotency exception"
           (put-job! log-client job-id (job-req {:not "the same"} job-type))
-          => (throws BadRequestException))
+          => (throws ExceptionInfo "Bad Request"))
 
     (fact "Server error is logged"
           (consume-logs logs-atom)
@@ -94,4 +94,4 @@
                                  {:event_type :commitment_result
                                   :event_data {:job_id job-id
                                                :result {:outcome :error
-                                                        :error   {:stacktrace (contains-string "not_valid_response")}}}}])))))
+                                                        :error   {:stacktrace (contains-string "Bad Request")}}}}])))))

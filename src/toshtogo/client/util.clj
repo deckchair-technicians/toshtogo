@@ -1,6 +1,5 @@
 (ns toshtogo.client.util
   (:import [toshtogo.client.senders SenderException]
-           [toshtogo.client BadRequestException]
            [java.net UnknownHostException InetAddress])
   (:require [trptcolin.versioneer.core :as version]
             [swiss.arrows :refer :all]
@@ -91,7 +90,7 @@
   [& body]
   `(let [result# (do ~@body)]
      (if (= 400 (:status result#))
-       (throw (BadRequestException. (str result#)))
+       (throw (ex-info "Bad Request" result#))
        result#)))
 
 (defmacro nil-on-404
