@@ -1,7 +1,7 @@
 (ns toshtogo.client.agent
-  (:import (java.util.concurrent ExecutorService Executors))
   (:require [clojure.stacktrace :refer [print-cause-trace]]
-            [toshtogo.client.protocol :refer :all]))
+            [toshtogo.client.protocol :refer :all])
+  (:import (java.util.concurrent ExecutorService Executors)))
 
 (defn start [^ExecutorService pool count f]
   (doall (map (fn [_] (.submit pool f)) (range count))))
