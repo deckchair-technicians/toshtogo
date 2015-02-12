@@ -21,7 +21,6 @@
                  [me.raynes/fs "1.4.5"]
                  [org.clojure/math.numeric-tower "0.0.4"]
                  [org.flatland/useful "0.10.3"]
-                 [prismatic/schema "0.2.1"]
                  [savagematt/hermit "0.7"]
                  [savagematt/vice "0.2"]
                  [swiss-arrows "1.0.0"]
