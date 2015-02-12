@@ -3,8 +3,7 @@
             [clj-time.core :refer [now minutes seconds millis plus minus after? interval within?]]
             [toshtogo.client.protocol :refer :all]
             [toshtogo.util.core :refer [uuid uuid-str debug]]
-            [toshtogo.test.functional.test-support :refer :all])
-  (:import (java.util UUID)))
+            [toshtogo.test.functional.test-support :refer :all]))
 
 (background (before :contents @migrated-dev-db))
 
