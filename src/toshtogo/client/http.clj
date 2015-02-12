@@ -3,7 +3,7 @@
             [clojure.walk :refer [postwalk]]
             [toshtogo.util.json :as json]
             [org.httpkit.client :as http]
-            [toshtogo.client.protocol :refer [success]])
+            [toshtogo.client.protocol :refer [success error]])
 
   (:import [clojure.lang ExceptionInfo]))
 
