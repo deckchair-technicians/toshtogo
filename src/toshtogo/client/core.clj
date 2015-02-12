@@ -1,12 +1,15 @@
 (ns toshtogo.client.core
-  (:require [toshtogo.util.core :refer [uuid cause-trace debug]]
-            [toshtogo.client.protocol :refer [success error]]
-            [toshtogo.client.clients.sender-client :refer :all]
-            [toshtogo.client.clients.json-converting-client :refer :all]
-            [toshtogo.client.util :refer :all]
-            [toshtogo.client.senders.decorators :refer :all]
-            [toshtogo.client.senders.http-sender :refer :all]
-            [toshtogo.client.senders.app-sender :refer :all]))
+  (:require [toshtogo.client.clients
+             [sender-client :refer [sender-client]]
+             [json-converting-client :refer [json-converting-client]]]
+
+            [toshtogo.client.util :refer [hostname]]
+
+            [toshtogo.client.senders.decorators :refer [wrap-decoration]]
+
+            [toshtogo.client.senders
+             [app-sender :refer [app-sender]]
+             [http-sender :refer [http-sender]]]))
 
 (defn sender
   [client-opts agent-details]
@@ -42,8 +45,8 @@ opts are:\n
   \n
   :debug boolean set this to true to send requests and responses to stdout"
   [client-opts & {:keys [agent-details error-fn timeout debug should-retry]
-                  :or {agent-details {:hostname @hostname :system_name "unknown" :system_version "unknown"}}
-                  :as opts}]
+                  :or   {agent-details {:hostname @hostname :system_name "unknown" :system_version "unknown"}}
+                  :as   opts}]
 
   (let [sender          (sender client-opts agent-details)
         decoration-opts (select-keys opts [:error-fn :timeout :debug :should-retry])]
