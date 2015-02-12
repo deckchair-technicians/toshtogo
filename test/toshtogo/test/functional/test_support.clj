@@ -11,6 +11,8 @@
             [clojure
              [pprint :refer [pprint]]]
 
+            [schema.core :as sch]
+
             [toshtogo.server.persistence.sql :refer [sql-persistence]]
             [toshtogo.server.api :refer [api]]
             [toshtogo.util.core :refer [uuid uuid-str debug cause-trace]]
@@ -33,6 +35,7 @@
 (def client-config in-process)
 
 (defn test-client [& {:as opts}]
+  (sch/set-fn-validation! true)
   (apply ttc/client
          (or (:client-config opts) client-config)
          (->> opts

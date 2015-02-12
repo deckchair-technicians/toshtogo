@@ -9,6 +9,14 @@
             [toshtogo.client
              [util :refer [url-str]]]
 
+            [schema
+             [core :as sch]
+             [macros :as sm]]
+
+            [vice.valuetypes :refer [Url]]
+
+            [toshtogo.schemas :refer [Agent]]
+
             [toshtogo.client.senders.protocol :refer :all])
 
   (:import [java.io InputStream]))
@@ -17,36 +25,37 @@
 (defmethod ensure-str :default [x] (str x))
 (defmethod ensure-str InputStream [x] (slurp x))
 
+(defn- slurp-body
+  [resp]
+  (update resp :body ensure-str))
+
 (defn post [[url body]]
   @(http/post url body))
 
 (defn put [[url body]]
   @(http/put url body))
 
-(defn http-sender [agent-details base-path]
-  (assert agent-details)
-  (assert base-path)
+(defn- url-and-body
+  [base-path agent-details location message]
+  [(url-str base-path location)
+   {:body    (tjson/encode (assoc message :agent agent-details))
+    :headers {"Content-Type" "application/json"}}])
 
-  (letfn [(url-of
-            [location]
-            (url-str base-path location))
+(sch/defrecord HTTPSender
+    [agent-details :- Agent
+     base-path :- Url]
 
-          (url-and-body
-            [location message]
-            [(url-of location)
-             {:body    (tjson/encode (assoc message :agent agent-details))
-              :headers {"Content-Type" "application/json"}}])
+  Sender
+  (POST! [{:keys [base-path agent-details]} location message]
+         (slurp-body (post (url-and-body base-path agent-details location message))))
 
-          (slurp-body
-            [resp]
-            (update resp :body ensure-str))]
+  (PUT! [{:keys [base-path agent-details]} location message]
+        (slurp-body (put (url-and-body base-path agent-details location message))))
 
-    (reify Sender
-      (POST! [this location message]
-        (slurp-body (post (url-and-body location message))))
+  (GET [{:keys [base-path]} location]
+      (slurp-body @(http/get (url-str base-path location)))))
 
-      (PUT! [this location message]
-        (slurp-body (put (url-and-body location message))))
-
-      (GET [this location]
-        (slurp-body @(http/get (url-of location)))))))
+(sch/defn http-sender :- HTTPSender
+  [agent-details :- Agent
+   base-path :- Url]
+  (->HTTPSender agent-details base-path))

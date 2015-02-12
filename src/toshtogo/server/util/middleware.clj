@@ -20,7 +20,7 @@
 
             [toshtogo.server
              [api :refer [api]]
-             [validation :refer [matches-schema? validated Agent]]
+             [validation :refer [matches-schema? validated]]
              [logging :refer [error-event safe-log]]]
 
             [toshtogo.util
@@ -28,6 +28,9 @@
              [io :refer [byte-array-input! byte-array-output!]]
              [hashing :refer [murmur!]]
              [json :as json]]
+
+            [toshtogo
+             [schemas :refer [Agent]]]
             )
   (:import [java.io ByteArrayInputStream]
            [toshtogo.server.logging ValidatingLogger DeferredLogger]))

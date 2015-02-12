@@ -5,9 +5,11 @@
             [clojure.string :as s]
             [clojure.pprint :refer [pprint]]
 
+            [toshtogo.schemas :refer [Agent]]
+
             [toshtogo.util.schema :as toshtogo-schema]
             [toshtogo.util.core :refer [exception-as-map with-sys-out]]
-            [toshtogo.server.validation :refer [JobRecord JobResult Agent validated]]))
+            [toshtogo.server.validation :refer [JobRecord JobResult validated]]))
 
 ; ----------------------------------------------
 ; Event schemas and construcors

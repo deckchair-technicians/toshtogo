@@ -1,12 +1,13 @@
 (ns toshtogo.server.validation
-  (:import (clojure.lang Keyword)
-           (org.joda.time DateTime))
-  (:require [schema.core :as s]
-            [schema.macros :as macros]
-            [toshtogo.util.schema :as toshtogo-schema]
-            [toshtogo.util.core :refer [uuid? ensure-seq]]
+  (:require [toshtogo.util
+             [core :refer [uuid? ensure-seq]]
+             [schema :as toshtogo-schema]]
 
-            [vice.coerce :refer [errors]]))
+            [schema.core :as s]
+
+            [vice
+             [coerce :refer [errors]]
+             [valuetypes :refer [JodaDateTime]]]))
 
 (defn validated [thing schema]
   (if-let [errors (s/check schema thing)]
@@ -28,7 +29,7 @@
    (s/optional-key :fungible_under_parent)     s/Bool
    (s/optional-key :tags)                      [s/Keyword]
    (s/optional-key :job_name)                  s/Str
-   (s/optional-key :contract_due)              DateTime
+   (s/optional-key :contract_due)              JodaDateTime
    (s/optional-key :notes)                     s/Str
    (s/optional-key :existing_job_dependencies) [s/Uuid]
    (s/optional-key :dependencies)              [(toshtogo-schema/recursive #'JobRequest)]})
@@ -38,16 +39,16 @@
    (s/optional-key :result)                    {s/Any s/Any}
    (s/optional-key :error)                     {(s/optional-key :message) (s/maybe s/Str)
                                                 (s/optional-key :stacktrace) s/Str
-                                                 s/Any s/Any}
+                                                s/Any s/Any}
    (s/optional-key :existing_job_dependencies) [s/Uuid]
    (s/optional-key :dependencies)              [JobRequest]
-   (s/optional-key :contract_due)              DateTime})
+   (s/optional-key :contract_due)              JodaDateTime})
 
 (def JobRecord
   {:job_id                    s/Uuid
    :job_type                  s/Keyword
    :requesting_agent          s/Uuid
-   :job_created               DateTime
+   :job_created               JodaDateTime
    (s/optional-key :notes)    s/Str
    (s/optional-key :tags)     [s/Keyword]
    :request_body              s/Str
@@ -60,11 +61,6 @@
    :link_tree_id  s/Uuid
    :parent_job_id s/Uuid
    :child_job_id  s/Uuid})
-
-(def Agent
-  {:hostname       s/Str
-   :system_name    s/Str
-   :system_version s/Str})
 
 (def UniqueConstraintException
   {:cause (s/eq :unique-constraint-exception)})
