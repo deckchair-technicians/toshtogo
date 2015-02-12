@@ -45,9 +45,10 @@
                         :headers {"Content-Type" "application/json;"}
                         :body    (json/encode {:a 123})}]
         (let [handler (-> identity
-                          (wrap-http-request :client (http-client :acceptable-response? (constantly false)))
-                          (wrap-exception-handling))]
+                          (wrap-http-request :client (http-client :acceptable-response? (constantly false))))]
+
           (handler {:url    "http://somewhere.localhost"
                     :method :get})
           => (matches {:outcome :error
-                       :error   {:ex_data {:response {:body {:a 123}}}}}))))))
+                       :error   {:response {:body   {:a 123}
+                                            :status 200}}}))))))

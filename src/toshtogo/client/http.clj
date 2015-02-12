@@ -3,7 +3,9 @@
             [clojure.walk :refer [postwalk]]
             [toshtogo.util.json :as json]
             [org.httpkit.client :as http]
-            [toshtogo.client.protocol :refer [success]]))
+            [toshtogo.client.protocol :refer [success]])
+
+  (:import [clojure.lang ExceptionInfo]))
 
 (def is-redirect? #{301 302 303})
 
@@ -87,7 +89,9 @@
   [handler & {:keys [client]
               :or   {client (http-client)}}]
   (fn [request]
-    (let [request (handler request)
-          response (client request)]
-      (success {:request  (select-keys request [:url :method :body :query-params :form-params])
-                :response response}))))
+    (let [request  (handler request)
+          response (try (client request) (catch ExceptionInfo e (error (ex-data e)) ))]
+      (if (= :error (:outcome response))
+        response
+        (success {:request  (select-keys request [:url :method :body :query-params :form-params])
+                  :response response})))))
