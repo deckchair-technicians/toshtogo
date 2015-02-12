@@ -1,11 +1,10 @@
 (ns toshtogo.test.functional.dependencies-test
-  (:import (java.util UUID)
-           (toshtogo.client.senders SenderException))
   (:require [midje.sweet :refer :all]
             [clj-time.core :refer [now minutes seconds millis plus minus after? interval within?]]
             [toshtogo.client.protocol :refer :all]
             [toshtogo.util.core :refer [uuid uuid-str debug]]
-            [toshtogo.test.functional.test-support :refer :all]))
+            [toshtogo.test.functional.test-support :refer :all])
+  (:import (java.util UUID)))
 
 (background (before :contents @migrated-dev-db))
 

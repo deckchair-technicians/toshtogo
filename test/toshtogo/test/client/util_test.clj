@@ -1,12 +1,11 @@
 (ns toshtogo.test.client.util-test
-  (:import [toshtogo.client.senders SenderException]
-           (java.util.concurrent ExecutionException))
+  (:import (java.util.concurrent ExecutionException))
   (:require [midje.sweet :refer :all]
             [flatland.useful.map :refer [into-map]]
             [toshtogo.client.util :refer [url-str throw-500 merge-dependency-results pick-highest-sequence-number]]))
 
 (fact "throw-500 works"
-      (throw-500 {:status 500}) => (throws SenderException)
+      (throw-500 {:status 500}) => (throws ExceptionInfo "Server Error")
       (throw-500 {:status 200}) => {:status 200}
       (throw-500 nil) => nil)
 

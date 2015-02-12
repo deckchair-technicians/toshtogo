@@ -1,6 +1,5 @@
 (ns toshtogo.client.util
-  (:import [toshtogo.client.senders SenderException]
-           [java.net UnknownHostException InetAddress])
+  (:import [java.net UnknownHostException InetAddress])
   (:require [trptcolin.versioneer.core :as version]
             [flatland.useful.map :refer [map-vals map-keys]]))
 
@@ -82,7 +81,7 @@
   [& body]
   `(let [result# (do ~@body)]
      (if (and (:status result#) (< 499 (:status result#) 600))
-       (throw (SenderException. (str result#)))
+       (throw (ex-info "Server Error" result#))
        result#)))
 
 (defmacro throw-400
