@@ -1,16 +1,15 @@
 (ns toshtogo.test.functional.test-support
-  (:require [toshtogo.client.protocol :refer :all]
-            [toshtogo.server.core :refer [dev-app dev-db]]
-            [toshtogo.client.core :as ttc]
-            [clj-time.core :refer [now minutes seconds millis plus minus after? interval within?]]
-            [clojure.pprint :refer [pprint]]
+  (:require [toshtogo.client
+             [core :as ttc]
+             [protocol :refer :all]]
 
-            [clojure.stacktrace :refer [print-cause-trace]]
-            [schema.core :as sch]
-            [schema.coerce :as coer]
-            [schema.utils :as s-util]
-            [schema.macros :as s-macros]
-            [midje.checking.core :refer [as-data-laden-falsehood]]
+            [toshtogo.server
+             [core :refer [dev-app dev-db]]]
+
+            [clj-time.core :refer [now minutes seconds millis plus minus after? interval within?]]
+
+            [clojure
+             [pprint :refer [pprint]]]
 
             [toshtogo.server.persistence.sql :refer [sql-persistence]]
             [toshtogo.server.api :refer [api]]
