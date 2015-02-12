@@ -1,10 +1,14 @@
 (ns toshtogo.client.senders.decorators
-  (:require [clojure.pprint :refer [pprint]]
-            [flatland.useful.map :refer [update]]
-            [toshtogo.util.core :refer [debug exponential-backoff retry-until-success]]
-            [toshtogo.util.json :as json]
-            [toshtogo.client.util :refer [nil-on-404 throw-500 throw-400]]
-            [toshtogo.client.senders.protocol :refer :all])
+  (:require [flatland.useful.map :refer [update]]
+
+            [toshtogo.util
+             [core :refer [debug exponential-backoff retry-until-success]]
+             [json :as json]]
+
+            [toshtogo.client
+             [util :refer [nil-on-404 throw-500 throw-400]]
+             [protocol :refer :all]])
+
   (:import [java.net ConnectException]))
 
 (defn wrapper [decorated map-fn]
