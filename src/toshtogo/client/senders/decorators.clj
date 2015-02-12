@@ -33,13 +33,16 @@
   ([decorated follow]
    (wrapper decorated follow)))
 
-(defn wrap-json-decode-body [decorated]
+(defn wrap-json-decode-body
+  [decorated]
   (wrapper decorated (fn [sender resp] (update resp :body json/decode))))
 
-(defn wrap-extract-body [decorated]
+(defn wrap-extract-body
+  [decorated]
   (wrapper decorated (fn [sender resp] (:body resp))))
 
-(defn wrap-debug [decorated should-debug]
+(defn wrap-debug
+  [decorated should-debug]
   (if should-debug
     (reify Sender
       (POST! [this location message]
@@ -56,15 +59,15 @@
   (wrapper decorated (fn [sender resp] (nil-on-404 resp))))
 
 (defn wrap-throw-500
-      [decorated]
+  [decorated]
   (wrapper decorated (fn [sender resp] (throw-500 resp))))
 
 (defn wrap-throw-400
-      [decorated]
+  [decorated]
   (wrapper decorated (fn [sender resp] (throw-400 resp))))
 
 (defn wrap-throw-recoverable-exception-on-connect-exception
-      [decorated]
+  [decorated]
   (wrapper decorated (fn [sender resp]
                        (if (instance? ConnectException (:error resp))
                          (throw (ex-info (str "HTTP connection failure" (.getMessage (:error resp)))
@@ -72,23 +75,24 @@
                          resp))))
 
 (defn wrap-throw-recoverable-exception-on-503
-      [decorated]
+  [decorated]
   (wrapper decorated (fn [sender resp]
                        (if (= 503 (:status resp))
                          (throw (ex-info (str resp) {:recoverable? true}))
                          resp))))
 
 (defn immediately-throw
-      "Calls f (presumably for logging), then throws the exception
-      if it passes the predicate"
-      [f immediately-throw?]
+  "Calls f (presumably for logging), then throws the exception
+   if it passes the predicate"
+  [f immediately-throw?]
   (fn [e]
     (when f
       (f e))
     (when (immediately-throw? e)
       (throw e))))
 
-(defn wrap-retry-sender [decorated opts]
+(defn wrap-retry-sender
+  [decorated opts]
   (if-not (:should-retry opts)
     decorated
 
