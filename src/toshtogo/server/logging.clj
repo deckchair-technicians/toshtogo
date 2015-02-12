@@ -31,7 +31,7 @@
     (event-type= :server_error)
     {:event_type (sch/eq :server_error)
      :event_data {:stacktrace         sch/Str
-                  :message            sch/Str
+                  :message            (sch/maybe sch/Str)
                   :class              sch/Str
                   :ex_data            sch/Any
                   :http_method        sch/Str
