@@ -8,7 +8,6 @@
              [generate :as json-gen]]
             [ring.util.response :as resp]
             [ring.util.codec :as codec]
-            [swiss.arrows :refer :all]
             [clojure.pprint :refer [pprint]]
             [flatland.useful.map :refer [update update-each map-keys]]
 
