@@ -1,6 +1,5 @@
 (ns toshtogo.test.client.util-test
   (:require [midje.sweet :refer :all]
-            [flatland.useful.map :refer [into-map]]
             [toshtogo.client.util :refer [url-str throw-500 merge-dependency-results pick-highest-sequence-number]])
   (:import [clojure.lang ExceptionInfo]))
 
