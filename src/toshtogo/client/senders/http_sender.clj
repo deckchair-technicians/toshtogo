@@ -1,18 +1,10 @@
 (ns toshtogo.client.senders.http-sender
   (:require [org.httpkit.client :as http]
 
-            [clojure
-             [string :as str]
-             [stacktrace :refer [print-cause-trace]]]
-
             [flatland.useful.map :refer [update]]
 
             [toshtogo.util
-             [json :as tjson]
-             [core :refer [debug]]]
-
-            [toshtogo.client
-             [util :refer [url-str]]]
+             [json :as tjson]]
 
             [toshtogo.client.senders.protocol :refer :all])
 
