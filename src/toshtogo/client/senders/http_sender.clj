@@ -6,6 +6,9 @@
             [toshtogo.util
              [json :as tjson]]
 
+            [toshtogo.client
+             [util :refer [url-str]]]
+
             [toshtogo.client.senders.protocol :refer :all])
 
   (:import [java.io InputStream]))
