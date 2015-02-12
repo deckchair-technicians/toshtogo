@@ -2,8 +2,7 @@
   (:require [midje.sweet :refer :all]
             [flatland.useful.map :refer [into-map]]
             [toshtogo.client.util :refer [url-str throw-500 merge-dependency-results pick-highest-sequence-number]])
-  (:import [java.util.concurrent ExecutionException]
-           [clojure.lang ExceptionInfo]))
+  (:import [clojure.lang ExceptionInfo]))
 
 (fact "throw-500 works"
       (throw-500 {:status 500}) => (throws ExceptionInfo "Server Error")
