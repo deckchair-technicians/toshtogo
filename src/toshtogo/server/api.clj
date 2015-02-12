@@ -9,8 +9,7 @@
             [toshtogo.server.logging :refer :all]
             [toshtogo.server.persistence.protocol :as pers]
             [toshtogo.server.preprocessing :refer [normalise-job-tree replace-fungible-jobs-with-existing-job-ids collect-dependencies collect-new-jobs]])
-  (:import [java.util UUID]
-           [toshtogo.server.util UniqueConstraintException]))
+  (:import [java.util UUID]))
 
 (defprotocol Api
   (new-contract! [this contract-req])
