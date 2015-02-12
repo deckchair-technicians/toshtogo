@@ -28,8 +28,6 @@
                  [trptcolin/versioneer "0.1.0"]
                  [watchtower "0.1.1"]]
 
-  :plugins [[s3-wagon-private "1.1.2"]]
-
   :main toshtogo.server.core
 
   :ring {:handler toshtogo.server.core/dev-app-instance :reload-paths ["src"]}
