@@ -176,11 +176,11 @@
     (when-let [contract (request-work! client job-type-or-query)]
       (let [commitment-id (contract :commitment_id)
             heartbeat-fn! #(heartbeat! client commitment-id)
-            wrapped-fn (-> handler-fn
-                           (wrap-heartbeating heartbeat-fn!)
-                           (wrap-exception-handling))
-            ; This may take some time to return
-            result (wrapped-fn contract)
-            result (safely-submit-result! client commitment-id result)]
+            wrapped-fn    (-> handler-fn
+                              (wrap-heartbeating heartbeat-fn!)
+                              (wrap-exception-handling))
+                                        ; This may take some time to return
+            result        (wrapped-fn contract)
+            result        (safely-submit-result! client commitment-id result)]
         {:contract contract
          :result   result}))))
