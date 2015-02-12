@@ -7,7 +7,10 @@
 
             [toshtogo.client
              [util :refer [nil-on-404 throw-500 throw-400]]
-             [protocol :refer :all]])
+             [protocol :refer :all]]
+
+            [toshtogo.client.senders
+             [protocol :refer [Sender POST! GET PUT!]]])
 
   (:import [java.net ConnectException]))
 
