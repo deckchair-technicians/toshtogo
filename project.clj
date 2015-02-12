@@ -23,6 +23,7 @@
                  [org.flatland/useful "0.10.3"]
                  [prismatic/schema "0.2.1"]
                  [savagematt/hermit "0.7"]
+                 [savagematt/vice "0.2"]
                  [swiss-arrows "1.0.0"]
                  [trptcolin/versioneer "0.1.0"]
                  [watchtower "0.1.1"]]
