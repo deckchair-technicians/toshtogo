@@ -1,26 +1,36 @@
 (ns toshtogo.server.util.middleware
   (:require [clojure.java.jdbc :as sql]
+
             [schema.core :as sch]
-            [clojure.stacktrace :refer [print-cause-trace]]
-            [clojure.pprint :refer [pprint]]
-            [clojure.string :refer [upper-case]]
+
+            [clojure
+             [pprint :refer [pprint]]
+             [string :refer [upper-case]]
+             [stacktrace :refer [print-cause-trace]]]
+
             [ring.middleware.json :as ring-json]
             [flatland.useful.map :refer [update]]
-            [toshtogo.server.util.idempotentput :refer [check-idempotent!]]
-            [toshtogo.server.persistence.sql :refer [sql-persistence]]
-            [toshtogo.server.api :refer [api]]
-            [toshtogo.server.util.sql :refer [with-exception-conversion execute!]]
-            [toshtogo.server.logging :refer [error-event safe-log]]
-            [toshtogo.server.validation :refer [validated Agent]]
 
-            [toshtogo.util.core :refer [debug ppstr cause-trace exception-as-map with-sys-out]]
-            [toshtogo.util.json :as json]
-            [toshtogo.util.hashing :refer [murmur!]]
-            [toshtogo.util.io :refer [byte-array-input! byte-array-output!]])
+            [toshtogo.server.persistence
+             [sql :refer [sql-persistence]]]
+
+            [toshtogo.server.util
+             [idempotentput :refer [check-idempotent!]]
+             [sql :refer [with-exception-conversion execute!]]]
+
+            [toshtogo.server
+             [api :refer [api]]
+             [validation :refer [matches-schema? validated Agent]]
+             [logging :refer [error-event safe-log]]]
+
+            [toshtogo.util
+             [core :refer [debug ppstr cause-trace exception-as-map with-sys-out]]
+             [io :refer [byte-array-input! byte-array-output!]]
+             [hashing :refer [murmur!]]
+             [json :as json]]
+            )
   (:import [java.io ByteArrayInputStream]
-           [clojure.lang ExceptionInfo]
-           [toshtogo.server.logging ValidatingLogger DeferredLogger]
-           [org.postgresql.util PSQLException]))
+           [toshtogo.server.logging ValidatingLogger DeferredLogger]))
 
 
 (defn wrap-body-hash
@@ -64,21 +74,19 @@
                    (update :body #(dissoc % :agent)))))))
 
 (defn- retry*
-  ([retries-left exception-types f]
+  ([retries-left exception-schemas f]
    (try
      (f)
      (catch Throwable e
        (if (and (not= retries-left 0)
-                (some #(instance? % e) exception-types))
-         (retry* (dec retries-left) exception-types f)
+                (some #(matches-schema? % (ex-data e)) exception-schemas))
+         (retry* (dec retries-left) exception-schemas f)
          (throw e))))))
 
 (defn wrap-retry-on-exceptions
-  [handler retry-count & exception-types]
-  (let [exception-types (set exception-types)]
-    (fn [req]
-      (retry* retry-count exception-types (fn []
-                                  (handler req))))))
+  [handler retry-count & exception-schemas]
+  (fn [req]
+    (retry* retry-count exception-schemas (fn [] (handler req)))))
 
 (defn request-summary [req]
   (str (upper-case (name (:request-method req))) " " (:uri req)))

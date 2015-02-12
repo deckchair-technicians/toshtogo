@@ -6,8 +6,7 @@
   (:import [java.sql BatchUpdateException Timestamp SQLException]
            [clojure.lang Keyword IPersistentMap]
            [org.joda.time DateTime]
-           [org.postgresql.util PSQLException PGobject]
-           [toshtogo.server.util UniqueConstraintException]))
+           [org.postgresql.util PSQLException PGobject]))
 
 (defmulti clj->sql class)
 (defmethod clj->sql DateTime [v] (Timestamp. (.getMillis v)))
@@ -24,7 +23,9 @@
      (catch SQLException e#
        (case (.getSQLState e#)
          "23505"
-         (throw (UniqueConstraintException. e#))
+         (throw (ex-info "Unique Constraint Violation"
+                 {:cause  :unique-constraint-exception}
+                 e#))
 
          "08004"
          (throw (ex-info (str "Database unavailable- " (.getMessage e#))

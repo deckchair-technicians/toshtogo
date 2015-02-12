@@ -19,8 +19,7 @@
             [toshtogo.server.validation :refer :all]
             [toshtogo.util.core :refer [uuid ppstr debug parse-datetime ensure-seq]]
             [toshtogo.server.logging :refer :all])
-  (:import [java.io InputStream]
-           [toshtogo.server.util UniqueConstraintException]))
+  (:import [java.io InputStream]))
 
 (defn redirect
       "CORS requires 200 responses for PUT and POST. So we

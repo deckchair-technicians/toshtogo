@@ -4,7 +4,9 @@
   (:require [schema.core :as s]
             [schema.macros :as macros]
             [toshtogo.util.schema :as toshtogo-schema]
-            [toshtogo.util.core :refer [uuid? ensure-seq]]))
+            [toshtogo.util.core :refer [uuid? ensure-seq]]
+
+            [vice.coerce :refer [errors]]))
 
 (defn validated [thing schema]
   (if-let [errors (s/check schema thing)]
@@ -13,6 +15,10 @@
                      :data   thing
                      :errors errors}))
     thing))
+
+(defn matches-schema?
+  [schema x]
+  (nil? (errors schema x)))
 
 (def JobRequest
   {:job_type                                   s/Keyword
@@ -59,3 +65,6 @@
   {:hostname       s/Str
    :system_name    s/Str
    :system_version s/Str})
+
+(def UniqueConstraintException
+  {:cause (s/eq :unique-constraint-exception)})

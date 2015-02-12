@@ -1,19 +1,35 @@
 (ns toshtogo.server.persistence.sql
   (:require [clojure.java.jdbc :as sql]
+
             [clojure.pprint :refer [pprint]]
-            [clj-time.format :refer [parse]]
-            [clj-time.core :refer [now]]
+
+            [clj-time
+             [core :refer [now]]
+             [format :refer [parse]]]
+
             [cheshire.core :as json]
+
             [flatland.useful.map :refer [update update-each]]
-            [toshtogo.util.core :refer [uuid debug ensure-seq ppstr]]
-            [toshtogo.server.persistence.protocol :refer :all]
-            [toshtogo.server.persistence.agents-helper :refer :all]
-            [toshtogo.server.persistence.sql-jobs-helper :refer :all]
-            [toshtogo.server.persistence.sql-contracts-helper :refer :all]
-            [toshtogo.server.validation :refer [JobRecord DependencyRecord validated]]
-            [toshtogo.server.util.sql :as ttsql]
+
+            [toshtogo.util
+             [core :refer [uuid debug ensure-seq ppstr]]]
+
+            [toshtogo.server.persistence
+             [agents-helper :refer :all]
+             [protocol :refer :all]
+             [sql-jobs-helper :refer :all]
+             [sql-contracts-helper :refer :all]]
+
+            [toshtogo.server
+             [validation :refer [JobRecord DependencyRecord UniqueConstraintException
+                                 validated matches-schema?]]]
+
+            [toshtogo.server.util
+             [sql :as ttsql]]
+
             [toshtogo.util.hsql :as hsql])
-  (:import [toshtogo.server.util UniqueConstraintException]))
+
+  (:import [clojure.lang ExceptionInfo]))
 
 (defn sql-persistence [cnxn]
   (reify Persistence
@@ -65,9 +81,10 @@
             (agent! this agent-details)))
         true
 
-        (catch UniqueConstraintException _
-          (ttsql/execute! cnxn ["rollback to before_insert"])
-          false)))
+        (catch ExceptionInfo e
+          (if (matches-schema? UniqueConstraintException (ex-data e))
+            (do (ttsql/execute! cnxn ["rollback to before_insert"]) false)
+            (throw e)))))
 
     (upsert-heartbeat! [this commitment-id]
       (let [heartbeat-time (now)]

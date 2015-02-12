@@ -31,8 +31,7 @@
   :ring {:handler toshtogo.server.core/dev-app-instance :reload-paths ["src"]}
 
   ;:jvm-opts ["-agentpath:/Applications/YourKit_Java_Profiler_2013_build_13082.app/bin/mac/libyjpagent.jnilib"]
-  :aot [toshtogo.server.util.UniqueConstraintException
-        toshtogo.client.RecoverableException]
+  :aot [toshtogo.client.RecoverableException]
 
   :profiles {:dev {:dependencies [[javax.servlet/servlet-api "2.5"]
                                   [midje "1.6.2"]
