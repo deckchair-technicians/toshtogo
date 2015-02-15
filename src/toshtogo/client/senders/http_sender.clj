@@ -41,7 +41,7 @@
    {:body    (tjson/encode (assoc message :agent agent-details))
     :headers {"Content-Type" "application/json"}}])
 
-(sch/defrecord HTTPSender
+(sm/defrecord HTTPSender
     [agent-details :- Agent
      base-path :- Url]
 
@@ -55,7 +55,7 @@
   (GET [{:keys [base-path]} location]
       (slurp-body @(http/get (url-str base-path location)))))
 
-(sch/defn http-sender :- HTTPSender
+(sm/defn http-sender :- HTTPSender
   [agent-details :- Agent
    base-path :- Url]
   (->HTTPSender agent-details base-path))
