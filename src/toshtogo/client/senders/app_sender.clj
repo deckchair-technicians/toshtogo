@@ -12,8 +12,12 @@
             [toshtogo.client.senders.protocol :refer :all]
             [toshtogo.util.json :as tjson]))
 
-(defn make-request
-  [agent-details app method location message]
+(sm/defn make-request
+  [agent-details :- Agent
+   app :- sch/Any
+   method :- (sch/enum :get :put :post)
+   location :- sch/Str
+   message :- (sch/maybe clojure.lang.Associative)]
   (let [req (request
              method
              (str "http://toshtogo.test/" (str/replace-first location #"^/" "")))]

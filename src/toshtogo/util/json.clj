@@ -16,6 +16,13 @@
            (java.io InputStream)
            (schema.utils ValidationError)))
 
+
+; Let's add a default encoder.
+(json-gen/add-encoder
+  Object
+  (fn [^Object o ^JsonGenerator jg]
+    (.writeString jg (.toString o))))
+
 (json-gen/add-encoder
   DateTime
   (fn [^DateTime d ^JsonGenerator jg]

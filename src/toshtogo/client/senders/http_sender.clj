@@ -35,8 +35,11 @@
 (defn put [[url body]]
   @(http/put url body))
 
-(defn- url-and-body
-  [base-path agent-details location message]
+(sm/defn url-and-body
+  [base-path :- Url
+   agent-details :- Agent
+   location :- sch/Str
+   message :- (sch/maybe clojure.lang.Associative)]
   [(url-str base-path location)
    {:body    (tjson/encode (assoc message :agent agent-details))
     :headers {"Content-Type" "application/json"}}])

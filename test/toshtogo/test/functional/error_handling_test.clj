@@ -9,10 +9,14 @@
              [protocol :refer :all]]
             [toshtogo.util.core :refer [uuid uuid-str debug]]
             [schema.core :as sch]
+
+            [cheshire.generate :refer [to-json]]
+
             [toshtogo.test.midje-schema :refer :all]
             [toshtogo.test.functional.test-support :refer :all])
 
   (:import (clojure.lang ExceptionInfo)
+           (cheshire.generate JSONable)
            (java.util.concurrent ExecutionException)))
 
 (background (before :contents @migrated-dev-db))
@@ -52,8 +56,7 @@
       (consumer nil)
 
       (:error (get-job client-no-logging job-id))
-      => (matches {:message             #"Problem sending result. Result cannot be json encoded."
-                   :original_result_str String})))
+      => (matches {:message (sch/both #"Problem sending result" #"does not match schema")})))
 
   (fact "Sending an invalid job results in client exception (i.e. does not get stuck in retry loop)"
     (lift-exceptions (put-job! client-no-logging (uuid) {:not "a job"}))
@@ -99,15 +102,28 @@
 
       (fact "unserialisable result"
         (let [job-id (uuid)
-              func (fn [job] (success {:cannot-be-json-encoded (Object.)}))]
+              func (fn [job] (success {:cannot-be-json-encoded
+                                      (reify JSONable (to-json [_ _] (assert false)))}))]
 
           (put-job! client-no-logging job-id (job-req {:a-field "field value"} job-type))
 
           @(do-work! client-no-logging job-type func)
 
           (:error (get-job client-no-logging job-id))
-          => (matches {:message             #"Cannot JSON encode object"
-                       :original_result_str #"cannot-be-json-encoded"})))))
+          => (matches {:message #"Problem sending result. Result cannot be json encoded."
+                       :original_result_str #":cannot-be-json-encoded"})))
+
+      (fact "catastrophically bad bad bad"
+        (let [job-id (uuid)
+              func (fn [job] (success {:cannot-be-json-encoded
+                                      (reify Object (toString [_] (assert false)))}))]
+
+          (put-job! client-no-logging job-id (job-req {:a-field "field value"} job-type))
+
+          @(do-work! client-no-logging job-type func)
+
+          (:error (get-job client-no-logging job-id))
+          => (matches {:message #"Catastrophic problems sending result."})))))
 
   (fact "Idempotency exceptions are marked as client errors"
     (let [job-id (uuid)]
