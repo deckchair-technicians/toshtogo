@@ -1,14 +1,17 @@
 (ns toshtogo.server.persistence.sql-jobs-helper
   (:require [flatland.useful.map :as mp]
             [clj-time.core :refer [now]]
-            [clj-time.coerce :as tc]
+
             [honeysql.helpers :refer :all]
-            [toshtogo.server.persistence.protocol :refer :all]
-            [toshtogo.server.persistence.sql-contracts-helper :refer [job-query]]
-            [toshtogo.util.core :refer [uuid debug assoc-not-nil]]
-            [toshtogo.util.deterministic-representation :refer [database-representation]]
-            [toshtogo.util.hsql :as hsql]
-            [toshtogo.util.json :as json]))
+
+            [toshtogo.server.persistence
+             [protocol :refer :all]
+             [sql-contracts-helper :refer [job-query]]]
+
+            [toshtogo.util
+             [deterministic-representation :refer [database-representation]]
+             [hsql :as hsql]
+             [json :as json]]))
 
 (defn collect-tags [job row]
   (if-not (contains? row :tag)
