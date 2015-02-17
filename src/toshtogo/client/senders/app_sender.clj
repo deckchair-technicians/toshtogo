@@ -1,23 +1,41 @@
 (ns toshtogo.client.senders.app-sender
-  (:require [ring.mock.request :refer [request body header]]
+  (:require [ring.mock.request :refer [request body]]
+
             [clojure.string :as str]
+
+            [schema
+             [core :as sch]
+             [macros :as sm]]
+
+            [toshtogo.schemas :refer [Agent]]
+
             [toshtogo.client.senders.protocol :refer :all]
             [toshtogo.util.json :as tjson]))
 
-(defn app-sender [agent-details app]
-  (letfn [(make-request [method location message]
-                        (let [req (request
-                                    method
-                                    (str "http://toshtogo.test/" (str/replace-first location #"^/" "")))]
-                          (app (-> req
-                                   (body (tjson/encode (assoc message :agent agent-details)))
-                                   (assoc :content-type "application/json")))))]
-    (reify Sender
-      (POST! [this location message]
-        (make-request :post location message))
+(defn make-request
+  [agent-details app method location message]
+  (let [req (request
+             method
+             (str "http://toshtogo.test/" (str/replace-first location #"^/" "")))]
+    (app (-> req
+             (body (tjson/encode (assoc message :agent agent-details)))
+             (assoc :content-type "application/json")))))
 
-      (PUT! [this location message]
-        (make-request :put location message))
+(sm/defrecord AppSender
+    [agent-details :- Agent
+     app :- sch/Any]
 
-      (GET [this location]
-        (app (request :get (str "http://toshtogo.test/" (str/replace-first location #"^/" ""))))))))
+  Sender
+  (POST! [{:keys [agent-details app]} location message]
+         (make-request agent-details app :post location message))
+
+  (PUT! [{:keys [agent-details app]} location message]
+        (make-request agent-details app :put location message))
+
+  (GET [{:keys [app]} location]
+      (app (request :get (str "http://toshtogo.test/" (str/replace-first location #"^/" ""))))))
+
+(sm/defn app-sender
+  [agent-details :- Agent
+   app :- sch/Any]
+  (->AppSender agent-details app))
