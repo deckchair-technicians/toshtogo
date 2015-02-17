@@ -1,7 +1,4 @@
-(ns toshtogo.server.persistence.protocol
-  (:import (java.util UUID))
-  (:require [clj-time.core :refer [now]]
-            [clojure.pprint :refer [pprint]]))
+(ns toshtogo.server.persistence.protocol)
 
 (defn contract-req
   ([job-id]
