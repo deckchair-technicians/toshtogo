@@ -34,8 +34,11 @@
    (s/optional-key :existing_job_dependencies) [s/Uuid]
    (s/optional-key :dependencies)              [(toshtogo-schema/recursive #'JobRequest)]})
 
+(def ContractOutcome
+  (s/enum :success :error :cancelled :try-later :more-work))
+
 (def JobResult
-  {:outcome                                    (s/enum :success :error :cancelled :try-later :more-work)
+  {:outcome                                    ContractOutcome
    (s/optional-key :result)                    {s/Any s/Any}
    (s/optional-key :error)                     {(s/optional-key :message) (s/maybe s/Str)
                                                 (s/optional-key :stacktrace) s/Str
