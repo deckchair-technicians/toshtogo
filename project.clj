@@ -22,6 +22,7 @@
                  [org.clojure/math.numeric-tower "0.0.4"]
                  [org.flatland/useful "0.10.3"]
                  [savagematt/hermit "0.7"]
+                 [savagematt/bowen "2.0"]
                  [savagematt/vice "0.3"]
                  [trptcolin/versioneer "0.1.0"]
                  [watchtower "0.1.1"]]
