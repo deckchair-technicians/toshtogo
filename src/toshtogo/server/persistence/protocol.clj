@@ -47,9 +47,11 @@
              :jobs     (get-jobs persistence params)
              :links    (get-dependency-links persistence params)}))
 
-(defn get-job [persistence job-id]
-         (assoc-dependencies persistence (first (get-jobs persistence {:job_id job-id}))))
+(defn get-job
+  [persistence job-id]
+  (assoc-dependencies persistence (first (get-jobs persistence {:job_id job-id}))))
 
-(defn get-contract [persistence params]
-              (cond-> (first (get-contracts persistence params))
-                      (params :with-dependencies) (merge-dependencies persistence)))
+(defn get-contract
+  [persistence params]
+  (cond-> (first (get-contracts persistence params))
+          (params :with-dependencies) (merge-dependencies persistence)))
