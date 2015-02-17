@@ -68,7 +68,7 @@
 
     (insert-commitment!
       [this commitment-id contract agent-details]
-      (assert contract "no contract-id")
+      (assert contract "no contract")
       (assert commitment-id "no commitment-id")
 
       (ttsql/execute! cnxn ["savepoint before_insert"])
