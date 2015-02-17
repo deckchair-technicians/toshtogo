@@ -6,7 +6,6 @@
             [toshtogo.util.json :as json]
             [toshtogo.util.core :refer [assoc-not-nil uuid uuid? ppstr debug]]
             [toshtogo.client.protocol :refer [cancelled]]
-            [toshtogo.server.logging :refer :all]
             [toshtogo.server.persistence.protocol :as pers]
             [toshtogo.server.preprocessing :refer [normalise-job-tree replace-fungible-jobs-with-existing-job-ids collect-dependencies collect-new-jobs]]))
 
@@ -42,7 +41,7 @@
               :contract_due)
       (update :request_body json/encode)))
 
-(defn api [persistence logger agent-details]
+(defn api [persistence agent-details]
   (reify Api
     (new-contract! [_ contract-req]
       (let [job-id (:job_id contract-req)
@@ -68,9 +67,6 @@
 
     (new-jobs! [this jobs]
       (let [job-records (map to-job-record jobs)]
-
-        (doseq [ev (map new-job-event job-records)]
-          (log logger ev))
 
         (pers/insert-jobs! persistence job-records)
         (doseq [job jobs]
@@ -131,8 +127,7 @@
 
     (request-work! [this commitment-id job-query]
       (let [insert-and-get (fn [contract]
-                             (when (pers/insert-commitment! persistence commitment-id (:contract_id contract) agent-details)
-                               (log logger (commitment-started-event commitment-id contract agent-details))
+                             (when (pers/insert-commitment! persistence commitment-id contract agent-details)
 
                                (pers/get-contract persistence {:commitment_id     commitment-id
                                                                :with-dependencies true})))
@@ -154,8 +149,7 @@
         (case (:outcome contract)
           :running
           (do
-            (log logger (commitment-result-event contract agent-details result))
-            (pers/insert-result! persistence commitment-id result)
+            (pers/insert-result! persistence commitment-id result agent-details)
             (process-result! this contract result))
 
           :cancelled
@@ -171,7 +165,7 @@
 
         (when (= :waiting (:outcome job))
           (let [commitment-id (uuid)]
-            (pers/insert-commitment! persistence commitment-id (:contract_id job) agent-details)
+            (pers/insert-commitment! persistence commitment-id job agent-details)
             (complete-work! this commitment-id (cancelled))))
 
         (when (= :running (:outcome job))

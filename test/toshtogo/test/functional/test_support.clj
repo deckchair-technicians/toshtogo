@@ -77,4 +77,4 @@
 (defn deps [cnxn]
   (let [persistence (sql-persistence cnxn)]
     {:persistence persistence
-     :api         (api persistence nil agent-details)}))
+     :api         (api persistence agent-details)}))

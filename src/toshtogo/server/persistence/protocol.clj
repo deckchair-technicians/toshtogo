@@ -20,9 +20,9 @@
   (insert-fungibility-group-entry! [this entry])
 
   (insert-contract!   [this job-id contract-number contract-due])
-  (insert-commitment! [this commitment-id contract-id agent-details])
+  (insert-commitment! [this commitment-id contract agent-details])
   (upsert-heartbeat!  [this commitment-id])
-  (insert-result!     [this commitment-id result])
+  (insert-result!     [this commitment-id result agent-details])
 
   (get-jobs             [this params])
   (get-dependency-links [this params])

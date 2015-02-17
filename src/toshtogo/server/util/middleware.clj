@@ -12,6 +12,7 @@
             [flatland.useful.map :refer [update]]
 
             [toshtogo.server.persistence
+             [logging-persistence :refer [logging-persistence]]
              [sql :refer [sql-persistence]]]
 
             [toshtogo.server.util
@@ -59,10 +60,11 @@
 
 (defn sql-deps
   [cnxn logger agent-details]
-  (let [persistence (sql-persistence cnxn)]
+  (let [persistence (-> (sql-persistence cnxn)
+                        (logging-persistence logger))]
     {:persistence persistence
      :agent       (validated agent-details (sch/maybe Agent))
-     :api         (api persistence logger agent-details)}))
+     :api         (api persistence agent-details)}))
 
 (defn wrap-dependencies
   "Adds protocol implementations for services"

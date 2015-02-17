@@ -67,8 +67,8 @@
                        ["job_id = ?" job-id])))
 
     (insert-commitment!
-      [this commitment-id contract-id agent-details]
-      (assert contract-id "no contract-id")
+      [this commitment-id contract agent-details]
+      (assert contract "no contract-id")
       (assert commitment-id "no commitment-id")
 
       (ttsql/execute! cnxn ["savepoint before_insert"])
@@ -77,7 +77,7 @@
         (ttsql/insert! cnxn :agent_commitments
           (commitment-record
             commitment-id
-            contract-id
+            (:contract_id contract)
             (agent! this agent-details)))
         true
 
@@ -96,7 +96,7 @@
           {:instruction :cancel}
           {:instruction :continue})))
 
-    (insert-result! [this commitment-id result]
+    (insert-result! [this commitment-id result agent-details]
       (assert commitment-id "no commitment-id")
       (ttsql/insert! cnxn
                     :commitment_outcomes
