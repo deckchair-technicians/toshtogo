@@ -1,16 +1,25 @@
 (ns toshtogo.test.server.api.sql-jobs-test
   (:require [midje.sweet :refer :all]
+
             [clojure.java.jdbc :as sql]
-            [clojure.pprint :refer [pprint]]
-            [toshtogo.test.server.api.util :refer [job-req]]
+
+            [toshtogo.test.server.api
+             [util :refer [job-req]]]
+
+            [toshtogo.test.functional
+             [test-support :refer :all]]
+
             [toshtogo.server.persistence.protocol :refer :all]
-            [toshtogo.server.persistence.sql :refer [sql-persistence]]
-            [toshtogo.server.core :refer [dev-db]]
-            [toshtogo.util.core :refer [uuid uuid-str debug]]
-            [toshtogo.client.util :as util]
-            [toshtogo.client.protocol :refer [success add-dependencies]]
-            [toshtogo.test.functional.test-support :refer :all]
-            [toshtogo.server.api :refer :all]))
+
+            [toshtogo.server
+             [api :refer :all]
+             [core :refer [dev-db]]]
+
+            [toshtogo.util
+             [core :refer [uuid uuid-str]]]
+
+            [toshtogo.client
+             [protocol :refer [success add-dependencies]]]))
 
 (background (before :contents @migrated-dev-db))
 
