@@ -1,25 +1,33 @@
 (ns toshtogo.server.handler
-  (:require [compojure.core :refer :all]
-            [compojure.handler :as handler]
-            [compojure.route :as route]
+  (:require [compojure
+             [core :refer :all]
+             [handler :as handler]
+             [route :as route]]
+
             [clojure.string :as s]
-            [cheshire
-             [core :as json]
-             [generate :as json-gen]]
-            [ring.util.response :as resp]
-            [ring.util.codec :as codec]
-            [clojure.pprint :refer [pprint]]
+
+            [ring.util
+             [codec :as codec]
+             [response :as resp]]
+
             [flatland.useful.map :refer [update update-each map-keys]]
 
+            [toshtogo.server.heartbeat
+             [core :refer [start-monitoring!]]]
 
-            [toshtogo.server.heartbeat.core :refer [start-monitoring!]]
-            [toshtogo.server.util.middleware :refer :all]
-            [toshtogo.server.persistence.protocol :refer :all]
-            [toshtogo.server.api :refer :all]
-            [toshtogo.server.validation :refer :all]
-            [toshtogo.util.core :refer [uuid ppstr debug parse-datetime ensure-seq]]
-            [toshtogo.server.logging :refer :all])
-  (:import [java.io InputStream]))
+            [toshtogo.util
+             [core :refer [uuid  debug parse-datetime ensure-seq]]]
+
+            [toshtogo.server.util
+             [middleware :refer :all]]
+
+            [toshtogo.server.persistence
+             [protocol :refer :all]]
+
+            [toshtogo.server
+             [api :refer :all]
+             [validation :refer :all]
+             [logging :refer :all]]))
 
 (defn redirect
       "CORS requires 200 responses for PUT and POST. So we
