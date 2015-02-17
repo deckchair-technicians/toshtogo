@@ -5,7 +5,6 @@
             [honeysql.helpers :refer :all]
 
             [toshtogo.server.persistence
-             [protocol :refer :all]
              [sql-contracts-helper :refer [job-query]]]
 
             [toshtogo.util

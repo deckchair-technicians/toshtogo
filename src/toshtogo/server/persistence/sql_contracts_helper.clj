@@ -1,13 +1,14 @@
 (ns toshtogo.server.persistence.sql-contracts-helper
   (:require [flatland.useful.map :as mp]
+
             [clj-time.core :refer [now]]
-            [clojure.string :as str]
-            [toshtogo.server.persistence.protocol :refer :all]
+
             [honeysql.helpers :refer :all]
-            [toshtogo.util.deterministic-representation :refer [database-representation]]
-            [toshtogo.util.json :as json]
-            [toshtogo.util.hsql :as hsql]
-            [toshtogo.util.core :refer [uuid debug ensure-seq safe-name]]))
+
+            [toshtogo.util
+             [core :refer [uuid ensure-seq safe-name]]
+             [deterministic-representation :refer [database-representation]]
+             [json :as json]]))
 
 (defn contract-record [job-id contract-number contract-due]
   {:contract_id      (uuid)
