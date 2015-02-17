@@ -115,7 +115,7 @@
 
       (fact "catastrophically bad bad bad"
         (let [job-id (uuid)
-              func (fn [job] (success {:cannot-be-json-encoded
+              func (fn [job] (success {:cannot-be-stringified
                                       (reify Object (toString [_] (assert false)))}))]
 
           (put-job! client-no-logging job-id (job-req {:a-field "field value"} job-type))
