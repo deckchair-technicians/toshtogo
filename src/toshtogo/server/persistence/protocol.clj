@@ -40,12 +40,12 @@
     (assoc contract :dependencies (get-jobs persistence {:dependency_of_job_id (contract :job_id)}))))
 
 (defn get-tree [persistence tree-id]
-          (let [params {:tree_id tree-id
-                        :fields  [:jobs.job_id :jobs.job_name :jobs.job_type :outcome]}]
-            {:root_job (first (get-jobs persistence {:root_of_tree_id tree-id
-                                                                 :fields          [:jobs.job_id]}))
-             :jobs     (get-jobs persistence params)
-             :links    (get-dependency-links persistence params)}))
+  (let [params {:tree_id tree-id
+                :fields  [:jobs.job_id :jobs.job_name :jobs.job_type :outcome]}]
+    {:root_job (first (get-jobs persistence {:root_of_tree_id tree-id
+                                             :fields          [:jobs.job_id]}))
+     :jobs     (get-jobs persistence params)
+     :links    (get-dependency-links persistence params)}))
 
 (defn get-job
   [persistence job-id]
