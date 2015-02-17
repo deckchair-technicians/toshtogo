@@ -4,12 +4,11 @@
             [clojure.walk :refer [postwalk]]
             [flatland.useful.map :refer [update]]
             [toshtogo.util.json :as json]
-            [toshtogo.util.core :refer [assoc-not-nil uuid ppstr debug]]
+            [toshtogo.util.core :refer [assoc-not-nil uuid uuid? ppstr debug]]
             [toshtogo.client.protocol :refer [cancelled]]
             [toshtogo.server.logging :refer :all]
             [toshtogo.server.persistence.protocol :as pers]
-            [toshtogo.server.preprocessing :refer [normalise-job-tree replace-fungible-jobs-with-existing-job-ids collect-dependencies collect-new-jobs]])
-  (:import [java.util UUID]))
+            [toshtogo.server.preprocessing :refer [normalise-job-tree replace-fungible-jobs-with-existing-job-ids collect-dependencies collect-new-jobs]]))
 
 (defprotocol Api
   (new-contract! [this contract-req])
@@ -27,7 +26,7 @@
 (defn- dependency-outcomes
   "This is incredibly inefficient"
   [persistence job-id]
-  (assert (instance? UUID job-id) (str "job-id should be a UUID but was" (ppstr job-id)))
+  (assert (uuid? job-id) (str "job-id should be a UUID but was" (ppstr job-id)))
   (reduce (fn [outcomes dependency]
             (cons (dependency :outcome) outcomes))
           #{}
