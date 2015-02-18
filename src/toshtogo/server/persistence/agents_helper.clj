@@ -1,6 +1,8 @@
 (ns toshtogo.server.persistence.agents-helper
   (:require [honeysql.helpers :refer :all]
-            [toshtogo.util.core :refer [uuid debug]]))
+
+            [toshtogo.util
+             [core :refer [uuid]]]))
 
 (def select-agent
   (-> (select :*)
