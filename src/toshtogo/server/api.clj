@@ -74,13 +74,13 @@
 
     (new-dependencies!
       [this parent-job-or-contract]
-      (let [agent-id (:agent_id (pers/agent! persistence agent-details))
+      (let [agent-id               (:agent_id (pers/agent! persistence agent-details))
             parent-job-or-contract (-> parent-job-or-contract
                                        (normalise-job-tree agent-id)
                                        (replace-fungible-jobs-with-existing-job-ids persistence))
 
-            dependency-records (collect-dependencies parent-job-or-contract)
-            new-jobs (collect-new-jobs parent-job-or-contract)]
+            dependency-records     (collect-dependencies parent-job-or-contract)
+            new-jobs               (collect-new-jobs parent-job-or-contract)]
 
         (new-jobs! this new-jobs)
 
