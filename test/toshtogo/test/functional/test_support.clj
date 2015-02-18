@@ -13,7 +13,7 @@
 
             [schema.core :as sch]
 
-            [toshtogo.server.persistence.sql :refer [sql-persistence]]
+            [toshtogo.server.persistence.sql-persistence :refer [sql-persistence]]
             [toshtogo.server.api :refer [api]]
             [toshtogo.util.core :refer [uuid uuid-str debug cause-trace]]
             [toshtogo.client.util :as client-util]

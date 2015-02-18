@@ -1,4 +1,4 @@
-(ns toshtogo.server.persistence.sql
+(ns toshtogo.server.persistence.sql-persistence
   (:require [clojure.java.jdbc :as sql]
 
             [clojure.pprint :refer [pprint]]

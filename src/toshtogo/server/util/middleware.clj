@@ -13,7 +13,7 @@
 
             [toshtogo.server.persistence
              [logging-persistence :refer [logging-persistence]]
-             [sql :refer [sql-persistence]]]
+             [sql-persistence :refer [sql-persistence]]]
 
             [toshtogo.server.util
              [idempotentput :refer [check-idempotent!]]
