@@ -44,10 +44,10 @@
 (defn api [persistence agent-details]
   (reify Api
     (new-contract! [_ contract-req]
-      (let [job-id (:job_id contract-req)
-            contract-due (or (:contract_due contract-req) (minus (now) (seconds 5)))
-            last-contract (pers/get-contract persistence {:job_id job-id :latest_contract true})
-            new-contract-ordinal (if last-contract (inc (:contract_number last-contract)) 1)
+      (let [job-id                (:job_id contract-req)
+            contract-due          (or (:contract_due contract-req) (minus (now) (seconds 5)))
+            last-contract         (pers/get-contract persistence {:job_id job-id :latest_contract true})
+            new-contract-ordinal  (if last-contract (inc (:contract_number last-contract)) 1)
             last-contract-outcome (:outcome last-contract)]
 
         (case last-contract-outcome

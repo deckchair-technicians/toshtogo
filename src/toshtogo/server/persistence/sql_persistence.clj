@@ -15,7 +15,7 @@
              [core :refer [uuid debug ensure-seq ppstr]]]
 
             [toshtogo.server.persistence
-             [agents-helper :refer :all]
+             [agents-helper :refer [agent-record select-agent]]
              [protocol :refer :all]
              [sql-jobs-helper :refer :all]
              [sql-contracts-helper :refer :all]]
