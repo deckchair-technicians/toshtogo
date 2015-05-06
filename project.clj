@@ -39,4 +39,5 @@
 
                    :plugins      [[lein-midje "3.1.0"]
                                   [lein-ring "0.8.8"]
+                                  [lein-set-version "0.4.1"]
                                   [midje-junit-formatter "0.1.0-SNAPSHOT"]]}})
