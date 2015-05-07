@@ -204,9 +204,10 @@
   (resp/resource-response path {:root "toshtogo/gui/"}))
 
 (defroutes site-routes
-           (route/resources "/" {:root "toshtogo/gui/"})
-           (GET "/jobs" [] (html-resource "jobs.html"))
-           (GET "/jobs/:job-id" [job-id] (html-resource "job.html")))
+  (GET "/health" [] "I'm fine")
+  (route/resources "/" {:root "toshtogo/gui/"})
+  (GET "/jobs" [] (html-resource "jobs.html"))
+  (GET "/jobs/:job-id" [job-id] (html-resource "job.html")))
 
 
 (defn start-heartbeat-monitor!
