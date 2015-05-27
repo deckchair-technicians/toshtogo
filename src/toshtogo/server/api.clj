@@ -7,7 +7,8 @@
             [toshtogo.util.core :refer [assoc-not-nil uuid uuid? ppstr debug]]
             [toshtogo.client.protocol :refer [cancelled]]
             [toshtogo.server.persistence.protocol :as pers]
-            [toshtogo.server.preprocessing :refer [normalise-job-tree replace-fungible-jobs-with-existing-job-ids collect-dependencies collect-new-jobs]]))
+            [toshtogo.server.preprocessing :refer [normalise-job-tree replace-fungible-jobs-with-existing-job-ids collect-dependencies collect-new-jobs]]
+            [toshtogo.server.persistence.protocol :refer (contract-req)]))
 
 (defprotocol Api
   (new-contract! [this contract-req])
@@ -19,6 +20,7 @@
   (process-result! [this contract result])
   (request-work! [this commitment-id job-query])
   (complete-work! [this commitment-id result])
+  (retry-job! [this job-id])
   (pause-job! [this job-id]))
 
 
@@ -172,4 +174,15 @@
           (complete-work! this (:commitment_id job) (cancelled))))
 
       (doseq [dependency (pers/get-jobs persistence {:dependency_of_job_id job-id})]
-        (pause-job! this (:job_id dependency))))))
+        (pause-job! this (:job_id dependency))))
+
+    (retry-job! [this job-id]
+      (let [job (pers/get-job persistence job-id)]
+        (assert job (str "no job " job-id))
+
+        (when (#{:error :cancelled} (:outcome job))
+          (new-contract! this (contract-req job-id)))
+
+       (doseq [dependency (pers/get-jobs persistence {:dependency_of_job_id job-id})]
+         (retry-job! this (:job_id dependency)))))))
+

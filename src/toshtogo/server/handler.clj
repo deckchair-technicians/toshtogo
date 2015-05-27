@@ -149,8 +149,7 @@
                   "pause"
                   (resp/response (pause-job! api job-id))
                   "retry"
-                  (resp/response (new-contract! api (contract-req job-id)))
-                  )))))
+                  (resp/response (retry-job! api job-id)))))))
 
     (context "/commitments" []
       (PUT "/" []
