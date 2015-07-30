@@ -33,10 +33,6 @@
       (merge-left-join :job_results
                  [:= :jobs.job_id :job_results.job_id])))
 
-(def job-max-contract-number (-> (select :%max.contract_number)
-                      (from [:contracts :c])
-                      (where [:= :c.job_id :contracts.job_id])))
-
 (def unfinished-dependency-count
   (-> (select :%count.*)
       (from [:job_dependencies :U_job_dependencies])
