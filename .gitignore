@@ -13,3 +13,6 @@ pom.xml.asc
 *.iml
 src/toshtogo/scratch.clj
 .idea
+resources/public/js/compiled
+figwheel_server.log
+
