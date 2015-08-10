@@ -1,7 +1,5 @@
 (ns toshtogo.util.json
-  (:require [schema.utils :refer :all]
-
-            [cheshire
+  (:require [cheshire
              [core :as json]
              [generate :as json-gen]]
 
@@ -26,21 +24,21 @@
 (json-gen/add-encoder
   DateTime
   (fn [^DateTime d ^JsonGenerator jg]
-    (.writeString jg (tf/unparse (tf/formatters :date-time) d))))
+    (.writeString jg ^String (tf/unparse (tf/formatters :date-time) d))))
 
 (json-gen/add-encoder
   DateMidnight
   (fn [^DateMidnight d ^JsonGenerator jg]
-    (.writeString jg (tf/unparse (tf/formatters :date) d))))
+    (.writeString jg ^String (tf/unparse (tf/formatters :date) d))))
 
 (json-gen/add-encoder
  LocalDate
  (fn [^LocalDate d ^JsonGenerator jg]
    (.writeString
-    jg
-    (tf/unparse
-     (tf/formatters :date)
-     (t/date-time (t/year d) (t/month d) (t/day d))))))
+     jg
+     ^String (tf/unparse
+               (tf/formatters :date)
+               (t/date-time (t/year d) (t/month d) (t/day d))))))
 
 (json-gen/add-encoder
   ValidationError
@@ -59,4 +57,4 @@
 
 (defmethod decode InputStream [s]
   (decode (slurp s)))
-(defmethod decode nil [s] nil)
+(defmethod decode nil [_] nil)
