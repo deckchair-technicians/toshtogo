@@ -10,8 +10,7 @@
              [util :refer [url-str]]]
 
             [schema
-             [core :as sch]
-             [macros :as sm]]
+             [core :as sch]]
 
             [vice.valuetypes :refer [Url]]
 
@@ -35,7 +34,7 @@
 (defn put [[url body]]
   @(http/put url body))
 
-(sm/defn url-and-body
+(sch/defn url-and-body
   [base-path :- Url
    agent-details :- Agent
    location :- sch/Str
@@ -44,7 +43,7 @@
    {:body    (tjson/encode (assoc message :agent agent-details))
     :headers {"Content-Type" "application/json"}}])
 
-(sm/defrecord HTTPSender
+(sch/defrecord HTTPSender
     [agent-details :- Agent
      base-path :- Url]
 
@@ -58,7 +57,7 @@
   (GET [{:keys [base-path]} location]
       (slurp-body @(http/get (url-str base-path location)))))
 
-(sm/defn http-sender :- HTTPSender
+(sch/defn http-sender :- HTTPSender
   [agent-details :- Agent
    base-path :- Url]
   (->HTTPSender agent-details base-path))

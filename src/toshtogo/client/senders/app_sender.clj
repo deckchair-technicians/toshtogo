@@ -4,15 +4,14 @@
             [clojure.string :as str]
 
             [schema
-             [core :as sch]
-             [macros :as sm]]
+             [core :as sch]]
 
             [toshtogo.schemas :refer [Agent]]
 
             [toshtogo.client.senders.protocol :refer :all]
             [toshtogo.util.json :as tjson]))
 
-(sm/defn make-request
+(sch/defn make-request
   [agent-details :- Agent
    app :- sch/Any
    method :- (sch/enum :get :put :post)
@@ -25,7 +24,7 @@
              (body (tjson/encode (assoc message :agent agent-details)))
              (assoc :content-type "application/json")))))
 
-(sm/defrecord AppSender
+(sch/defrecord AppSender
     [agent-details :- Agent
      app :- sch/Any]
 
@@ -39,7 +38,7 @@
   (GET [{:keys [app]} location]
       (app (request :get (str "http://toshtogo.test/" (str/replace-first location #"^/" ""))))))
 
-(sm/defn app-sender
+(sch/defn app-sender
   [agent-details :- Agent
    app :- sch/Any]
   (->AppSender agent-details app))

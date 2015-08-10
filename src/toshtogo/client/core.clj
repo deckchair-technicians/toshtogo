@@ -9,19 +9,16 @@
 
             [toshtogo.client.senders
              [app-sender :refer [app-sender]]
-             [http-sender :refer [http-sender]]]))
+             [http-sender :refer [http-sender]]])
+  (:import [java.net URL]))
 
 (defn sender
-  [client-opts agent-details]
-  (case (:type client-opts)
+  [{:keys [type base-url app]} agent-details]
+  (case type
     :http
-    (let [base-url (:base-url client-opts)]
-      (assert base-url)
-      (http-sender agent-details base-url))
+    (http-sender agent-details (if (instance? URL base-url) base-url (URL. base-url)))
     :app
-    (let [app (:app client-opts)]
-      (assert app)
-      (app-sender agent-details app))))
+    (app-sender agent-details app)))
 
 
 (defn client
