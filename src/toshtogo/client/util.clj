@@ -2,7 +2,7 @@
   (:require [trptcolin.versioneer.core :as version]
             [flatland.useful.map :refer [map-keys]])
 
-  (:import [java.net UnknownHostException InetAddress]))
+  (:import [java.net UnknownHostException InetAddress URL]))
 
 (def hostname
   (delay
@@ -117,5 +117,5 @@
                                   (drop-while #(= \/ %))
                                   (apply str))]
         (str stripped-url "/" stripped-segment)))
-    base-url
+    (str base-url)
     path-segments)))

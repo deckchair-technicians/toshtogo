@@ -1,7 +1,8 @@
 (ns toshtogo.test.client.util-test
   (:require [midje.sweet :refer :all]
             [toshtogo.client.util :refer [url-str throw-500 merge-dependency-results pick-highest-sequence-number]])
-  (:import [clojure.lang ExceptionInfo]))
+  (:import [clojure.lang ExceptionInfo]
+           [java.net URL]))
 
 (fact "throw-500 works"
       (throw-500 {:status 500}) => (throws ExceptionInfo "Server Error")
@@ -55,10 +56,9 @@
                                            {:dep2-value 2}])}))
 
 (fact "Url str can do basic url joining"
-
       (let [base-url "http://www.google.com"]
         (url-str base-url) => base-url
-        (url-str base-url "/foo") => (str base-url "/foo")
+        (url-str (URL. base-url) "/foo") => (str base-url "/foo")
         (url-str base-url "///foo") => (str base-url "/foo")
         (url-str (str base-url "//") "//foo") => (str base-url "/foo")
         (url-str base-url "/foo/" "/bar") => (str base-url "/foo/bar")
