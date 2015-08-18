@@ -6,13 +6,14 @@
             [clj-time
              [core :as t]
              [format :as tf]]
+            [schema.utils :as utils]
 
             [toshtogo.util.core :refer [debug]])
 
-  (:import (org.joda.time DateTime LocalDate DateMidnight)
-           (com.fasterxml.jackson.core JsonGenerator)
-           (java.io InputStream)
-           (schema.utils ValidationError)))
+  (:import [org.joda.time DateTime LocalDate DateMidnight]
+           [com.fasterxml.jackson.core JsonGenerator]
+           [java.io InputStream]
+           [schema.utils ValidationError]))
 
 
 ; Let's add a default encoder.
