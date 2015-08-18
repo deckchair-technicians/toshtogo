@@ -85,13 +85,13 @@
     => truthy
 
     (fact "If client sends badly formed result, we get a server error and a commitment result"
-          (remove #(= :request (:event_type %)) (consume-logs logs-atom))
-          => (matches (in-order [{:event_type :commitment_started}
+      (remove #(= :request (:event_type %)) (consume-logs logs-atom))
+      => (matches (in-order [{:event_type :commitment_started}
 
-                                 {:event_type :server_error
-                                  :event_data {:stacktrace (contains-string "not_valid_response")}}
+                             {:event_type :server_error
+                              :event_data {:stacktrace (contains-string "not_valid_response")}}
 
-                                 {:event_type :commitment_result
-                                  :event_data {:job_id job-id
-                                               :result {:outcome :error
-                                                        :error   {:stacktrace (contains-string "Bad Request")}}}}])))))
+                             {:event_type :commitment_result
+                              :event_data {:job_id job-id
+                                           :result {:outcome :error
+                                                    :error   {:stacktrace (contains-string "Bad Request")}}}}])))))
