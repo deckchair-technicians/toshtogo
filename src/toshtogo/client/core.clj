@@ -5,6 +5,7 @@
 
             [toshtogo.client.util :refer [hostname]]
 
+            [toshtogo.client.clients.large-error-converting-client :as error-converting]
             [toshtogo.client.senders.decorators :refer [wrap-decoration]]
 
             [toshtogo.client.senders
@@ -20,6 +21,13 @@
     :app
     (app-sender agent-details app)))
 
+(def printing-large-error-handler
+  (reify
+    error-converting/ErrorTransformer
+    (transform [this error]
+      (println "Large error encountered:")
+      (clojure.pprint/pprint error)
+      {:error "...was too large- check stdout from agent process"})))
 
 (defn client
   "Either:\n
@@ -41,13 +49,15 @@ opts are:\n
   :timeout integer milliseconds after which the client will give up trying to send a message to the server and re-throw the error\n
   \n
   :debug boolean set this to true to send requests and responses to stdout"
-  [client-opts & {:keys [agent-details error-fn timeout debug should-retry]
-                  :or   {agent-details {:hostname @hostname :system_name "unknown" :system_version "unknown"}}
+  [client-opts & {:keys [agent-details error-fn timeout debug should-retry large-error-transformer]
+                  :or   {agent-details           {:hostname @hostname :system_name "unknown" :system_version "unknown"}
+                         large-error-transformer printing-large-error-handler}
                   :as   opts}]
 
   (let [sender          (sender client-opts agent-details)
         decoration-opts (select-keys opts [:error-fn :timeout :debug :should-retry])]
-    (json-converting-client
-      (sender-client (apply wrap-decoration
-                            sender
-                            (flatten (seq decoration-opts)))))))
+    (-> (sender-client (apply wrap-decoration
+                              sender
+                              (flatten (seq decoration-opts))))
+        (error-converting/large-error-transforming-client large-error-transformer)
+        (json-converting-client))))
