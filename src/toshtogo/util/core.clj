@@ -175,16 +175,17 @@
 
   If root-fn is (fn [a b c]), handlers must be (fn [exception-from-root-fn a b c]).
 
-  Returns the result of the first success, or throws the exception from the last handler."
+  Returns the result of the first success, or throws the exception from root-fn, on the assumpt that this will contain most
+  information about the cause of the problem"
   [root-fn & handlers]
-  (reduce (fn [func handler]
+  (reduce (fn [previous-handlers-func next-handler]
             (fn [& args]
               (try
-                (apply func args)
+                (apply previous-handlers-func args)
                 (catch Throwable root-fn-exception
                   (try
-                    (apply handler root-fn-exception args)
-                    (catch Throwable always-handle-root-fn-exception
+                    (apply next-handler root-fn-exception args)
+                    (catch Throwable _always-throw-root-fn-exception
                       (throw root-fn-exception)))))))
           root-fn
           handlers))
