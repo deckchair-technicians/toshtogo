@@ -8,7 +8,7 @@
             [toshtogo.client.protocol :refer [cancelled]]
             [toshtogo.server.persistence.protocol :as pers]
             [toshtogo.server.preprocessing :refer [normalise-job-tree replace-fungible-jobs-with-existing-job-ids collect-dependencies collect-new-jobs]]
-            [toshtogo.server.persistence.protocol :refer (contract-req)]))
+            [toshtogo.server.persistence.protocol :refer [contract-req]]))
 
 (defprotocol Api
   (new-contract! [this contract-req])
@@ -22,16 +22,6 @@
   (complete-work! [this commitment-id result])
   (retry-job! [this job-id])
   (pause-job! [this job-id]))
-
-
-(defn- dependency-outcomes
-  "This is incredibly inefficient"
-  [persistence job-id]
-  (assert (uuid? job-id) (str "job-id should be a UUID but was" (ppstr job-id)))
-  (reduce (fn [outcomes dependency]
-            (cons (dependency :outcome) outcomes))
-          #{}
-          (pers/get-jobs persistence (pers/dependencies-of job-id))))
 
 (defn to-job-record [job-request]
   (-> job-request
