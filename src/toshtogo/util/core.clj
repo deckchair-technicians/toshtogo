@@ -164,20 +164,6 @@
       (name x)
       x)))
 
-(defmulti to-ordered* class)
-(defmethod to-ordered*
-           Map
-           [x]
-  (PersistentTreeMap/create x))
-(defmethod to-ordered*
-           Set
-           [x]
-  (PersistentTreeSet/create (sort x)))
-(defmethod to-ordered* :default [x] x)
-
-(defn to-ordered [x]
-  (prewalk to-ordered* x))
-
 (defn exception-as-map [e]
   {:stacktrace (cause-trace e)
    :message    (.getMessage e)
