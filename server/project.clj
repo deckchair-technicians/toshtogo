@@ -1,30 +1,20 @@
-(defproject savagematt/toshtogo "0.5.30-SNAPSHOT"
+(defproject savagematt.toshtogo/server "0.5.30-SNAPSHOT"
 
   :description "An asynchronous job manager"
 
   :dependencies [[org.clojure/clojure "1.5.1"]
+                 [savagematt.toshtogo/client "0.5.30-SNAPSHOT"]
+
+                 [ring/ring-jetty-adapter "1.2.1"]
+                 [ring-mock "0.1.5"]
+                 [ring/ring-json "0.2.0"]
 
                  [com.dbdeploy/dbdeploy-core "3.0M3"]
                  [org.clojure/java.jdbc "0.3.2"]
                  [postgresql/postgresql "8.4-702.jdbc4"]
                  [honeysql "0.4.3"]
 
-                 [cheshire "5.3.0"]
-                 [compojure "1.1.6"]
-                 [ring/ring-jetty-adapter "1.2.1"]
-                 [ring-mock "0.1.5"]
-                 [ring/ring-json "0.2.0"]
-                 [http-kit "2.1.16"]
-
-                 [clj-time "0.6.0"]
-                 [com.google.guava/guava "15.0"]
-                 [me.raynes/fs "1.4.5"]
-                 [org.clojure/math.numeric-tower "0.0.4"]
-                 [org.flatland/useful "0.10.3"]
                  [savagematt/hermit "0.7"]
-                 [savagematt/bowen "2.1"]
-                 [savagematt/vice "0.13"]
-                 [trptcolin/versioneer "0.1.0"]
                  [watchtower "0.1.1"]]
 
   :main toshtogo.server.core

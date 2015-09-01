@@ -1,6 +1,9 @@
 (ns toshtogo.client.util
   (:require [trptcolin.versioneer.core :as version]
-            [flatland.useful.map :refer [map-keys]])
+            [flatland.useful.map :refer [map-keys update update-each]]
+            [toshtogo.util
+             [core :refer [uuid ensure-seq parse-datetime]]]
+            [clojure.string :as s])
 
   (:import [java.net UnknownHostException InetAddress URL]))
 
@@ -119,3 +122,32 @@
         (str stripped-url "/" stripped-segment)))
     (str base-url)
     path-segments)))
+
+(defn parse-order-by-expression [order-by]
+  (let [[name direction]   (-> order-by
+                               s/trim
+                               (s/split #"\s+"))]
+    [(keyword name) (or (keyword direction) :asc)]))
+
+(defn parse-order-by [order-by]
+  (when order-by
+    (->> order-by
+         ensure-seq
+         (map parse-order-by-expression)
+         (filter (comp not empty?)))))
+
+(defn sequence-of-keywords [s]
+  (when s
+    (->> s
+         ensure-seq
+         (map keyword))))
+
+(defn normalise-search-params [params]
+  (-> params
+      (map-keys keyword)
+      (update :order-by (fn [x] (or (parse-order-by x) [:job_created])))
+      ;(update-each [:latest_contract :has_contract] parse-boolean-param)
+      (update-each [:tree_id :commitment_id :job_id :depends_on_job_id :dependency_of_job_id :fungibility_group_id] uuid)
+      (update-each [:job_type :outcome] #(when % (map keyword (ensure-seq %))))
+      (update-each [:fields :tags] sequence-of-keywords)
+      (update :max_due_time parse-datetime)))

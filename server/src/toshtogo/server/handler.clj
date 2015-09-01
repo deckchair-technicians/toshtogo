@@ -21,6 +21,8 @@
             [toshtogo.server.util
              [middleware :refer :all]]
 
+            [toshtogo.client.util :refer [normalise-search-params]]
+
             [toshtogo.server.persistence
              [protocol :refer :all]]
 
@@ -42,37 +44,6 @@
 (defn commitment-redirect [commitment-id]
   (redirect (str "/api/commitments/" commitment-id)))
 
-(defn parse-order-by-expression [order-by]
-  (let [[name direction]   (-> order-by
-                               s/trim
-                               (s/split #"\s+"))]
-    [(keyword name) (or (keyword direction) :asc)]))
-
-(defn parse-order-by [order-by]
-  (when order-by
-    (->> order-by
-         ensure-seq
-         (map parse-order-by-expression)
-         (filter (comp not empty?)))))
-
-(defn parse-boolean-param [s]
-  (and s (not= "false" (s/trim (s/lower-case s)))))
-
-(defn sequence-of-keywords [s]
-  (when s
-    (->> s
-         ensure-seq
-         (map keyword))))
-
-(defn normalise-search-params [params]
-  (-> params
-      (map-keys keyword)
-      (update :order-by (fn [x] (or (parse-order-by x) [:job_created])))
-      ;(update-each [:latest_contract :has_contract] parse-boolean-param)
-      (update-each [:tree_id :commitment_id :job_id :depends_on_job_id :dependency_of_job_id :fungibility_group_id] uuid)
-      (update-each [:job_type :outcome] #(when % (map keyword (ensure-seq %))))
-      (update-each [:fields :tags] sequence-of-keywords)
-      (update :max_due_time parse-datetime)))
 
 (defn normalise-paging-params
   "Parse (or default) the paging related parameters."

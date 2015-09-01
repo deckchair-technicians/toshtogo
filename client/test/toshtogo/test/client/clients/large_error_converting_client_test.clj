@@ -9,7 +9,7 @@
   ; TODO: Replace underlying-client with a throw-unsupported implementation, once Bowen supports it
   (let [result-sent-to-underlying-client (atom nil)
         transformer-saw-error            (atom nil)
-        original-large-error             {:too-big (range 10000)}
+        original-large-error             {:too-big (range 15000)}
         transformed-error                {:error-url "http://some/proper/file/store"}
         error-transformer                (reify ErrorTransformer
                                            (transform [this error]
@@ -32,11 +32,13 @@
 
     (complete-work! large-error-transforming-client nil (error original-large-error))
 
-    @transformer-saw-error
-    => original-large-error
+    (fact "Error was passed through the transformer"
+      @transformer-saw-error
+      => original-large-error)
 
-    @result-sent-to-underlying-client
-    => (error transformed-error)))
+    (fact "Result is whatever came back from the transformer"
+      @result-sent-to-underlying-client
+      => (error transformed-error))))
 
 (fact "Small errors are passed through as-is"
   ; TODO: Replace underlying-client with a throw-unsupported implementation, once Bowen supports it

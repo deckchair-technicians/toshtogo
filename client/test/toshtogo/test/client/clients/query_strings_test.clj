@@ -3,7 +3,7 @@
             [ring.util.codec :refer [form-decode]]
             [ring.middleware.keyword-params :refer [keyword-params-request]]
             [toshtogo.client.clients.sender-client :refer [to-query-string]]
-            [toshtogo.server.handler :refer [normalise-search-params]]))
+            [toshtogo.client.util :refer [normalise-search-params]]))
 
 (defn keywordify [params]
   (-> {:params params}
