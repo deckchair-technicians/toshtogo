@@ -4,15 +4,30 @@
             [ring.adapter.jetty :refer [run-jetty]]
             [clojure.java.jdbc :as sql]
 
-            [schema.core :as s]
+            [schema.core :as sch]
 
             [toshtogo.client.protocol :refer :all]
             [toshtogo.util.core :refer [uuid uuid-str debug]]
-            [toshtogo.test.midje-schema :refer :all]
+            [vice
+             [midje :refer [matches]]
+             [schemas :refer [when-sorted in-any-order]]]
             [toshtogo.test.functional.test-support :refer :all])
   (:import [clojure.lang ExceptionInfo]))
 
 (background (before :contents @migrated-dev-db))
+
+(def is-nil (sch/pred nil? "nil"))
+
+(def timestamp-tolerance (seconds 5))
+
+(defn close-to
+  ([expected]
+   (close-to expected timestamp-tolerance))
+  ([expected tolerance-period]
+   (let [start (minus expected tolerance-period)
+         end (plus expected tolerance-period)]
+     (sch/pred (fn [x] (within? start end x))
+               (str "Within " tolerance-period " of " expected)))))
 
 (with-redefs
   [toshtogo.client.protocol/heartbeat-time 1]
@@ -192,16 +207,16 @@
                                       (with-notes notes)
                                       (with-name job-name)))
           (get-job client job-id)
-          => (matches {:home_tree_id         s/Uuid
+          => (matches {:home_tree_id         sch/Uuid
                        :commitment_agent     is-nil
                        :commitment_id        is-nil
                        :contract_claimed     is-nil
                        :contract_created     (close-to created-time)
                        :contract_due         (close-to due-time)
                        :contract_finished    is-nil
-                       :contract_id          s/Uuid
+                       :contract_id          sch/Uuid
                        :contract_number      1
-                       :dependencies         (is [])
+                       :dependencies         (sch/eq [])
                        :job_name             job-name
                        :notes                notes
                        :error                is-nil
@@ -209,12 +224,12 @@
                        :job_id               job-id
                        :last_heartbeat       is-nil
                        :outcome              :waiting
-                       :request_body         (is request-body)
-                       :requesting_agent     s/Uuid
+                       :request_body         (sch/eq request-body)
+                       :requesting_agent     sch/Uuid
                        :result_body          is-nil
                        :job_type             job-type
                        :tags                 (when-sorted (sort tags))
-                       :fungibility_group_id s/Uuid})
+                       :fungibility_group_id sch/Uuid})
           (provided (now) => created-time)
 
           (deliver commitment (request-work! client job-type))
@@ -222,14 +237,14 @@
           (provided (now) => claimed-time)
 
           (get-job client job-id)
-          => (matches {:commitment_agent  s/Uuid
-                       :commitment_id     s/Uuid
+          => (matches {:commitment_agent  sch/Uuid
+                       :commitment_id     sch/Uuid
                        :contract_claimed  (close-to claimed-time)
                        :contract_finished is-nil
                        :error             is-nil
                        :last_heartbeat    (close-to claimed-time)
                        :outcome           :running
-                       :requesting_agent  s/Uuid})
+                       :requesting_agent  sch/Uuid})
 
           (complete-work! client (@commitment :commitment_id) (success {:some-field "some value"}))
           => truthy

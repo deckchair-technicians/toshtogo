@@ -2,8 +2,7 @@
   (:require [midje.sweet :refer :all]
             [clj-time.core :as t]
             [flatland.useful.map :refer [update map-keys]]
-            [toshtogo.util.json :as json]
-            [toshtogo.test.midje-schema :refer :all]
+            [vice.midje :refer [matches]]
             [toshtogo.client.middleware :refer :all]
             [toshtogo.client.protocol :refer :all]))
 

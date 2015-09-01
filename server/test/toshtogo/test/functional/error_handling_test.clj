@@ -12,7 +12,7 @@
 
             [cheshire.generate :refer [to-json]]
 
-            [toshtogo.test.midje-schema :refer :all]
+            [vice.midje :refer [matches]]
             [toshtogo.test.functional.test-support :refer :all])
 
   (:import (clojure.lang ExceptionInfo)

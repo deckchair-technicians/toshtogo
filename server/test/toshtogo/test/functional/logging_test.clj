@@ -4,12 +4,17 @@
             [toshtogo.server.logging :refer :all]
             [toshtogo.client.protocol :refer :all]
             [toshtogo.util.core :refer [uuid uuid-str debug]]
-            [toshtogo.test.midje-schema :refer :all]
+            [vice
+             [midje :refer [matches]]
+             [schemas :refer [in-any-order in-order]]]
             [toshtogo.test.functional.test-support :refer :all])
   (:import [clojure.lang ExceptionInfo]
            [toshtogo.server.logging DeferredLogger]))
 
 (background (before :contents @migrated-dev-db))
+
+(defn contains-items [schemas]
+  (in-any-order schemas :extras-ok true))
 
 (defn logging-client
   "Creates an app (not HTTP) client. App is configured with a logger that
@@ -50,7 +55,7 @@
     (fact "Server error is logged"
           (consume-logs logs-atom)
           => (matches (contains-items [{:event_type :server_error
-                                        :event_data {:stacktrace (contains-string "Previous put for create-job")}}])))
+                                        :event_data {:stacktrace #"Previous put for create-job"}}])))
 
     (fact "Job completes successfully"
           @(do-work! log-client {:job_id job-id} return-success)
@@ -89,9 +94,9 @@
       => (matches (in-order [{:event_type :commitment_started}
 
                              {:event_type :server_error
-                              :event_data {:stacktrace (contains-string "not_valid_response")}}
+                              :event_data {:stacktrace #"not_valid_response"}}
 
                              {:event_type :commitment_result
                               :event_data {:job_id job-id
                                            :result {:outcome :error
-                                                    :error   {:stacktrace (contains-string "Bad Request")}}}}])))))
+                                                    :error   {:stacktrace #"Bad Request"}}}}])))))

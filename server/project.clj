@@ -1,8 +1,8 @@
-(defproject savagematt.toshtogo/server "0.5.30-SNAPSHOT"
+(defproject savagematt.toshtogo/server "0.5.30"
 
   :description "An asynchronous job manager"
 
-  :dependencies [[org.clojure/clojure "1.5.1"]
+  :dependencies [[org.clojure/clojure "1.6.0"]
                  [savagematt.toshtogo/client "0.5.30-SNAPSHOT"]
 
                  [ring/ring-jetty-adapter "1.2.1"]
@@ -24,7 +24,7 @@
   ;:jvm-opts ["-agentpath:/Applications/YourKit_Java_Profiler_2013_build_13082.app/bin/mac/libyjpagent.jnilib"]
 
   :profiles {:dev {:dependencies [[javax.servlet/servlet-api "2.5"]
-                                  [midje "1.6.2"]
+                                  [midje "1.7.0"]
                                   [http-kit.fake "0.2.1"]]
 
                    :plugins      [[lein-midje "3.1.0"]

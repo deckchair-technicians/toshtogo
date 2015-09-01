@@ -2,7 +2,7 @@
 
   :description "An asynchronous job manager"
 
-  :dependencies [[org.clojure/clojure "1.5.1"]
+  :dependencies [[org.clojure/clojure "1.6.0"]
 
                  [cheshire "5.3.0"]
                  [ring-mock "0.1.5"]
@@ -20,7 +20,8 @@
                  [savagematt/vice "0.13"]
                  [trptcolin/versioneer "0.1.0"]]
 
-  :profiles {:dev {:dependencies [[midje "1.6.2"]
+  :profiles {:dev {:dependencies [[javax.servlet/servlet-api "2.5"]
+                                  [midje "1.7.0"]
                                   [http-kit.fake "0.2.1"]]
 
                    :plugins      [[lein-midje "3.1.0"]

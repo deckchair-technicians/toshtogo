@@ -1,6 +1,6 @@
 (ns toshtogo.test.server.logging-test
   (:require [midje.sweet :refer :all]
-            [toshtogo.test.midje-schema :refer :all]
+            [vice.midje :refer [matches strict]]
             [toshtogo.client.protocol :refer [job-req success]]
             [toshtogo.server.api :refer [to-job-record]]
             [toshtogo.server.preprocessing :refer [normalise-job-tree]]

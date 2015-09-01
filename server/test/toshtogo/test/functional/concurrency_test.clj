@@ -1,6 +1,6 @@
 (ns toshtogo.test.functional.concurrency-test
   (:require [midje.sweet :refer :all]
-            [toshtogo.test.midje-schema :refer :all]
+            [vice.midje :refer [matches]]
             [schema.core :as sch]
             [clojure.stacktrace :refer [print-cause-trace]]
 

@@ -1,6 +1,6 @@
 (ns toshtogo.test.client.http-test
   (:require [midje.sweet :refer :all]
-            [toshtogo.test.midje-schema :refer :all]
+            [vice.midje :refer [matches]]
             [org.httpkit.fake :refer [with-fake-http]]
             [toshtogo.util.json :as json]
             [toshtogo.client

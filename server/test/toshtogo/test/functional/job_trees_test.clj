@@ -2,11 +2,12 @@
   (:require [midje.sweet :refer :all]
             [clj-time.core :refer [now minutes seconds millis plus minus after? interval within?]]
             [ring.adapter.jetty :refer [run-jetty]]
-            [clojure.java.jdbc :as sql]
             [toshtogo.client.protocol :refer :all]
             [toshtogo.util.core :refer [uuid uuid-str debug]]
             [toshtogo.test.functional.test-support :refer [migrated-dev-db client]]
-            [toshtogo.test.midje-schema :refer :all]
+            [vice
+             [midje :refer [matches]]
+             [schemas :refer [in-any-order]]]
             [schema.core :as s])
   (:import (java.util UUID)))
 
