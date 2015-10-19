@@ -7,7 +7,7 @@
             [clojure.walk :refer [postwalk]]
             [honeysql.format :as hsf]
             [honeysql.core :as hsc]
-            [honeysql.helpers :refer :all]
+            [honeysql.helpers :refer [select from]]
             [toshtogo.util
              [core :refer [ppstr]]
              [json :as json]]

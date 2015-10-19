@@ -3,7 +3,7 @@
   :description "An asynchronous job manager"
 
   :dependencies [[org.clojure/clojure "1.7.0"]
-                 [savagematt.toshtogo/client "0.6.2"]
+                 [savagematt.toshtogo/client "0.6.5"]
 
                  [ring/ring-jetty-adapter "1.2.1"]
                  [ring-mock "0.1.5"]
@@ -12,7 +12,7 @@
                  [com.dbdeploy/dbdeploy-core "3.0M3"]
                  [org.clojure/java.jdbc "0.3.2"]
                  [postgresql/postgresql "8.4-702.jdbc4"]
-                 [honeysql "0.4.3"]
+                 [honeysql "0.6.1"]
 
                  [savagematt/hermit "0.7"]
                  [watchtower "0.1.1"]]
