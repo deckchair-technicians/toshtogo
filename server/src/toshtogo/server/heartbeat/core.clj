@@ -1,8 +1,6 @@
 (ns toshtogo.server.heartbeat.core
   (:import [java.util.concurrent ScheduledExecutorService])
-  (:require [flatland.useful.map :refer :all]
-
-            [cheshire.core :as json]
+  (:require [cheshire.core :as json]
 
             [clj-time
              [format :as tf]

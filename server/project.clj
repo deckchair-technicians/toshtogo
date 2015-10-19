@@ -1,9 +1,9 @@
-(defproject savagematt.toshtogo/server "0.6.2-SNAPSHOT"
+(defproject savagematt.toshtogo/server "0.6.2"
 
   :description "An asynchronous job manager"
 
-  :dependencies [[org.clojure/clojure "1.6.0"]
-                 [savagematt.toshtogo/client "0.6.1"]
+  :dependencies [[org.clojure/clojure "1.7.0"]
+                 [savagematt.toshtogo/client "0.6.2"]
 
                  [ring/ring-jetty-adapter "1.2.1"]
                  [ring-mock "0.1.5"]

@@ -3,7 +3,9 @@
 
             [clj-time.core :refer [now]]
 
-            [honeysql.helpers :refer :all]
+            [honeysql.helpers :refer [select from merge-left-join
+                                      merge-where order-by where join
+                                      modifiers]]
 
             [toshtogo.util
              [core :refer [uuid ensure-seq safe-name]]
@@ -184,7 +186,7 @@
   (-> contract
       (mp/update-each [:outcome :job_type] keyword)
       fix-contract-outcome
-      (mp/update :request_body json/decode)))
+      (update :request_body json/decode)))
 
 (def job-types-query (-> (select :job_type)
                          (modifiers :distinct)

@@ -86,10 +86,10 @@
                            (mapcat (fn [table-name] [table-name (keyword (str prefix (name table-name)))]))
                            (apply hash-map))]
     (-> (postwalk (partial prefix-alias-columns table-aliases) q)
-        (mp/update :left-join #(partition 2 %))
-        (mp/update :left-join #(map (fn [[table-keyword join-expression]]
+        (update :left-join #(partition 2 %))
+        (update :left-join #(map (fn [[table-keyword join-expression]]
                                    [(table-alias-pair table-aliases table-keyword)
                                     join-expression])
                                  %))
-        (mp/update :left-join #(mapcat identity %))
-        (mp/update :from #(map (partial table-alias-pair table-aliases) %)))))
+        (update :left-join #(mapcat identity %))
+        (update :from #(map (partial table-alias-pair table-aliases) %)))))

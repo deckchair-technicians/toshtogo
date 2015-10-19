@@ -2,7 +2,6 @@
   (:require [clj-time.core :refer [now minus seconds]]
             [clojure.pprint :refer [pprint]]
             [clojure.walk :refer [postwalk]]
-            [flatland.useful.map :refer [update]]
             [toshtogo.util.json :as json]
             [toshtogo.util.core :refer [assoc-not-nil uuid uuid? ppstr debug]]
             [toshtogo.client.protocol :refer [cancelled]]
@@ -175,4 +174,3 @@
 
        (doseq [dependency (pers/get-jobs persistence {:dependency_of_job_id job-id})]
          (retry-job! this (:job_id dependency)))))))
-

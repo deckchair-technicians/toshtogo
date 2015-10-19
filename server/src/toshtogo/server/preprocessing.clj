@@ -1,6 +1,5 @@
 (ns toshtogo.server.preprocessing
-  (:require [flatland.useful.map :refer [update]]
-            [clj-time.core :refer [now]]
+  (:require [clj-time.core :refer [now]]
             [toshtogo.server.persistence.protocol :refer :all]
             [toshtogo.util
              [core :refer [uuid ppstr debug]]]))

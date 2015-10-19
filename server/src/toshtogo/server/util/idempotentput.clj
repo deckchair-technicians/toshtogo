@@ -1,5 +1,5 @@
 (ns toshtogo.server.util.idempotentput
-  (:require [honeysql.helpers :refer :all]
+  (:require [honeysql.helpers :refer [select from where]]
             [toshtogo.util.hsql :as hsql]
             [toshtogo.server.util.sql :as sql]))
 

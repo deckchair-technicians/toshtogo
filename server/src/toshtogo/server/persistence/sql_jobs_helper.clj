@@ -2,7 +2,7 @@
   (:require [flatland.useful.map :as mp]
             [clj-time.core :refer [now]]
 
-            [honeysql.helpers :refer :all]
+            [honeysql.helpers :refer [select from where]]
 
             [toshtogo.server.persistence
              [sql-contracts-helper :refer [job-query]]]
@@ -16,7 +16,7 @@
   (if-not (contains? row :tag)
     (or job row)
     (-> (or job row)
-        (mp/update :tags #(if (row :tag)
+        (update :tags #(if (row :tag)
                            (conj % (row :tag))
                            (or % #{})))
         (dissoc :tag))))
