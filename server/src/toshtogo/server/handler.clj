@@ -10,7 +10,7 @@
              [codec :as codec]
              [response :as resp]]
 
-            [flatland.useful.map :refer [update update-each map-keys]]
+            [flatland.useful.map :as mp]
 
             [toshtogo.server.heartbeat
              [core :refer [start-monitoring!]]]
@@ -49,17 +49,17 @@
   "Parse (or default) the paging related parameters."
   [params]
   (-> params
-      (update :page (fn [s] (when s (Integer/parseInt s))))
-      (update :page_size (fn [s] (Integer/parseInt (or s "25"))))))
+      (mp/update :page (fn [s] (when s (Integer/parseInt s))))
+      (mp/update :page_size (fn [s] (Integer/parseInt (or s "25"))))))
 
 (defn normalise-job-req [req]
   (-> req
-      (update-each [:job_id :fungibility_group_id] uuid)
-      (update :job_type keyword)
-      (update :contract_due parse-datetime)
-      (update :tags #(map keyword %))
-      (update :existing_job_dependencies #(map uuid %))
-      (update :dependencies #(map normalise-job-req %))))
+      (mp/update-each [:job_id :fungibility_group_id] uuid)
+      (mp/update :job_type keyword)
+      (mp/update :contract_due parse-datetime)
+      (mp/update :tags #(map keyword %))
+      (mp/update :existing_job_dependencies #(map uuid %))
+      (mp/update :dependencies #(map normalise-job-req %))))
 
 (defn update-query-param [query-string param-name new-value]
   (codec/form-encode (assoc (codec/form-decode query-string) (name param-name) new-value)))
@@ -68,10 +68,10 @@
   (str uri "?" (update-query-param query-string :page page-number)))
 
 (defn paginate [{pages :paging :as jobs} {query :query-string uri :uri :as query}]
-  (update jobs :paging (fn [paging] (update paging :pages
-                                            (fn [page-count]
-                                              (for [page (range 1 (inc page-count))]
-                                                (page-url uri query page)))))))
+  (mp/update jobs :paging (fn [paging] (mp/update paging :pages
+                                                  (fn [page-count]
+                                                    (for [page (range 1 (inc page-count))]
+                                                      (page-url uri query page)))))))
 
 (defn job-types [jobs {query :query-string uri :uri :as query}]
   (assoc jobs :job_types "/api/metadata/job_types"))
@@ -85,13 +85,13 @@
 (defroutes api-routes
   (context "/api" {:keys [persistence api body check-idempotent!]}
     (context "/trees" []
-             (GET "/:tree-id" [tree-id]
-                  (resp/response (get-tree persistence (uuid tree-id)))))
+      (GET "/:tree-id" [tree-id]
+        (resp/response (get-tree persistence (uuid tree-id)))))
 
     (context "/jobs" []
       (GET "/" {params :query-params :as request}
         (let [normalised-params (-> params normalise-search-params normalise-paging-params)]
-              (resp/response (restify (get-jobs persistence normalised-params) request))))
+          (resp/response (restify (get-jobs persistence normalised-params) request))))
       (context "/:job-id" [job-id]
 
         (PUT  "/" []
@@ -99,12 +99,12 @@
             (check-idempotent!
              :create-job job-id
              #(do
-               (new-root-job! api
-                              (-> body
-                                  (assoc :job_id job-id)
-                                  normalise-job-req
-                                  (validated JobRequest)))
-               (job-redirect job-id))
+                (new-root-job! api
+                               (-> body
+                                   (assoc :job_id job-id)
+                                   normalise-job-req
+                                   (validated JobRequest)))
+                (job-redirect job-id))
              #(job-redirect job-id))))
 
         (GET "/" []
@@ -115,12 +115,12 @@
               (route/not-found "Unknown job id"))))
 
         (POST "/" [action]
-              (let [job-id (uuid job-id)]
-                (case action
-                  "pause"
-                  (resp/response (pause-job! api job-id))
-                  "retry"
-                  (resp/response (retry-job! api job-id)))))))
+          (let [job-id (uuid job-id)]
+            (case action
+              "pause"
+              (resp/response (pause-job! api job-id))
+              "retry"
+              (resp/response (retry-job! api job-id)))))))
 
     (context "/commitments" []
       (PUT "/" []
@@ -141,30 +141,30 @@
              :complete-commitment commitment-id
              #(do (complete-work! api commitment-id
                                   (-> body
-                                      (update :outcome keyword)
-                                      (update :contract_due parse-datetime)
-                                      (update :existing_job_dependencies (fn [dep-job-id] (map uuid dep-job-id)))
-                                      (update :dependencies (fn [deps] (map normalise-job-req deps)))
-                                      ; Convert error strings into maps
-                                      (update :error (fn [e] (if (string? e)
-                                                               {:stacktrace e}
-                                                               e)))
+                                      (mp/update :outcome keyword)
+                                      (mp/update :contract_due parse-datetime)
+                                      (mp/update :existing_job_dependencies (fn [dep-job-id] (map uuid dep-job-id)))
+                                      (mp/update :dependencies (fn [deps] (map normalise-job-req deps)))
+                                        ; Convert error strings into maps
+                                      (mp/update :error (fn [e] (if (string? e)
+                                                                  {:stacktrace e}
+                                                                  e)))
                                       (validated JobResult)))
                   (commitment-redirect commitment-id))
              #(commitment-redirect commitment-id))))
 
         (GET "/" []
-             {:body  (get-contract
-                       persistence
-                       {:commitment_id (uuid commitment-id)
-                        :with-dependencies true})})
+          {:body  (get-contract
+                   persistence
+                   {:commitment_id (uuid commitment-id)
+                    :with-dependencies true})})
 
         (POST "/heartbeat" []
           {:body (upsert-heartbeat! persistence (uuid commitment-id))})))
 
     (context "/metadata" []
-             (GET "/job_types" {:keys [persistence]}
-               (get-job-types persistence))))
+      (GET "/job_types" {:keys [persistence]}
+        (get-job-types persistence))))
 
   (OPTIONS ["/:path" :path #".+"] [] {:status 200 :body {:result "You made a pre-flight CORS OPTIONS request. Well done :-)"}})
 
