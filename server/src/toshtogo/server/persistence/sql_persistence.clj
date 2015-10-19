@@ -9,7 +9,7 @@
 
             [cheshire.core :as json]
 
-            [flatland.useful.map :refer [update update-each]]
+            [flatland.useful.map :as mp]
 
             [toshtogo.util
              [core :refer [uuid debug ensure-seq ppstr]]]
@@ -125,7 +125,7 @@
                          :count-sql-map (job-query (dissoc params :get_tags))
                          :page (:page params 1)
                          :page-size (:page_size params))
-              (update :data normalise-job-rows))
+              (mp/update :data normalise-job-rows))
           (normalise-job-rows
             (hsql/query
               cnxn

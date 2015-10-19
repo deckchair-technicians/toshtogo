@@ -1,5 +1,5 @@
 (ns toshtogo.server.persistence.agents-helper
-  (:require [honeysql.helpers :refer :all]
+  (:require [honeysql.helpers :refer [select from where]]
 
             [toshtogo.util
              [core :refer [uuid]]]))
