@@ -1,6 +1,6 @@
 (ns toshtogo.client.util
   (:require [trptcolin.versioneer.core :as version]
-            [flatland.useful.map :refer [map-keys update update-each]]
+            [flatland.useful.map :refer [map-keys update-each]]
             [toshtogo.util
              [core :refer [uuid ensure-seq parse-datetime]]]
             [clojure.string :as s])
