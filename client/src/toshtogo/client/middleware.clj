@@ -1,7 +1,6 @@
 (ns toshtogo.client.middleware
   (:require [clojure.pprint :refer [pprint]]
             [clj-time.core :as t]
-            [flatland.useful.map :refer [update]]
             [toshtogo.util.json :as json]
             [toshtogo.client.util :refer [merge-dependency-results]]
             [toshtogo.client.protocol :refer :all]))

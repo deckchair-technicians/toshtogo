@@ -1,8 +1,6 @@
 (ns toshtogo.client.senders.http-sender
   (:require [org.httpkit.client :as http]
 
-            [flatland.useful.map :refer [update]]
-
             [toshtogo.util
              [json :as tjson]]
 

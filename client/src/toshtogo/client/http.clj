@@ -1,5 +1,5 @@
 (ns toshtogo.client.http
-  (:require [flatland.useful.map :refer [update map-keys]]
+  (:require [flatland.useful.map :refer [map-keys]]
             [clojure.walk :refer [postwalk]]
             [toshtogo.util.json :as json]
             [org.httpkit.client :as http]

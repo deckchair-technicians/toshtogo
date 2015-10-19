@@ -1,6 +1,6 @@
 (ns toshtogo.client.clients.json-converting-client
   (:require [clj-time.format :as tf]
-            [flatland.useful.map :refer [update update-each]]
+            [flatland.useful.map :refer [update-each]]
             [toshtogo.util.core :refer [uuid cause-trace parse-datetime]]
             [toshtogo.client.protocol :refer :all]
             [toshtogo.client.senders.protocol :refer :all]))

@@ -1,7 +1,5 @@
 (ns toshtogo.client.senders.decorators
-  (:require [flatland.useful.map :refer [update]]
-
-            [toshtogo.util
+  (:require [toshtogo.util
              [core :refer [debug exponential-backoff retry-until-success]]
              [json :as json]]
 

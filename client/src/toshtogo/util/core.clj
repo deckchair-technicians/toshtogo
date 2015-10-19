@@ -6,7 +6,7 @@
     [clojure.pprint :refer [pprint]]
     [clojure.stacktrace :as stacktrace]
     [clojure.walk :refer [prewalk]]
-    [flatland.useful.map :refer [update update-each map-keys]])
+    [flatland.useful.map :refer [update-each map-keys]])
   (:import (java.util UUID Map Set)
            (java.util.concurrent TimeoutException)
            (clojure.lang PersistentTreeMap PersistentTreeSet)))
@@ -190,6 +190,3 @@
                       (throw root-fn-exception)))))))
           root-fn
           handlers))
-
-
-

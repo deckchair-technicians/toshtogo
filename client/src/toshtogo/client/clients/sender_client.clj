@@ -2,7 +2,7 @@
   (:require [clj-time.format :as tf]
             [ring.util.codec :refer [form-encode]]
             [clojure.string :as s]
-            [flatland.useful.map :refer [update update-each]]
+            [flatland.useful.map :refer [update-each]]
             [toshtogo.util.core :refer [uuid safe-name ensure-seq]]
             [toshtogo.client.protocol :refer :all]
             [toshtogo.client.senders.protocol :refer :all]))

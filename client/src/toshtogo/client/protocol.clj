@@ -2,7 +2,6 @@
   (:import [java.util.concurrent ExecutionException])
   (:require [clojure.set :refer [rename-keys]]
             [clj-time.core :refer [now]]
-            [flatland.useful.map :refer [update]]
             [toshtogo.util.core :refer [ppstr debug uuid cause-trace assoc-not-nil ensure-seq handle-exception]]))
 
 (defn success [response-body]
