@@ -2,7 +2,7 @@
 
   :description "An asynchronous job manager"
 
-  :dependencies [[org.clojure/clojure "1.6.0"]
+  :dependencies [[org.clojure/clojure "1.7.0"]
 
                  [cheshire "5.3.0"]
                  [ring-mock "0.1.5"]
