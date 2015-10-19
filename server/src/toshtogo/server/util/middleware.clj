@@ -9,7 +9,7 @@
              [stacktrace :refer [print-cause-trace]]]
 
             [ring.middleware.json :as ring-json]
-            [flatland.useful.map :refer [update]]
+            [flatland.useful.map :as mp]
 
             [toshtogo.server.persistence
              [logging-persistence :refer [logging-persistence]]
@@ -76,7 +76,7 @@
       (handler (-> req
                    (assoc :check-idempotent! check-idempotent*)
                    (merge (sql-deps cnxn (:logger req) (get-in req [:body :agent])))
-                   (update :body #(dissoc % :agent)))))))
+                   (mp/update :body #(dissoc % :agent)))))))
 
 (defn- retry*
   ([retries-left exception-schemas f]
@@ -141,7 +141,7 @@
   parse the request body"
   [handler]
   (fn [request]
-    (handler (update request :body json/decode))))
+    (handler (mp/update request :body json/decode))))
 
 (defn should-log? [request]
   (let [{:keys [request-method uri]} request]
