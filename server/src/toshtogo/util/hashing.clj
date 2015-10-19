@@ -38,6 +38,11 @@
       [first second])))
 
 (defmethod murmur!
+  clojure.lang.PersistentArrayMap
+  [x]
+  (murmur! (sort x)))
+
+(defmethod murmur!
   :default
   [x]
   (murmur! (input-stream (.getBytes (pr-str x)))))
