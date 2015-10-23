@@ -149,7 +149,7 @@
 
               (dom/div nil (history/navigate "/")))))))))
 
-(def app-state (atom {:search {:page-size 2}}))
+(def app-state (atom {:search {:page-size 25}}))
 
 (om/root
   app-view

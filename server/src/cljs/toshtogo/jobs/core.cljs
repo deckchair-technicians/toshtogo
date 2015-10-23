@@ -28,7 +28,7 @@
       (dom/div nil
         (om/build search/search-form search {:opts {:search-fn (fn [{:keys [job-types job-statuses]}]
                                                                  (println job-types)
-                                                         (history/navigate (str "/jobs?source=" (url/url-encode (str "api/jobs/?page=1&page_size=3"
+                                                         (history/navigate (str "/jobs?source=" (url/url-encode (str "api/jobs/?page=1&page_size=25"
                                                                                                          (when (not (empty? job-types))
                                                                                                            (str "&job_type=" (clojure.string/join "&job_type=" job-types)))
 

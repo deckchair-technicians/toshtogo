@@ -3,6 +3,7 @@
 * Add version number and hostname to UI agent, somehow
 * Width of job outcome and type select boxes in search screen
 * Persist search screen parameters
+* How on earth does default page size work?
 
 ## Navigation stuff- concerns
 * Link in navbar that doesn't do anything if it's 
