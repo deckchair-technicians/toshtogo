@@ -60,6 +60,9 @@
     :cancelled (dom/button #js {:className "btn btn-success"
                                 :onClick   (fn [_] (act! "retry" job_id <messages>))}
                  "Retry")
+    :error (dom/button #js {:className "btn btn-success"
+                                :onClick   (fn [_] (act! "retry" job_id <messages>))}
+                 "Retry")
     nil))
 
 (defn job-view [job]
