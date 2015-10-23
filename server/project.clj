@@ -33,7 +33,9 @@
 
   :ring {:handler toshtogo.server.core/dev-app-instance :reload-paths ["src"]}
 
-  :profiles {:dev {:dependencies [[javax.servlet/servlet-api "2.5"]
+  :profiles {:uberjar  {:aot   :all
+                        :hooks [leiningen.cljsbuild]}
+             :dev {:dependencies [[javax.servlet/servlet-api "2.5"]
                                   [midje "1.7.0"]
                                   [http-kit.fake "0.2.1"]]
 
