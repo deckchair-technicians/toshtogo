@@ -70,20 +70,16 @@
 (defn page-url [uri query-string page-number]
   (str uri "?" (update-query-param query-string :page page-number)))
 
-(defn paginate [{pages :paging :as jobs} {query :query-string uri :uri :as query}]
+(defn paginate [{:as jobs} {uri :uri :as query}]
   (mp/update jobs :paging (fn [paging] (mp/update paging :pages
                                                   (fn [page-count]
                                                     (for [page (range 1 (inc page-count))]
                                                       (page-url uri query page)))))))
 
-(defn job-types [jobs {query :query-string uri :uri :as query}]
-  (assoc jobs :job_types "/api/metadata/job_types"))
-
 (defn restify [jobs query]
   (cond-> jobs
           (sequential? jobs) ((fn [jobs] {:data jobs}))
-          (:paging jobs)     (paginate query)
-          true               (job-types query)))
+          (:paging jobs)     (paginate query)))
 
 (defroutes api-routes
   (context "/api" {:keys [persistence api body check-idempotent!]}
@@ -130,9 +126,9 @@
         (let [commitment-id (uuid (body :commitment_id))]
           (check-idempotent!
            :create-commitment commitment-id
-           #(if-let [commitment (request-work! api
-                                               commitment-id
-                                               (normalise-search-params (:query body)))]
+           #(if (request-work! api
+                               commitment-id
+                               (normalise-search-params (:query body)))
               (commitment-redirect commitment-id)
               {:status 204})
            #(commitment-redirect commitment-id))))
