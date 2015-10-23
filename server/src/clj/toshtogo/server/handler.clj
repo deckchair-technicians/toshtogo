@@ -70,7 +70,7 @@
 (defn page-url [uri query-string page-number]
   (str uri "?" (update-query-param query-string :page page-number)))
 
-(defn paginate [{:as jobs} {uri :uri :as query}]
+(defn paginate [{:as jobs} {query :query-string uri :uri :as query}]
   (mp/update jobs :paging (fn [paging] (mp/update paging :pages
                                                   (fn [page-count]
                                                     (for [page (range 1 (inc page-count))]

@@ -121,7 +121,7 @@
             order-by (if (empty? order-by) [:job_created] order-by)
             params   (assoc params :order-by order-by)]
         (if (or (:page params)
-                +                (:page_size params))
+                (:page_size params))
           (-> (hsql/page cnxn (job-query params)
                          :count-sql-map (job-query (dissoc params :get_tags))
                          :page (:page params 1)
