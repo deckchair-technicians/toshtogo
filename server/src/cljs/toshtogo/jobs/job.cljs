@@ -8,10 +8,10 @@
 (defn json-view [selector m]
   (.JSONView (js/$ selector) (clj->js m)))
 
-(defn update-json [{:keys [request_body result_body] :as job}]
+(defn update-json [{:keys [request_body result_body error] :as job}]
   (json-view "#job-json" job)
   (json-view "#job-request" request_body)
-  (json-view "#job-result" result_body))
+  (json-view "#job-result" (if error error result_body)))
 
 (defn panel [heading content]
   (dom/div #js {:className "panel panel-default"}
@@ -74,20 +74,20 @@
 
     om/IRenderState
     (render-state [_this {:keys [<messages>]}]
-      (dom/div #js {:className "container"}
+      (dom/div #js {:className ""}
         (title job)
 
         (actions job <messages>)
 
         (dom/div #js {:className "row"}
-          (dom/div #js {:className "col-md-5"}
+          (dom/div #js {:className "col-md-6"}
             (panel "Request"
                    (dom/div #js {:id "job-request"})))
-          (dom/div #js {:className "col-md-5"}
+          (dom/div #js {:className "col-md-6"}
             (panel "Response"
                    (dom/div #js {:id "job-result"}))))
 
         (dom/div #js {:className "row"}
-          (dom/div #js {:className "col-md-10"}
+          (dom/div #js {:className "col-md-12"}
             (panel "Full state"
                    (dom/div #js {:id "job-json"}))))))))
