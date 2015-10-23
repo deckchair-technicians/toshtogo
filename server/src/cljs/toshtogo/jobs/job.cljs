@@ -3,8 +3,7 @@
             [om.core :as om]
             [cljs.core.async :refer [chan <! put!]]
             [ajax.core :refer [POST]]
-            [toshtogo.jobs.util :as util]
-            [toshtogo.util.history :as history]))
+            [toshtogo.jobs.util :as util]))
 
 (defn json-view [selector m]
   (.JSONView (js/$ selector) (clj->js m)))
