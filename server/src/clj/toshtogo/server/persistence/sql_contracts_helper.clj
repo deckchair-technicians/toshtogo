@@ -92,13 +92,6 @@
        :job_type
        (merge-where query [:in :job_type (mapv name (ensure-seq v))])
 
-       :tags
-       (merge-where query [:in :jobs.job_id (-> (select :j.job_id)
-                                                (modifiers :distinct)
-                                                (from [:jobs :j])
-                                                (join [:job_tags :t] [:= :j.job_id :t.job_id])
-                                                (where [:in :t.tag (vec (map safe-name v))]))])
-
        :commitment_id
        (merge-where query [:= :agent_commitments.commitment_id v])
 
@@ -144,10 +137,6 @@
                                                (from :job_trees)
                                                (where [:= :job_trees.tree_id v]))])
 
-       :get_tags
-       (merge-left-join query :job_tags
-                        [:= :jobs.job_id :job_tags.job_id])
-
        :fields
        (apply select query (map fully-qualify-field v))
 
@@ -166,7 +155,6 @@
 
 (defn job-query [params]
   (-> params
-      (assoc :get_tags true)
       (assoc :latest_contract true)
       contract-query))
 

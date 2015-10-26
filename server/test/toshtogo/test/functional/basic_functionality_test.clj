@@ -191,7 +191,6 @@
   (fact "Current job state is serialised between server and client as expected"
         (let [job-id (uuid)
               job-type (uuid-str)
-              tags (set [(keyword (uuid-str)) (keyword (uuid-str))])
               created-time (now)
               claimed-time (plus created-time (millis 5))
               finished-time (plus claimed-time (millis 5))
@@ -203,7 +202,6 @@
 
           ; Newly created
           (put-job! client job-id (-> (job-req request-body job-type)
-                                      (with-tags tags)
                                       (with-notes notes)
                                       (with-name job-name)))
           (get-job client job-id)
@@ -228,7 +226,6 @@
                        :requesting_agent     sch/Uuid
                        :result_body          is-nil
                        :job_type             job-type
-                       :tags                 (when-sorted (sort tags))
                        :fungibility_group_id sch/Uuid})
           (provided (now) => created-time)
 

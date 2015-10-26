@@ -50,14 +50,10 @@
 
     (insert-jobs! [this jobs]
       (doseq [job (validated jobs [JobRecord])]
-        (let [job-id          (job :job_id)
-              job-tag-records (map (fn [tag] {:job_id job-id :tag tag}) (job :tags))]
+        (let [job-id          (job :job_id)]
 
           ; TODO: Batch inserts would be more efficient for long lists of dependencies
-          (ttsql/insert! cnxn :jobs (dissoc job :tags))
-
-          (when (not (empty? job-tag-records))
-            (apply ttsql/insert! cnxn :job_tags job-tag-records)))))
+          (ttsql/insert! cnxn :jobs job))))
 
     (insert-contract! [this job-id contract-ordinal contract-due]
       (let [contract (contract-record job-id contract-ordinal contract-due)]
@@ -123,7 +119,7 @@
         (if (or (:page params)
                 (:page_size params))
           (-> (hsql/page cnxn (job-query params)
-                         :count-sql-map (job-query (dissoc params :get_tags))
+                         :count-sql-map (job-query params)
                          :page (:page params 1)
                          :page-size (:page_size params 25))
               (mp/update :data normalise-job-rows))

@@ -36,12 +36,11 @@
      :error error-text)))
 
 (defn job-req
-  ([body job-type & {:keys [dependencies notes tags]}]
+  ([body job-type & {:keys [dependencies notes]}]
    (-> {:job_type     job-type
         :request_body body}
        (assoc-not-nil :dependencies dependencies
-                      :notes notes
-                      :tags tags))))
+                      :notes notes))))
 
 (defn with-dependencies [job-req dependencies]
   (update job-req :dependencies #(concat % (ensure-seq dependencies))))
@@ -66,9 +65,6 @@
 
 (defn with-start-time [job-req start-time]
   (assoc job-req :contract_due start-time))
-
-(defn with-tags [job-req tags]
-  (assoc job-req :tags tags))
 
 (defprotocol Client
   (put-job! [this job-id job-req])

@@ -2,12 +2,11 @@
   (:require [toshtogo.util.core :refer [assoc-not-nil]]))
 
 (defn job-req
-  [id  body job-type & {:keys [dependencies notes tags]}]
+  [id  body job-type & {:keys [dependencies notes]}]
   (assert id)
   (-> {:job_id       id
        :job_type     job-type
        :request_body body}
       (assoc-not-nil :dependencies dependencies
-                     :notes notes
-                     :tags tags)))
+                     :notes notes)))
 

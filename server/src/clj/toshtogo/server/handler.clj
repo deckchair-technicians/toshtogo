@@ -60,7 +60,6 @@
       (mp/update-each [:job_id :fungibility_group_id] uuid)
       (mp/update :job_type keyword)
       (mp/update :contract_due parse-datetime)
-      (mp/update :tags #(map keyword %))
       (mp/update :existing_job_dependencies #(map uuid %))
       (mp/update :dependencies #(map normalise-job-req %))))
 

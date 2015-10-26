@@ -71,30 +71,6 @@
                (ids-and-created-dates client {:dependency_of_job_id job-id-2 :job_type job-type})
                => empty?)))
 
-(facts "Can filter by tags"
-       (let [job-id-1 (uuid)
-             job-id-2 (uuid)
-             tag-1 (keyword (uuid-str))
-             tag-2 (keyword (uuid-str))
-             job-type (uuid-str)]
-
-         (put-job! client job-id-1 (job-req {} job-type :tags [tag-1]))
-         (put-job! client job-id-2 (job-req {} job-type :tags [tag-1 tag-2]))
-
-         (fact "Filter by one tag"
-               (get-and-select client {:tags [tag-1] :job_type job-type} :job_id :tags)
-               => (contains [(contains {:job_id job-id-1})
-                             (contains {:job_id job-id-2})]
-                            :in-any-order))
-
-         (fact "Filter by both tags"
-               (get-and-select client {:tags [tag-1 tag-2] :job_type job-type} :job_id :tags)
-               => (contains [(contains {:job_id job-id-2})]))
-
-         (fact "No job with matching tags"
-               (get-and-select client {:tags [(keyword (uuid-str))] :job_type job-type} :job_id :tags)
-               => empty?)))
-
 (facts "Can filter by outcome"
        (let [job-id-1 (uuid)
              job-id-2 (uuid)

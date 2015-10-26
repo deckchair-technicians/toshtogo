@@ -27,7 +27,6 @@
    (s/optional-key :job_id)                    Uuid
    (s/optional-key :fungibility_group_id)      Uuid
    (s/optional-key :fungible_under_parent)     s/Bool
-   (s/optional-key :tags)                      [s/Keyword]
    (s/optional-key :job_name)                  s/Str
    (s/optional-key :contract_due)              JodaDateTime
    (s/optional-key :notes)                     s/Str
@@ -53,7 +52,6 @@
    :requesting_agent          Uuid
    :job_created               JodaDateTime
    (s/optional-key :notes)    s/Str
-   (s/optional-key :tags)     [s/Keyword]
    :request_body              s/Str
    :fungibility_group_id      Uuid
    (s/optional-key :job_name) s/Str

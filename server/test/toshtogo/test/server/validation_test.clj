@@ -10,7 +10,6 @@
                           (with-job-id (uuid))
                           (with-name "some name")
                           (with-notes "some notes")
-                          (with-tags [:a :b :c])
                           (fungibility-group (uuid))
                           (with-dependency-on (uuid) (uuid))
                           (with-dependencies [(job-req {:child :request} :child-job-type)]))]

@@ -12,15 +12,6 @@
              [hsql :as hsql]
              [json :as json]]))
 
-(defn collect-tags [job row]
-  (if-not (contains? row :tag)
-    (or job row)
-    (-> (or job row)
-        (update :tags #(if (row :tag)
-                           (conj % (row :tag))
-                           (or % #{})))
-        (dissoc :tag))))
-
 (defn job-outcome [job]
   (if (:outcome job)
     (:outcome job)
@@ -37,22 +28,14 @@
 
 (defn normalise-job [job]
   (-> job
-      (dissoc :tag)
       (dissoc :job_id_2 :job_id_3 :job_id_4 :commitment_contract :outcome_id)
       (mp/update-each [:outcome :job_type] keyword)
       (fix-job-outcome)
       (mp/update-each [:request_body :result_body] #(json/decode %))))
 
-(defn fold-in-tags [job-with-tags]
-  (reduce collect-tags
-          nil
-          job-with-tags))
-
 (defn normalise-job-rows
-  "job-rows might include joins in to the tags table"
   [job-rows]
-  (map (comp normalise-job fold-in-tags)
-       (partition-by :job_id job-rows)))
+  (map normalise-job job-rows))
 
 (defn commitment-record [commitment-id contract-id agent]
   {:commitment_id       commitment-id

@@ -17,7 +17,7 @@
                                  (s/join " " (map safe-name order-by))
                                  (safe-name order-by)))
                              %))
-      (update-each [:job_type :outcome :tags :fields] names)
+      (update-each [:job_type :outcome :fields] names)
       form-encode))
 
 (defn sender-client [sender]

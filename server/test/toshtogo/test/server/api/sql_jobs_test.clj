@@ -30,10 +30,9 @@
     (complete-work! api commitment-id result)))
 
 (fact "Job records are the right shape"
-      (job-req ...id... {:data "value"} :job-type :tags [:tag-one :tag-two])
+      (job-req ...id... {:data "value"} :job-type)
       => {:job_id       ...id...
           :job_type         :job-type
-          :tags         [:tag-one :tag-two]
           :request_body {:data "value"}})
 
 (fact "Adding a job triggers creation of a contract"

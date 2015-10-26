@@ -1,21 +1,14 @@
 (ns toshtogo.client.clients.json-converting-client
-  (:require [clj-time.format :as tf]
-            [flatland.useful.map :refer [update-each]]
+  (:require [flatland.useful.map :refer [update-each]]
             [toshtogo.util.core :refer [uuid cause-trace parse-datetime]]
             [toshtogo.client.protocol :refer :all]
             [toshtogo.client.senders.protocol :refer :all]))
-
-(defn set-tags [job]
-  (if (:tags job)
-    (update job :tags #(map keyword %))
-    job))
 
 (defn convert-job [job]
   (when job
     (-> job
         (update-each [:contract_created :contract_claimed :contract_due :contract_finished :job_created :last_heartbeat] parse-datetime)
         (update-each [:home_tree_id :commitment_id :contract_id :job_id :requesting_agent :commitment_agent :fungibility_group_id] uuid)
-        (set-tags)
         (update-each [:outcome] keyword))))
 
 (defn convert-link [link]
