@@ -54,6 +54,9 @@
 (defn with-fungibility-key [job-req k]
   (assoc job-req :fungibility_key k))
 
+(defn with-alternative-fungibility-keys [job-req ks]
+  (assoc job-req :alternative_fungibility_keys ks))
+
 (defn with-name [job-req job-name]
   (assoc job-req :job_name job-name))
 

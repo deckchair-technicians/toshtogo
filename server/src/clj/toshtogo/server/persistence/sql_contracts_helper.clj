@@ -121,7 +121,7 @@
        (merge-where query [:= :request_body (database-representation v)])
 
        :fungibility_key
-       (merge-where query [:= :jobs.fungibility_key v])
+       (merge-where query [:in :jobs.fungibility_key (vec (ensure-seq v))])
 
        :tree_id
        (merge-where query [:or

@@ -57,14 +57,46 @@
     (put-job! client job-id       (job-req {:parent-job "parent job"} parent-job-type))
     (put-job! client child-job-id (-> (job-req {:child-job "ONE"} child-job-type)
                                       (with-fungibility-key fungibility-key)))
-                                        ; Matching child job has already completed
+    ; Matching child job has already completed
     @(do-work! client child-job-type echo-request)
     => truthy
 
     (let [add-deps (fn [job]
                      (add-dependencies
-                      (-> (job-req {:child-job "TWO"} child-job-type)
-                          (with-fungibility-key fungibility-key))))]
+                       (-> (job-req {:child-job "TWO"} child-job-type)
+                           (with-fungibility-key fungibility-key))))]
+
+      @(do-work! client parent-job-type add-deps)
+      => truthy
+
+      (fact "Parent job is ready immediately, because a matching job has already completed"
+        (let [contract (request-work! client parent-job-type)]
+          contract
+          => (contains {:request_body {:parent-job "parent job"}})
+
+          (contract :dependencies)
+          => (contains [(contains {:result_body {:child-job "ONE"}})]))))))
+
+(facts "We support alternative fungibility keys to allow backwards compatibility"
+  (let [job-id          (uuid)
+        child-job-id    (uuid)
+        fungibility-key-v1 (uuid-str)
+        fungibility-key-v2 (uuid-str)
+        parent-job-type (uuid-str)
+        child-job-type  (uuid-str)]
+
+    (put-job! client job-id       (job-req {:parent-job "parent job"} parent-job-type))
+    (put-job! client child-job-id (-> (job-req {:child-job "ONE"} child-job-type)
+                                      (with-fungibility-key fungibility-key-v1)))
+    ; Matching child job has already completed
+    @(do-work! client child-job-type echo-request)
+    => truthy
+
+    (let [add-deps (fn [job]
+                     (add-dependencies
+                       (-> (job-req {:child-job "TWO"} child-job-type)
+                           (with-fungibility-key fungibility-key-v2)
+                           (with-alternative-fungibility-keys [fungibility-key-v1]))))]
 
       @(do-work! client parent-job-type add-deps)
       => truthy

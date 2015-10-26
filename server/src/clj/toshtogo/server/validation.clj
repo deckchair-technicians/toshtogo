@@ -22,15 +22,16 @@
   (nil? (errors schema x)))
 
 (def JobRequest
-  {:job_type                                   s/Keyword
-   :request_body                               (s/pred map? "should be a map")
-   (s/optional-key :job_id)                    Uuid
-   (s/optional-key :fungibility_key)           s/Str
-   (s/optional-key :job_name)                  s/Str
-   (s/optional-key :contract_due)              JodaDateTime
-   (s/optional-key :notes)                     s/Str
-   (s/optional-key :existing_job_dependencies) [Uuid]
-   (s/optional-key :dependencies)              [(toshtogo-schema/recursive #'JobRequest)]})
+  {:job_type                                      s/Keyword
+   :request_body                                  (s/pred map? "should be a map")
+   (s/optional-key :job_id)                       Uuid
+   (s/optional-key :fungibility_key)              s/Str
+   (s/optional-key :alternative_fungibility_keys) [s/Str]
+   (s/optional-key :job_name)                     s/Str
+   (s/optional-key :contract_due)                 JodaDateTime
+   (s/optional-key :notes)                        s/Str
+   (s/optional-key :existing_job_dependencies)    [Uuid]
+   (s/optional-key :dependencies)                 [(toshtogo-schema/recursive #'JobRequest)]})
 
 (def ContractOutcome
   (s/enum :success :error :cancelled :try-later :more-work))

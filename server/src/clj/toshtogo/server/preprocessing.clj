@@ -57,9 +57,9 @@
   (reduce (fn [result job]
             (if-let [existing-job (and (:fungibility_key job)
                                        (first
-                                         (get-jobs persistence {:job_type             (:job_type job)
-                                                                :fungibility_key      (:fungibility_key job)
-                                                                :fields               [:job_id]})))]
+                                         (get-jobs persistence {:job_type        (:job_type job)
+                                                                :fungibility_key (conj (:alternative_fungibility_keys job) (:fungibility_key job))
+                                                                :fields          [:job_id]})))]
               (update result :existing-job-ids #(cons (:job_id existing-job) %))
 
               (update result :new-jobs #(cons job %))))

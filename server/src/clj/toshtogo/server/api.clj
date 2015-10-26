@@ -26,6 +26,7 @@
   (-> job-request
       (dissoc :dependencies
               :existing_job_dependencies
+              :alternative_fungibility_keys
               :parent_job_id
               :contract_due)
       (update :request_body json/encode)))
