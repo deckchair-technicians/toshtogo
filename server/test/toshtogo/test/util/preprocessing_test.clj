@@ -6,8 +6,8 @@
 
 (defn is-uuid? [x] (instance? UUID x))
 
-(fact "normalise-job-tree sets job_ids"
-      (normalise-job-tree {:job          "1"
+(fact "normalise-job-graph sets job_ids"
+      (normalise-job-graph {:job          "1"
                            :dependencies [{:job "1.1"}
                                           {:job          "1.2"
                                            :dependencies [{:job "1.2.1"}]}]}
@@ -24,8 +24,8 @@
                                                                           :job    "1.2.1"}))})
                                     :in-any-order)}))
 
-(fact "normalise-job-tree sets agent_ids"
-      (normalise-job-tree {:job          "1"
+(fact "normalise-job-graph sets agent_ids"
+      (normalise-job-graph {:job          "1"
                            :dependencies [{:job "1.1"}
                                           {:job          "1.2"
                                            :dependencies [{:job "1.2.1"}]}]}
@@ -42,9 +42,9 @@
                                                                                   :job              "1.2.1"}))})
                                         :in-any-order)}))
 
-(fact "normalise-job-tree propagates :home_tree_id"
-      (let [tree-id (uuid)]
-        (normalise-job-tree {:home_tree_id tree-id
+(fact "normalise-job-graph propagates :home_graph_id"
+      (let [graph-id (uuid)]
+        (normalise-job-graph {:home_graph_id graph-id
                              :job          "1"
                              :dependencies [{:job          "1.1"
                                              :dependencies [{:job "1.1.1"}]}]}
@@ -52,13 +52,13 @@
         => (contains {:job          "1"
                       :dependencies (just
                                       (contains {:job          "1.1"
-                                                 :home_tree_id tree-id
+                                                 :home_graph_id graph-id
                                                  :dependencies (just
                                                                  (contains {:job          "1.1.1"
-                                                                            :home_tree_id tree-id}))}))})))
+                                                                            :home_graph_id graph-id}))}))})))
 
-(fact "normalise-job-tree sets :parent_job_id"
-      (normalise-job-tree {:job_id       "1"
+(fact "normalise-job-graph sets :parent_job_id"
+      (normalise-job-graph {:job_id       "1"
                            :dependencies [{:job_id       "1.1"
                                            :dependencies [{:job_id "1.1.1"}]}]}
                           ..agent-id..)

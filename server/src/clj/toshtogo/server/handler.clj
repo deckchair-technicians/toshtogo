@@ -82,9 +82,9 @@
 
 (defroutes api-routes
   (context "/api" {:keys [persistence api body check-idempotent!]}
-    (context "/trees" []
-      (GET "/:tree-id" [tree-id]
-        (resp/response (get-tree persistence (uuid tree-id)))))
+    (context "/graphs" []
+      (GET "/:graph-id" [graph-id]
+        (resp/response (get-graph persistence (uuid graph-id)))))
 
     (context "/jobs" []
       (GET "/" {params :query-params :as request}

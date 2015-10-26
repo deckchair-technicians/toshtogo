@@ -3,7 +3,7 @@
   :description "An asynchronous job manager"
 
   :dependencies [[org.clojure/clojure "1.7.0"]
-                 [savagematt.toshtogo/client "0.6.5"]
+                 [savagematt.toshtogo/client "0.7.1-SNAPSHOT"]
 
                  [org.clojure/clojurescript "0.0-3211"]
                  [org.clojure/core.async "0.1.346.0-17112a-alpha"]

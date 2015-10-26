@@ -147,7 +147,7 @@
       (map-keys keyword)
       (update-each [:order-by] (fn [x] (or (parse-order-by x) [:job_created])))
       ;(update-each [:latest_contract :has_contract] parse-boolean-param)
-      (update-each [:tree_id :commitment_id :job_id :depends_on_job_id :dependency_of_job_id] uuid)
+      (update-each [:graph_id :commitment_id :job_id :depends_on_job_id :dependency_of_job_id] uuid)
       (update-each [:job_type :outcome] #(when % (map keyword (ensure-seq %))))
       (update-each [:fields] sequence-of-keywords)
       (update-each [:max_due_time] parse-datetime)))

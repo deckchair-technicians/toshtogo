@@ -123,19 +123,19 @@
        :fungibility_key
        (merge-where query [:in :jobs.fungibility_key (vec (ensure-seq v))])
 
-       :tree_id
+       :graph_id
        (merge-where query [:or
                            [:in :jobs.job_id (-> (select :parent_job_id)
                                                  (from :job_dependencies)
-                                                 (where [:= :link_tree_id v]))]
+                                                 (where [:= :dependency_graph_id v]))]
                            [:in :jobs.job_id (-> (select :child_job_id)
                                                  (from :job_dependencies)
-                                                 (where [:= :link_tree_id v]))]])
+                                                 (where [:= :dependency_graph_id v]))]])
 
-       :root_of_tree_id
-       (merge-where query [:= :jobs.job_id (-> (select :job_trees.root_job_id)
-                                               (from :job_trees)
-                                               (where [:= :job_trees.tree_id v]))])
+       :root_of_graph_id
+       (merge-where query [:= :jobs.job_id (-> (select :job_graphs.root_job_id)
+                                               (from :job_graphs)
+                                               (where [:= :job_graphs.graph_id v]))])
 
        :fields
        (apply select query (map fully-qualify-field v))

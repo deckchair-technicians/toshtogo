@@ -205,7 +205,7 @@
                                       (with-notes notes)
                                       (with-name job-name)))
           (get-job client job-id)
-          => (matches {:home_tree_id         sch/Uuid
+          => (matches {:home_graph_id         sch/Uuid
                        :commitment_agent     is-nil
                        :commitment_id        is-nil
                        :contract_claimed     is-nil

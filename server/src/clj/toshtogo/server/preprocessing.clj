@@ -4,12 +4,12 @@
             [toshtogo.util
              [core :refer [uuid ppstr debug]]]))
 
-(defn process-job-tree
+(defn process-job-graph
       "Breadth-first walk of root and its dependencies.
 
       1) Applies parent-fn to root
       2) Applies (child-fn root (:dependencies children)
-      3) Recurs to process-job-tree for each child"
+      3) Recurs to process-job-graph for each child"
   [parent-fn child-fn root]
   (let [root (parent-fn root)]
     (if-not (:dependencies root)
@@ -17,16 +17,16 @@
       (update root :dependencies #(doall
                                    (->> %
                                         (child-fn root)
-                                        (map (fn [child] (process-job-tree parent-fn child-fn child)))))))))
+                                        (map (fn [child] (process-job-graph parent-fn child-fn child)))))))))
 
-(defn normalise-job-tree
-      "Takes a job tree and ensures that the following fields are set on all dependencies:
+(defn normalise-job-graph
+      "Takes a job graph and ensures that the following fields are set on all dependencies:
 
       :job_id
-      :home_tree_id
+      :home_graph_id
       :parent_job_id"
   [root-job agent-id]
-  (process-job-tree
+  (process-job-graph
 
     (fn [parent]
       (-> parent
@@ -37,7 +37,7 @@
 
     (fn [parent children]
       (map (fn [child] (-> child
-                           (assoc :home_tree_id (:home_tree_id parent))
+                           (assoc :home_graph_id (:home_graph_id parent))
                            (assoc :parent_job_id (:job_id parent))))
            children))
 
@@ -70,10 +70,10 @@
           jobs))
 
 (defn replace-fungible-jobs-with-existing-job-ids
-      "Walks the dependency tree, removing entries from :dependencies and replacing them
+      "Walks the dependency graph, removing entries from :dependencies and replacing them
       with :existing_job_dependencies"
   [job-or-contract persistence]
-  (process-job-tree
+  (process-job-graph
     (fn [parent]
       (let [{:keys [existing-job-ids new-jobs]} (find-replacements persistence (:dependencies parent))]
         (-> parent
@@ -88,7 +88,7 @@
   (let [child-ids (concat (:existing_job_dependencies job)
                           (map :job_id (:dependencies job)))
 
-        dependency-records (map (fn [child-id] {:link_tree_id  (:home_tree_id job)
+        dependency-records (map (fn [child-id] {:dependency_graph_id  (:home_graph_id job)
                                                 :parent_job_id (:job_id job)
                                                 :child_job_id  child-id})
                                 child-ids)]

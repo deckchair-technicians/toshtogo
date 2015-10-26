@@ -45,8 +45,8 @@
                                               (assoc :dependency_id (uuid))
                                               (validated DependencyRecord))))
 
-    (insert-tree! [this tree-id root-job-id]
-      (ttsql/insert! cnxn :job_trees {:tree_id tree-id :root_job_id root-job-id}))
+    (insert-graph! [this graph-id root-job-id]
+      (ttsql/insert! cnxn :job_graphs {:graph_id graph-id :root_job_id root-job-id}))
 
     (insert-jobs! [this jobs]
       (doseq [job (validated jobs [JobRecord])]

@@ -6,14 +6,14 @@
             [toshtogo.util.core :refer [assoc-not-nil uuid uuid? ppstr debug]]
             [toshtogo.client.protocol :refer [cancelled]]
             [toshtogo.server.persistence.protocol :as pers]
-            [toshtogo.server.preprocessing :refer [normalise-job-tree replace-fungible-jobs-with-existing-job-ids collect-dependencies collect-new-jobs]]
+            [toshtogo.server.preprocessing :refer [normalise-job-graph replace-fungible-jobs-with-existing-job-ids collect-dependencies collect-new-jobs]]
             [toshtogo.server.persistence.protocol :refer [contract-req]]))
 
 (defprotocol Api
   (new-contract! [this contract-req])
   (new-jobs! [this jobs])
   (new-dependencies! [this parent-job-or-contract]
-                     "Assumes job-or-contract already exists. Navigates the dependency tree,
+                     "Assumes job-or-contract already exists. Navigates the dependency graph,
                      creating new jobs and dependencies as required.")
   (new-root-job! [this job])
   (process-result! [this contract result])
@@ -66,7 +66,7 @@
       [this parent-job-or-contract]
       (let [agent-id               (:agent_id (pers/agent! persistence agent-details))
             parent-job-or-contract (-> parent-job-or-contract
-                                       (normalise-job-tree agent-id)
+                                       (normalise-job-graph agent-id)
                                        (replace-fungible-jobs-with-existing-job-ids persistence))
 
             dependency-records     (collect-dependencies parent-job-or-contract)
@@ -80,10 +80,10 @@
 
     (new-root-job! [this job]
       (let [job (-> job
-                    (assoc :home_tree_id (uuid))
-                    (normalise-job-tree (:agent_id (pers/agent! persistence agent-details))))]
+                    (assoc :home_graph_id (uuid))
+                    (normalise-job-graph (:agent_id (pers/agent! persistence agent-details))))]
 
-        (pers/insert-tree! persistence (:home_tree_id job) (:job_id job))
+        (pers/insert-graph! persistence (:home_graph_id job) (:job_id job))
         (new-jobs! this [job])
 
         (new-dependencies! this job)))

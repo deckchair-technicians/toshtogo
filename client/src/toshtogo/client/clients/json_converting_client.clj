@@ -8,7 +8,7 @@
   (when job
     (-> job
         (update-each [:contract_created :contract_claimed :contract_due :contract_finished :job_created :last_heartbeat] parse-datetime)
-        (update-each [:home_tree_id :commitment_id :contract_id :job_id :requesting_agent :commitment_agent] uuid)
+        (update-each [:home_graph_id :commitment_id :contract_id :job_id :requesting_agent :commitment_agent] uuid)
         (update-each [:outcome] keyword))))
 
 (defn convert-link [link]
@@ -31,8 +31,8 @@
       (-> (get-jobs decorated query)
           (update :data #(map convert-job %))))
 
-    (get-tree [this tree-id]
-      (-> (get-tree decorated tree-id)
+    (get-graph [this graph-id]
+      (-> (get-graph decorated graph-id)
           (update :root_job convert-job)
           (update :jobs #(map convert-job %))
           (update :links #(map convert-link %))))

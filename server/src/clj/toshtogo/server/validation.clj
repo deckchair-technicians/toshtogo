@@ -55,11 +55,11 @@
    :request_body                     s/Str
    (s/optional-key :fungibility_key) s/Str
    (s/optional-key :job_name)        s/Str
-   :home_tree_id                     Uuid})
+   :home_graph_id                    Uuid})
 
 (def DependencyRecord
   {:dependency_id Uuid
-   :link_tree_id  Uuid
+   :dependency_graph_id Uuid
    :parent_job_id Uuid
    :child_job_id  Uuid})
 

@@ -26,10 +26,10 @@
          (fact "No contract is created for parent job"
                (request-work! client parent-job-type) => nil)
 
-         (fact "Dependencies are in the same job tree"
-               (let [parent-job-tree-id (:home_tree_id (get-job client job-id))]
-                 (get-job client child-one-id) => (contains {:home_tree_id parent-job-tree-id})
-                 (get-job client child-two-id) => (contains {:home_tree_id parent-job-tree-id})))
+         (fact "Dependencies are in the same job graph"
+               (let [parent-job-graph-id (:home_graph_id (get-job client job-id))]
+                 (get-job client child-one-id) => (contains {:home_graph_id parent-job-graph-id})
+                 (get-job client child-two-id) => (contains {:home_graph_id parent-job-graph-id})))
 
          (:contract @(do-work! client {:job_id child-one-id} (return-success-with-result {:child-one "result"})))
          => (contains {:request_body {:b "child one"}})
@@ -73,10 +73,10 @@
            (fact "Parent job is not ready until new dependencies complete"
                  (request-work! client parent-job-type) => nil)
 
-           (fact "Dependencies are in the same job tree"
-                 (let [parent-job-tree-id (:home_tree_id (get-job client job-id))]
-                   (get-job client child-one-id) => (contains {:home_tree_id parent-job-tree-id})
-                   (get-job client child-two-id) => (contains {:home_tree_id parent-job-tree-id})))
+           (fact "Dependencies are in the same job graph"
+                 (let [parent-job-graph-id (:home_graph_id (get-job client job-id))]
+                   (get-job client child-one-id) => (contains {:home_graph_id parent-job-graph-id})
+                   (get-job client child-two-id) => (contains {:home_graph_id parent-job-graph-id})))
 
            @(do-work! client child-job-type complete-child) => truthy
            @(do-work! client child-job-type complete-child) => truthy
@@ -144,9 +144,9 @@
          @(do-work! client parent-job-type (fn [job] (add-dependencies other-job-id)))
          => truthy
 
-         (fact "Other job is now included in the parent job's home tree"
-               (let [parent-job-tree-id (:home_tree_id (get-job client parent-job-id))]
-                 (:data (get-jobs client {:tree_id parent-job-tree-id}))
+         (fact "Other job is now included in the parent job's home graph"
+               (let [parent-job-graph-id (:home_graph_id (get-job client parent-job-id))]
+                 (:data (get-jobs client {:graph_id parent-job-graph-id}))
                  => (contains [(contains {:job_id other-job-id})])))
 
          (fact "Parent job is not ready until new dependencies complete"

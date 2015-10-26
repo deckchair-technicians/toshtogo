@@ -1,4 +1,4 @@
-(ns toshtogo.test.functional.job-trees-test
+(ns toshtogo.test.functional.job-graphs-test
   (:require [midje.sweet :refer :all]
             [clj-time.core :refer [now minutes seconds millis plus minus after? interval within?]]
             [ring.adapter.jetty :refer [run-jetty]]
@@ -13,19 +13,19 @@
 
 (background (before :contents @migrated-dev-db))
 
-(fact "We can request a whole job tree, which returns links and stripped-down job details to keep the message size small"
+(fact "We can request a whole job graph, which returns links and stripped-down job details to keep the message size small"
       (let [parent-job-id (uuid)
             child-1-job-id (uuid)
             child-2-job-id (uuid)
             grandchild-job-id (uuid)
-            job-in-a-different-home-tree (uuid)]
+            job-in-a-different-home-graph (uuid)]
 
-        (put-job! client job-in-a-different-home-tree (-> (job-req {} "job_in_different_home_tree")
+        (put-job! client job-in-a-different-home-graph (-> (job-req {} "job_in_different_home_graph")
                                                           (with-name "e (other job)")))
 
         (put-job! client parent-job-id (-> (job-req {} "parent_job_type")
                                            (with-dependency-on
-                                             job-in-a-different-home-tree)
+                                             job-in-a-different-home-graph)
                                            (with-name "a (parent)")
 
                                            (with-dependencies
@@ -41,11 +41,11 @@
                                                                          (with-job-id grandchild-job-id)
                                                                          (with-name "d (grandchild)"))))])))
 
-        (let [tree-id (:home_tree_id (get-job client parent-job-id))]
-          (:data (get-jobs client {:tree_id tree-id}))
-          => (contains [(contains {:job_id job-in-a-different-home-tree})])
+        (let [graph-id (:home_graph_id (get-job client parent-job-id))]
+          (:data (get-jobs client {:graph_id graph-id}))
+          => (contains [(contains {:job_id job-in-a-different-home-graph})])
 
-          (get-tree client tree-id)
+          (get-graph client graph-id)
           => (matches {:root_job {:job_id parent-job-id}
                        :jobs     (in-any-order [{:job_id   parent-job-id
                                                  :job_name "a (parent)"
@@ -67,9 +67,9 @@
                                                  :job_type "grandchild_job_type"
                                                  :outcome  :no-contract}
 
-                                                {:job_id   job-in-a-different-home-tree
+                                                {:job_id   job-in-a-different-home-graph
                                                  :job_name "e (other job)"
-                                                 :job_type "job_in_different_home_tree"
+                                                 :job_type "job_in_different_home_graph"
                                                  :outcome  :no-contract}])
 
 
@@ -83,4 +83,4 @@
                                                  :child_job_id  grandchild-job-id}
 
                                                 {:parent_job_id parent-job-id
-                                                 :child_job_id  job-in-a-different-home-tree}])}))))
+                                                 :child_job_id  job-in-a-different-home-graph}])}))))

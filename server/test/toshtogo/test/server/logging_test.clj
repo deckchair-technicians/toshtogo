@@ -3,7 +3,7 @@
             [vice.midje :refer [matches strict]]
             [toshtogo.client.protocol :refer [job-req success]]
             [toshtogo.server.api :refer [to-job-record]]
-            [toshtogo.server.preprocessing :refer [normalise-job-tree]]
+            [toshtogo.server.preprocessing :refer [normalise-job-graph]]
             [toshtogo.util.core :refer [uuid]]
             [toshtogo.test.functional.test-support :refer [agent-details]]
 
@@ -11,8 +11,8 @@
 
 (fact "Event constructors produce valid events"
       (new-job-event (-> (job-req {:some :request} :a_job_type)
-                         (assoc :home_tree_id (uuid))
-                         (normalise-job-tree (uuid))
+                         (assoc :home_graph_id (uuid))
+                         (normalise-job-graph (uuid))
                          (to-job-record)))
       => (matches (strict LoggingEvent))
 

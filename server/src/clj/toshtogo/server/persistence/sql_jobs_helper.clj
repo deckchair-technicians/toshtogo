@@ -43,11 +43,11 @@
    :commitment_agent    (agent :agent_id)
    :contract_claimed    (now)})
 
-(defn is-tree-member [cnxn tree-id job-id]
+(defn is-graph-member [cnxn graph-id job-id]
   (not (empty? (hsql/query cnxn (-> (select :*)
                                     (from :job_dependencies)
                                     (where [:and
-                                            [:= :link_tree_id tree-id]
+                                            [:= :dependency_graph_id graph-id]
                                             [:or
                                                   [:= :parent_job_id job-id]
                                                   [:= :child_job_id job-id]]]))))))
@@ -61,7 +61,7 @@
               [:in :links.child_job_id (-> (job-query params)
                                             (select [:jobs.job_id]))]])))
 
-(defn tree-query [tree-id]
+(defn graph-query [graph-id]
   (-> (select :*)
-      (from :job_trees)
-      (where [:= :job_trees.tree_id tree-id])))
+      (from :job_graphs)
+      (where [:= :job_graphs.graph_id graph-id])))
