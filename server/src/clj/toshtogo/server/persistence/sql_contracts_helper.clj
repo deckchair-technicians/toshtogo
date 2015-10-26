@@ -125,6 +125,9 @@
 
        :graph_id
        (merge-where query [:or
+                           [:= :jobs.job_id (-> (select :root_job_id)
+                                                (from :job_graphs)
+                                                (where [:= :graph_id v]))]
                            [:in :jobs.job_id (-> (select :parent_job_id)
                                                  (from :job_dependencies)
                                                  (where [:= :dependency_graph_id v]))]

@@ -7,11 +7,26 @@
             [toshtogo.test.functional.test-support :refer [migrated-dev-db client]]
             [vice
              [midje :refer [matches]]
-             [schemas :refer [in-any-order]]]
-            [schema.core :as s])
-  (:import (java.util UUID)))
+             [schemas :refer [in-any-order in-order]]]))
 
 (background (before :contents @migrated-dev-db))
+
+
+(fact "A graph with a single job returns just that job"
+  (let [job-id (uuid)]
+
+    (put-job! client job-id (job-req {} (uuid-str)))
+
+    (let [graph-id (:home_graph_id (get-job client job-id))]
+      (:data (get-jobs client {:graph_id graph-id}))
+      => (contains [(contains {:job_id job-id})])
+
+      (get-graph client graph-id)
+      => (matches {:root_job {:job_id job-id}
+                   :jobs     (in-any-order [{:job_id   job-id}])
+
+
+                   :links    (in-order [])}))))
 
 (fact "We can request a whole job graph, which returns links and stripped-down job details to keep the message size small"
       (let [parent-job-id (uuid)
