@@ -13,8 +13,8 @@
 (defn job-row [{:keys [job_id job_type job_created contract_claimed contract_finished outcome] :as job}]
   (dom/tr nil
           (dom/td #js {:className (util/row-classname job)} outcome)
-          (dom/td nil (dom/a #js {:onClick (fn [_] (history/navigate (str "/jobs/" job_id)))}
-                        job_type))
+          (dom/td nil (dom/a #js {:href (str "#/jobs/" job_id)}
+                             job_type))
           (dom/td nil (dates/date->day-string (dates/string->date job_created)))
           (dom/td nil (dates/date->time-string (dates/string->date job_created)))
           (dom/td nil (dates/date->time-string (dates/string->date contract_claimed)))

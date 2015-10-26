@@ -1,4 +1,4 @@
-(ns ^:figwheel-always toshtogo.util.history
+(ns toshtogo.util.history
   (:import goog.History)
   (:require [secretary.core :as secretary ]
             [goog.events :as events]
@@ -12,8 +12,10 @@
   [location]
   (. history (setToken location "")))
 
+(defonce event-listener
+  (events/listen history EventType/NAVIGATE #(secretary/dispatch! (.-token %))))
+
 (defn enable-history!
   []
-  (events/listen history EventType/NAVIGATE #(secretary/dispatch! (.-token %)))
   (.setEnabled history true))
 

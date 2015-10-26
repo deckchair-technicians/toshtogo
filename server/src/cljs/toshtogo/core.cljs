@@ -152,7 +152,8 @@
 
               (dom/div nil "You have found a broken link, congratulations!"))))))))
 
-(def app-state (atom {:search {:page-size 25}}))
+(defonce app-state
+  (atom {:search {:page-size 25}}))
 
 (om/root
   app-view
