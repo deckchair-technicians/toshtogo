@@ -6,13 +6,14 @@
   )
 
 (defonce history
-         (History.))
+  (History.))
 
-(defn navigate [location]
-  (println "NAV" location)
+(defn navigate
+  [location]
   (. history (setToken location "")))
 
-(defonce navigation-listener
-         (events/listen history EventType/NAVIGATE #(secretary/dispatch! (.-token %))))
+(defn enable-history!
+  []
+  (events/listen history EventType/NAVIGATE #(secretary/dispatch! (.-token %)))
+  (.setEnabled history true))
 
-(.setEnabled history true)

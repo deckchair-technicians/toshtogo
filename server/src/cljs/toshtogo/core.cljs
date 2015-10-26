@@ -102,6 +102,7 @@
       (aset toastr/options "positionClass" "toast-top-right")
       (let [<messages> (om/get-state owner :<messages>)]
         (build-routes data <messages>)
+        (history/enable-history!)
         (go-loop []
           (when-let [[event body] (<! <messages>)]
             (case event
@@ -149,7 +150,7 @@
               :job
               (om/build job/job-view (:job data) {:init-state {:<messages> <messages>}})
 
-              (dom/div nil (history/navigate "/")))))))))
+              (dom/div nil "You have found a broken link, congratulations!"))))))))
 
 (def app-state (atom {:search {:page-size 25}}))
 
