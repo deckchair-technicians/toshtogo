@@ -15,6 +15,8 @@
 
 (enable-console-print!)
 
+(def base-search-uri "api/jobs?page=1&page_size=25&order-by=job_created desc")
+
 (defn notify
   [type msg]
   (case type
@@ -69,7 +71,7 @@
   (secretary/add-route! "/"
     (fn [_]
       (println "HOME")
-      (history/navigate (str "/jobs?source=" (url/url-encode "api/jobs?page=1&page_size=25")))))
+      (history/navigate (str "/jobs?source=" (url/url-encode base-search-uri)))))
 
   (secretary/add-route! "/jobs"
     (fn [{{:keys [source]} :query-params}]
@@ -142,7 +144,7 @@
             (println "VIEW" view)
             (case view
               :jobs
-              (om/build jobs/jobs-view data)
+              (om/build jobs/jobs-view data {:opts {:base-search-uri base-search-uri}})
 
               :job
               (om/build job/job-view (:job data) {:init-state {:<messages> <messages>}})
