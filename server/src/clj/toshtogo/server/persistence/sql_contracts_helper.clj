@@ -120,8 +120,8 @@
        :request_body
        (merge-where query [:= :request_body (database-representation v)])
 
-       :fungibility_group_id
-       (merge-where query [:= :jobs.fungibility_group_id v])
+       :fungibility_key
+       (merge-where query [:= :jobs.fungibility_key v])
 
        :tree_id
        (merge-where query [:or

@@ -1,6 +1,6 @@
 (ns toshtogo.test.server.validation-test
   (:require [midje.sweet :refer :all]
-            [toshtogo.util.core :refer [uuid]]
+            [toshtogo.util.core :refer [uuid uuid-str]]
             [toshtogo.client.protocol :refer :all]
             [toshtogo.server.validation :refer :all])
   (:import (clojure.lang ExceptionInfo)))
@@ -10,7 +10,7 @@
                           (with-job-id (uuid))
                           (with-name "some name")
                           (with-notes "some notes")
-                          (fungibility-group (uuid))
+                          (with-fungibility-key (uuid-str))
                           (with-dependency-on (uuid) (uuid))
                           (with-dependencies [(job-req {:child :request} :child-job-type)]))]
         (validated valid-job JobRequest)

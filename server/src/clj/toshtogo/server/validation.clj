@@ -25,8 +25,7 @@
   {:job_type                                   s/Keyword
    :request_body                               (s/pred map? "should be a map")
    (s/optional-key :job_id)                    Uuid
-   (s/optional-key :fungibility_group_id)      Uuid
-   (s/optional-key :fungible_under_parent)     s/Bool
+   (s/optional-key :fungibility_key)           s/Str
    (s/optional-key :job_name)                  s/Str
    (s/optional-key :contract_due)              JodaDateTime
    (s/optional-key :notes)                     s/Str
@@ -47,15 +46,15 @@
    (s/optional-key :contract_due)              JodaDateTime})
 
 (def JobRecord
-  {:job_id                    s/Uuid
-   :job_type                  s/Keyword
-   :requesting_agent          Uuid
-   :job_created               JodaDateTime
-   (s/optional-key :notes)    s/Str
-   :request_body              s/Str
-   :fungibility_group_id      Uuid
-   (s/optional-key :job_name) s/Str
-   :home_tree_id              Uuid})
+  {:job_id                           s/Uuid
+   :job_type                         s/Keyword
+   :requesting_agent                 Uuid
+   :job_created                      JodaDateTime
+   (s/optional-key :notes)           s/Str
+   :request_body                     s/Str
+   (s/optional-key :fungibility_key) s/Str
+   (s/optional-key :job_name)        s/Str
+   :home_tree_id                     Uuid})
 
 (def DependencyRecord
   {:dependency_id Uuid

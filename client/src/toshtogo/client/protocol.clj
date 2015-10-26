@@ -51,11 +51,8 @@
 (defn with-dependency-on [job-req job-id & job-ids]
   (update job-req :existing_job_dependencies #(concat % [job-id] job-ids)))
 
-(defn fungibility-group [job-req group-id]
-  (assoc job-req :fungibility_group_id group-id))
-
-(defn fungible-under-parent [job-req]
-  (assoc job-req :fungible_under_parent true))
+(defn with-fungibility-key [job-req k]
+  (assoc job-req :fungibility_key k))
 
 (defn with-name [job-req job-name]
   (assoc job-req :job_name job-name))

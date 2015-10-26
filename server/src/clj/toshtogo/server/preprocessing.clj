@@ -4,16 +4,6 @@
             [toshtogo.util
              [core :refer [uuid ppstr debug]]]))
 
-(defn set-fungibility-group-id [child parent]
-  (assert (:fungibility_group_id parent) (str "Parent should have :fungibility_group_id " parent))
-  (update child :fungibility_group_id
-          #(or %
-
-               (when (:fungible_under_parent child)
-                 (:fungibility_group_id parent))
-
-               (uuid))))
-
 (defn process-job-tree
       "Breadth-first walk of root and its dependencies.
 
@@ -33,7 +23,6 @@
       "Takes a job tree and ensures that the following fields are set on all dependencies:
 
       :job_id
-      :fungibility_group_id (incuding processing :fungible_under_parent)
       :home_tree_id
       :parent_job_id"
   [root-job agent-id]
@@ -42,16 +31,12 @@
     (fn [parent]
       (-> parent
           (update :job_id #(or % (uuid)))
-          (assoc :should-funge (or (contains? parent :fungibility_group_id)
-                                   (contains? parent :fungible_under_parent)))
-          (update :fungibility_group_id #(or % (uuid)))
           (update :job_type keyword)
           (assoc :requesting_agent agent-id)
           (assoc :job_created (now))))
 
     (fn [parent children]
       (map (fn [child] (-> child
-                           (set-fungibility-group-id parent)
                            (assoc :home_tree_id (:home_tree_id parent))
                            (assoc :parent_job_id (:job_id parent))))
            children))
@@ -70,11 +55,10 @@
       group specified."
   [persistence jobs]
   (reduce (fn [result job]
-            (if-let [existing-job (and (:should-funge job)
+            (if-let [existing-job (and (:fungibility_key job)
                                        (first
                                          (get-jobs persistence {:job_type             (:job_type job)
-                                                                :request_body         (:request_body job)
-                                                                :fungibility_group_id (:fungibility_group_id job)
+                                                                :fungibility_key      (:fungibility_key job)
                                                                 :fields               [:job_id]})))]
               (update result :existing-job-ids #(cons (:job_id existing-job) %))
 

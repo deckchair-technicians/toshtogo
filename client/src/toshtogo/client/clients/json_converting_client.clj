@@ -8,7 +8,7 @@
   (when job
     (-> job
         (update-each [:contract_created :contract_claimed :contract_due :contract_finished :job_created :last_heartbeat] parse-datetime)
-        (update-each [:home_tree_id :commitment_id :contract_id :job_id :requesting_agent :commitment_agent :fungibility_group_id] uuid)
+        (update-each [:home_tree_id :commitment_id :contract_id :job_id :requesting_agent :commitment_agent] uuid)
         (update-each [:outcome] keyword))))
 
 (defn convert-link [link]

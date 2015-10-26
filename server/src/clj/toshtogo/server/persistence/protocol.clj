@@ -17,7 +17,6 @@
   (insert-tree! [this tree-id root-job-id])
   (insert-jobs! [this jobs])
   (insert-dependency! [this dependency-record])
-  (insert-fungibility-group-entry! [this entry])
 
   (insert-contract!   [this job-id contract-number contract-due])
   (insert-commitment! [this commitment-id contract agent-details])

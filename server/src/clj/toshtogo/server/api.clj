@@ -27,8 +27,6 @@
       (dissoc :dependencies
               :existing_job_dependencies
               :parent_job_id
-              :fungible_under_parent
-              :should-funge
               :contract_due)
       (update :request_body json/encode)))
 

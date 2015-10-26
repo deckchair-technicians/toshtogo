@@ -42,22 +42,6 @@
                                                                                   :job              "1.2.1"}))})
                                         :in-any-order)}))
 
-(fact "normalise-job-tree supports :fungible_under_parent"
-      (let [f-group (uuid)]
-        (normalise-job-tree {:job          "1"
-                             :dependencies [{:job                  "1.1"
-                                             :fungibility_group_id f-group
-                                             :dependencies         [{:fungible_under_parent true
-                                                                     :job                   "1.1.1"}]}]}
-                            ..agent-id..)
-        => (contains {:job          "1"
-                      :dependencies (just
-                                      (contains {:job                  "1.1"
-                                                 :fungibility_group_id f-group
-                                                 :dependencies         (just
-                                                                         (contains {:job                  "1.1.1"
-                                                                                    :fungibility_group_id f-group}))}))})))
-
 (fact "normalise-job-tree propagates :home_tree_id"
       (let [tree-id (uuid)]
         (normalise-job-tree {:home_tree_id tree-id

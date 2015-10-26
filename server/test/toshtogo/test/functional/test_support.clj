@@ -59,6 +59,8 @@
 (defn return-success-with-result [result]
   (fn [job] (success result)))
 
+(defn echo-request [job] (success (:request_body job)))
+
 (defn return-error [job] (error "something went wrong"))
 
 (defn get-and-select [client query & keys]

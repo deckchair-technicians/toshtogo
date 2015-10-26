@@ -226,7 +226,7 @@
                        :requesting_agent     sch/Uuid
                        :result_body          is-nil
                        :job_type             job-type
-                       :fungibility_group_id sch/Uuid})
+                       :fungibility_key      is-nil})
           (provided (now) => created-time)
 
           (deliver commitment (request-work! client job-type))

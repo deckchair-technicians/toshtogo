@@ -57,7 +57,7 @@
 
 (defn normalise-job-req [req]
   (-> req
-      (mp/update-each [:job_id :fungibility_group_id] uuid)
+      (mp/update-each [:job_id] uuid)
       (mp/update :job_type keyword)
       (mp/update :contract_due parse-datetime)
       (mp/update :existing_job_dependencies #(map uuid %))

@@ -52,7 +52,7 @@
        (let [job-type (uuid-str)
 
              fungible-job-type (uuid-str)
-             fungibility-group-id (uuid)
+             fungibility-key (uuid)
 
              num-threads 10
              barrier (promise)
@@ -64,7 +64,7 @@
              test-complete (promise)
 
              dep (-> (job-req {} fungible-job-type)
-                     (fungibility-group fungibility-group-id))
+                     (with-fungibility-key fungibility-key))
              add-fungible-dependency (add-dependencies dep)]
 
          (doseq [i (range num-threads)]
