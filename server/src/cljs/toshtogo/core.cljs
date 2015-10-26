@@ -159,3 +159,8 @@
   app-view
   app-state
   {:target (. js/document (getElementById "app"))})
+
+; This seems to be required to make Figwheel not act like a crying baby
+(defn on-js-reload
+  []
+  )
