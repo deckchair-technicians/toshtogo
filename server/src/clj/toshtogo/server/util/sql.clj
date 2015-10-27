@@ -45,14 +45,24 @@
   (with-exception-conversion
     (sql/execute! cnxn sql-params)))
 
+(defn columns [records]
+  (reduce (fn [cols record] (clojure.set/union cols (set (keys record))))
+          #{}
+          records))
+
 (defn insert! [cnxn table & records]
   #_(println "Insert" table (ppstr records))
-  (with-exception-conversion
-    (apply sql/insert!
-           cnxn
-           table
-           (concat (map #(map-vals % clj->sql) records)
-                   [:transaction? false]))))
+  (when-not (empty? records)
+    (with-exception-conversion
+      (let [column-keys (vec (columns records))]
+        (apply sql/insert!
+               cnxn
+               table
+               (concat [column-keys]
+                       (->> records
+                            (map #((apply juxt column-keys) %))
+                            (map #(map clj->sql %)))
+                       [:transaction? false]))))))
 
 (defn update! [cnxn table set-map where-clause]
   #_(println "Update" table (ppstr [set-map where-clause]))

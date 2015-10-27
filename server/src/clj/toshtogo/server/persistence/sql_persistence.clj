@@ -49,11 +49,7 @@
       (ttsql/insert! cnxn :job_graphs {:graph_id graph-id :root_job_id root-job-id}))
 
     (insert-jobs! [this jobs]
-      (doseq [job (validated jobs [JobRecord])]
-        (let [job-id          (job :job_id)]
-
-          ; TODO: Batch inserts would be more efficient for long lists of dependencies
-          (ttsql/insert! cnxn :jobs job))))
+      (apply ttsql/insert! cnxn :jobs (validated jobs [JobRecord])))
 
     (insert-contract! [this job-id contract-ordinal contract-due]
       (let [contract (contract-record job-id contract-ordinal contract-due)]
