@@ -17,7 +17,8 @@
             [toshtogo.server.api :refer [api]]
             [toshtogo.util.core :refer [uuid uuid-str debug cause-trace]]
             [toshtogo.client.util :as client-util]
-            [toshtogo.server.migrations.run :refer [run-migrations!]])
+            [toshtogo.server.migrations.run :refer [run-migrations!]]
+            [clojure.java.jdbc :as jdbc])
 
   (:import [java.net ServerSocket]))
 
@@ -28,6 +29,15 @@
     port))
 
 (def migrated-dev-db (delay (run-migrations! dev-db)))
+
+(defn reset-database!
+  [db]
+  (jdbc/db-do-commands db
+                       "drop schema if exists public cascade"
+                       "create schema public")
+  (run-migrations! db))
+
+(defn reset-dev-db [] (reset-database! dev-db))
 
 (def in-process {:type :app :app (dev-app :debug false)})
 (def localhost {:type :http :base-url "http://localhost:3000"})

@@ -7,7 +7,7 @@
            (com.dbdeploy.database DelimiterType)))
 
 (def create-changelog-sql "
-CREATE TABLE IF NOT EXISTS changelog (
+CREATE TABLE IF NOT EXISTS public.changelog (
   change_number BIGINT NOT NULL primary key,
   complete_dt TIMESTAMP NOT NULL,
   applied_by VARCHAR(100) NOT NULL,
