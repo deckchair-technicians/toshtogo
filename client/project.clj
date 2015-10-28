@@ -9,7 +9,7 @@
                  [http-kit "2.1.16"]
 
                  ; TODO: this should definitely not be here, but we use it for query strings
-                 [compojure "1.1.6"]
+                 [compojure "1.4.0"]
 
                  [clj-time "0.6.0"]
                  [com.google.guava/guava "15.0"]

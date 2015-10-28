@@ -5,7 +5,7 @@
   :dependencies [[org.clojure/clojure "1.7.0"]
                  [savagematt.toshtogo/client "0.7.1-SNAPSHOT"]
 
-                 [org.clojure/clojurescript "0.0-3211"]
+                 [org.clojure/clojurescript "1.7.145"]
                  [org.clojure/core.async "0.1.346.0-17112a-alpha"]
                  [org.omcljs/om "0.9.0"]
                  [cljs-ajax "0.3.10"]
@@ -37,7 +37,8 @@
                         :hooks [leiningen.cljsbuild]}
              :dev {:dependencies [[javax.servlet/servlet-api "2.5"]
                                   [midje "1.7.0"]
-                                  [http-kit.fake "0.2.1"]]
+                                  [http-kit.fake "0.2.1"]
+                                  [figwheel-sidecar "0.4.0"]]
 
                    :plugins      [[lein-midje "3.1.0"]
                                   [lein-ring "0.8.8"]
