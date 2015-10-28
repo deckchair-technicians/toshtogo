@@ -7,6 +7,8 @@
             [secretary.core :as secretary :refer-macros [defroute]]
             toastr
 
+            [clojure.string :as s]
+
             [toshtogo.jobs.core :as jobs]
             [toshtogo.jobs.job :as job]
             [toshtogo.jobs.graph :as graph]
@@ -16,32 +18,27 @@
 
 (enable-console-print!)
 
-(def base-search-uri "api/jobs?page=1&page_size=25&order-by=job_created desc")
-
 (defn notify
   [type msg]
   (case type
     :error (toastr/error msg)
     :success (toastr/success msg)))
 
+(defn params->api-string
+  [{:keys [outcome job-types] :as query-params}]
+  (str (s/join "&"
+               (map (partial s/join "=")
+                    (map (fn [[k v]]
+                           [(name k) v])
+                         (dissoc query-params :outcome :job-types))))
+       (s/join (map (partial str "&outcome=") (s/split outcome ",")))
+       (s/join (map (partial str "&job_type=") (s/split job-types ",")))))
+
 (defn fetch-jobs
-  [<messages> api-url]
-  (GET api-url
+  [<messages> query-params]
+  (GET (str "/api/jobs?" (params->api-string query-params))
        {:handler         (fn [response]
                            (put! <messages> [:jobs-fetched {:response response}]))
-
-        :error-handler   (fn [response]
-                           (put! <messages> [:failure {:response response}]))
-
-        :keywords?       true
-
-        :response-format :json}))
-
-(defn fetch-job-types
-  [<messages>]
-  (GET "/api/metadata/job_types"
-       {:handler         (fn [response]
-                           (put! <messages> [:job-types-fetched {:response response}]))
 
         :error-handler   (fn [response]
                            (put! <messages> [:failure {:response response}]))
@@ -76,6 +73,10 @@
 
         :response-format :json}))
 
+(defn string->int
+  [s]
+  (js/parseInt s 10))
+
 (defn build-routes
   [data <messages>]
 
@@ -85,16 +86,26 @@
   (secretary/add-route! "/"
     (fn [_]
       (println "HOME")
-      (history/navigate (str "/jobs?source=" (url/url-encode base-search-uri)))))
+      (history/navigate (str "/jobs?" (history/params->query-string {:page 1
+                                                                     :page_size 25
+                                                                     :order-by "job_created desc"
+                                                                     :outcome ["running"
+                                                                               "success"
+                                                                               "error"
+                                                                               "waiting"
+                                                                               "cancelled"]})))))
 
   (secretary/add-route! "/jobs"
-    (fn [{{:keys [source]} :query-params}]
+    (fn [{:keys [query-params]}]
       (println "JOBS")
       (om/transact! data #(assoc %
-                           :view :jobs
-                           :status :loading))
-      (fetch-jobs <messages> source)
-      (fetch-job-types <messages>)))
+                                 :query (-> query-params
+                                            (update-in [:outcome] (fn [outcome] (set (s/split outcome ","))))
+                                            (update-in [:job-types] (fn [job-types] (set (s/split job-types ","))))
+                                            (update-in [:page] string->int))
+                                 :view :jobs
+                                 :status :loading))
+      (fetch-jobs <messages> query-params)))
 
   (secretary/add-route! "/graphs/:graph-id/jobs/:job-id"
     (fn [{:keys [graph-id job-id]}]
@@ -152,9 +163,7 @@
                                          (= :job (get-in @data [:view])))
                                 (fetch-job <messages> job-id)))
 
-              :job-types-fetched (let [{:keys [response]} body]
-                                   (om/transact! data #(merge % {:status    :done
-                                                                 :job-types response})))
+
               :failure (do
                          (notify :error "Oh dear")
                          (om/transact! data #(assoc % :status :error :error-body (keyword (:error body)))))
@@ -177,7 +186,7 @@
             (println "VIEW" view)
             (case view
               :jobs
-              (om/build jobs/jobs-view data {:opts {:base-search-uri base-search-uri}})
+              (om/build jobs/jobs-view data)
 
               :job
               (dom/div nil
