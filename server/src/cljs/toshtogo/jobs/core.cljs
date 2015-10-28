@@ -21,21 +21,24 @@
           (dom/td nil (dates/date->time-string (dates/string->date contract_finished))))
   )
 
-(defn jobs-view [{:keys [jobs search paging]} _ {:keys [base-search-uri]}]
+(defn job-tbody
+  [data owner]
+  (reify
+    om/IRender
+    (render [_]
+      (apply dom/tbody nil
+             (map (fn [job]
+                    (job-row job))
+                  data)))))
+
+(defn jobs-view [{:keys [jobs search paging query]} _]
   (reify
     om/IRender
     (render [_this]
       (dom/div nil
-        (om/build search/search-form search {:opts {:search-fn (fn [{:keys [job-types job-statuses]}]
-                                                                 (println job-types)
-                                                                 (history/navigate (str "/jobs?source=" (url/url-encode (str
-                                                                                                                          base-search-uri
-                                                                                                                          (when (not (empty? job-types))
-                                                                                                                            (str "&job_type=" (clojure.string/join "&job_type=" job-types)))
-
-                                                                                                                          (when (not (empty? job-statuses))
-                                                                                                                            (str "&outcome=" (clojure.string/join "&outcome=" job-statuses))))))))}})
-        (om/build pager paging {:opts {:navigate #(history/navigate (str "/jobs?source=" (url/url-encode %)))}})
+        (om/build search/search-form {:search search :query query})
+        (om/build pager {:paging paging
+                         :query query})
 
         (dom/table #js {:className "table table-striped"}
           (dom/thead nil
@@ -46,9 +49,7 @@
               (dom/th nil "Created")
               (dom/th nil "Started")
               (dom/th nil "Finished")))
-          (apply dom/tbody nil
-                 (map (fn [job]
-                        (job-row job))
-                      jobs)))
+          (om/build job-tbody jobs))
 
-        (om/build pager paging {:opts {:navigate #(history/navigate (str "/jobs?source=" (url/url-encode %)))}})))))
+        (om/build pager {:paging paging
+                         :query query})))))

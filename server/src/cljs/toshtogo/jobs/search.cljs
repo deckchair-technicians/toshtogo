@@ -4,7 +4,7 @@
             [om.core :as om]
             [om.dom :as dom]
             [ajax.core :refer [GET]]
-            [toshtogo.util.chosen :as chosen]))
+            [toshtogo.util.history :as history]))
 
 (defn get-job-types [<fetched>]
   (GET "api/metadata/job_types"
@@ -15,62 +15,62 @@
 
         :response-format :json}))
 
-(defn search-form [{:keys [job-types] :as search} owner {:keys [search-fn]}]
+(defn html-coll->seq
+  [coll]
+  (map
+    (fn [i]
+      (aget coll i))
+    (range 0 (aget coll "length"))))
+
+(defn search-form [{:keys [query] :as data} owner]
   (reify
     om/IInitState
     (init-state [this]
-      {:<job-type-selected>   (chan)
-       :<job-status-selected> (chan)
-       :<job-type-list>       (chan)
-       :<job-select-ready>    (chan)
-       :all-job-types         nil})
+      {:<job-type-list> (chan)})
 
     om/IWillMount
     (will-mount [this]
-      (let [{:keys [<job-type-list> <job-type-selected> <job-status-selected> <job-select-ready>]} (om/get-state owner)]
+      (let [{:keys [<job-type-list>]} (om/get-state owner)]
         (go
-          (om/set-state! owner :all-job-types (<! <job-type-list>))
-          (<! <job-select-ready>)
-          (chosen/init "#job-type-select" <job-type-selected>))
-
-        (get-job-types <job-type-list>)
-        (go
-          (loop []
-            (alt! <job-type-selected> ([v _] (om/update! search :job-types v))
-                  <job-status-selected> ([v _] (om/update! search :job-statuses v)))
-            (recur)))))
-
-    om/IDidMount
-    (did-mount [this]
-      (let [{:keys [<job-status-selected>]} (om/get-state owner)]
-        (chosen/init "#job-status-select" <job-status-selected>)))
+          (om/set-state! owner :all-job-types (<! <job-type-list>)))
+        (get-job-types <job-type-list>)))
 
     om/IRenderState
-    (render-state [this {:keys [<job-select-ready> all-job-types]}]
+    (render-state [this {:keys [all-job-types]}]
       (dom/div nil
         (when all-job-types
           (dom/div #js {:className "form-group"}
             (dom/label #js {:for "job-types"} "Job types:")
             (dom/div #js {:className "input-group"}
-              (put! <job-select-ready> all-job-types)
-              (apply dom/select #js {:id       "job-type-select"
-                                     :name     "job-types"
-                                     :multiple true}
+              (apply dom/select #js {:className "form-group"
+                                     :name "job-types"
+                                     :size 10
+                                     :multiple true
+                                     :onChange (fn [e]
+                                                 (om/update! query :job-types
+                                                             (let [selections (.. e -target -selectedOptions)]
+                                                               (set (map #(aget % "value") (html-coll->seq selections))))))}
                      (map #(dom/option nil %) all-job-types)))))
 
         (dom/div #js {:className "form-group"}
           (dom/label #js {:for "job-statuses"} "Status:")
           (dom/div #js {:className "input-group"}
-            (dom/select #js {:id       "job-status-select"
-                             :name     "job-statuses"
-                             :multiple true}
-              (dom/option nil "cancelled")
-              (dom/option nil "error")
-              (dom/option nil "running")
-              (dom/option nil "success")
-              (dom/option nil "waiting"))))
+                   (apply dom/div nil
+                          (map (fn [field]
+                                 (dom/label #js {:className "checkbox-inline"}
+                                            (dom/input #js {:type "checkbox"
+                                                            :checked (contains? (:outcome query) field)
+                                                            :onChange (fn [e]
+                                                                        (om/transact! query [:outcome]
+                                                                                      (fn [outcome]
+                                                                                        (if (.. e -target -checked)
+                                                                                          (conj outcome field)
+                                                                                          (disj outcome field)))))
+                                                            }
+                                                       field)))
+                               ["cancelled" "error" "running" "success" "waiting"]))))
 
         (dom/div nil
           (dom/button #js {:className "btn btn-success"
-                           :onClick   (fn [_] (search-fn search))}
+                           :onClick   (fn [_] (history/update-query! query))}
             "Search"))))))
