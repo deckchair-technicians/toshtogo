@@ -8,6 +8,7 @@
                  [org.clojure/clojurescript "1.7.145"]
                  [org.clojure/core.async "0.1.346.0-17112a-alpha"]
                  [org.omcljs/om "0.9.0"]
+                 [cljsjs/d3 "3.5.5-3"]
                  [cljs-ajax "0.3.10"]
                  [secretary "1.2.3"]
                  [com.andrewmcveigh/cljs-time "0.3.5"]

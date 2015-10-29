@@ -78,6 +78,7 @@
     om/IRenderState
     (render-state [_this {:keys [<messages>]}]
       (dom/div #js {:className ""}
+
         (title job)
 
         (actions job <messages>)

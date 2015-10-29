@@ -9,6 +9,7 @@
 
             [toshtogo.jobs.core :as jobs]
             [toshtogo.jobs.job :as job]
+            [toshtogo.jobs.graph :as graph]
 
             [toshtogo.util.history :as history]
             [cemerick.url :as url]))
@@ -62,6 +63,19 @@
 
         :response-format :json}))
 
+(defn fetch-graph [<messages> graph-id]
+  (println "FETCHING" (str "/api/graphs/" graph-id))
+  (GET (str "/api/graphs/" graph-id)
+       {:handler         (fn [response]
+                           (put! <messages> [:graph-fetched {:response response}]))
+
+        :error-handler   (fn [response]
+                           (put! <messages> [:failure {:response response}]))
+
+        :keywords?       true
+
+        :response-format :json}))
+
 (defn build-routes
   [data <messages>]
 
@@ -82,13 +96,26 @@
       (fetch-jobs <messages> source)
       (fetch-job-types <messages>)))
 
-  (secretary/add-route! "/jobs/:job-id"
-    (fn [{:keys [job-id]}]
-      (println "JOB")
+  (secretary/add-route! "/graphs/:graph-id/jobs/:job-id"
+    (fn [{:keys [graph-id job-id]}]
       (om/transact! data #(assoc %
                            :view :job
                            :status :loading))
-      (fetch-job <messages> job-id))))
+      (fetch-job <messages> job-id)
+      (fetch-graph <messages> graph-id))))
+
+(defn clj->d3
+  [graph-map]
+  (let [job-look-up (into {} (map-indexed (fn [i {:keys [job_id]}]
+                                            [job_id i])
+                                          (:jobs graph-map)))]
+
+    {"nodes" (:jobs graph-map)
+     "links" (map
+               (fn [{:keys [parent_job_id child_job_id]}]
+                 {:source (job-look-up parent_job_id)
+                  :target (job-look-up child_job_id)})
+               (:links graph-map))}))
 
 (defn app-view
   [{:keys [view] :as data} owner]
@@ -114,6 +141,11 @@
                               (om/transact! data #(merge % {:status :done
                                                             :jobs   (:data response)
                                                             :paging (:paging response)})))
+
+              :graph-fetched (let [{:keys [response]} body]
+                               (om/transact! data #(merge % {:status :done
+                                                             :graph  (-> response
+                                                                         clj->d3)})))
 
               :job-modified (let [{:keys [job-id]} body]
                               (when (and (= job-id (get-in @data [:job :job_id]))
@@ -148,7 +180,9 @@
               (om/build jobs/jobs-view data {:opts {:base-search-uri base-search-uri}})
 
               :job
-              (om/build job/job-view (:job data) {:init-state {:<messages> <messages>}})
+              (dom/div nil
+                (om/build graph/graph-view (:graph data) {:init-state {:<messages> <messages>}})
+                (om/build job/job-view (:job data) {:init-state {:<messages> <messages>}}))
 
               (dom/div nil "You have found a broken link, congratulations!"))))))))
 
