@@ -24,8 +24,7 @@
                  [postgresql/postgresql "8.4-702.jdbc4"]
                  [honeysql "0.6.1"]
 
-                 [savagematt/hermit "0.7"]
-                 [watchtower "0.1.1"]]
+                 [savagematt/hermit "0.7"]]
 
   :source-paths ["src/clj"]
 

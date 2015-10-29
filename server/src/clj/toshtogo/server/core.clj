@@ -2,8 +2,7 @@
   (:require [toshtogo.server.migrations.run :refer [run-migrations!]]
             [toshtogo.server.handler :refer [app]]
             [toshtogo.server.logging :refer :all]
-            [ring.adapter.jetty :refer [run-jetty]]
-            [watchtower.core :as watcher])
+            [ring.adapter.jetty :refer [run-jetty]])
   (:import [toshtogo.server.logging SysLogger]
            [org.eclipse.jetty.server Server])
   (:gen-class))
@@ -31,15 +30,3 @@
 (defn -main [& {debug "-debug"}]
   (start! (= "yes" debug) 3001 true))
 
-(defn reload-templates! [files]
-  (require 'toshtogo.server.handler :reload-all))
-
-(defn auto-reloading-start!
-  "For interactive development ONLY"
-  []
-  ; Reload this namespace and its templates when one of the templates changes.
-  (when-not (= (System/getenv "RING_ENV") "production")
-    (watcher/watcher ["src"]
-                     (watcher/rate 50)                      ; poll every 50ms
-                     (watcher/file-filter (watcher/extensions :html))
-                     (watcher/on-change reload-templates!))))
