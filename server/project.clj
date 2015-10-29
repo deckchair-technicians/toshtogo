@@ -22,6 +22,8 @@
                  [postgresql/postgresql "8.4-702.jdbc4"]
                  [honeysql "0.6.1"]
 
+                 [org.clojure/data.csv "0.1.3"]
+
                  [savagematt/hermit "0.7"]]
 
   :source-paths ["src/clj"]
