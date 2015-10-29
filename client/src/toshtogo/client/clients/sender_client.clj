@@ -1,11 +1,41 @@
 (ns toshtogo.client.clients.sender-client
-  (:require [clj-time.format :as tf]
-            [ring.util.codec :refer [form-encode]]
-            [clojure.string :as s]
+  (:require [clojure.string :as s]
             [flatland.useful.map :refer [update-each]]
             [toshtogo.util.core :refer [uuid safe-name ensure-seq]]
             [toshtogo.client.protocol :refer :all]
-            [toshtogo.client.senders.protocol :refer :all]))
+            [toshtogo.client.senders.protocol :refer :all]
+            [clojure.string :as str])
+  (:import [java.net URLEncoder]
+           [java.util Map]))
+
+(defprotocol FormEncodeable
+  (form-encode* [x encoding]))
+
+(extend-protocol FormEncodeable
+  String
+  (form-encode* [unencoded encoding]
+    (URLEncoder/encode unencoded encoding))
+  Map
+  (form-encode* [params encoding]
+    (letfn [(encode [x] (form-encode* x encoding))
+            (encode-param [[k v]] (str (encode (name k)) "=" (encode v)))]
+      (->> params
+           (mapcat
+             (fn [[k v]]
+               (if (or (seq? v) (sequential? v) )
+                 (map #(encode-param [k %]) v)
+                 [(encode-param [k v])])))
+           (str/join "&"))))
+  Object
+  (form-encode* [x encoding]
+    (form-encode* (str x) encoding)))
+
+(defn form-encode
+  "Encode the supplied value into www-form-urlencoded format, often used in
+  URL query strings and POST request bodies, using the specified encoding.
+  If the encoding is not specified, it defaults to UTF-8"
+  [x & [encoding]]
+  (form-encode* x (or encoding "UTF-8")))
 
 (defn names [xs]
   (when xs (map name (ensure-seq xs))))
