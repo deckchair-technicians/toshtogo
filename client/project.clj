@@ -5,7 +5,6 @@
   :dependencies [[org.clojure/clojure "1.7.0"]
 
                  [cheshire "5.3.0"]
-                 [ring-mock "0.1.5"]
                  [http-kit "2.1.16"]
 
                  [clj-time "0.6.0"]
