@@ -1,15 +1,13 @@
 (ns toshtogo.util.core
   (:require
-    [clojure.math.numeric-tower :refer [expt]]
     [clj-time.core :refer [after? now plus millis interval]]
     [clj-time.format :as tf]
     [clojure.pprint :refer [pprint]]
     [clojure.stacktrace :as stacktrace]
     [clojure.walk :refer [prewalk]]
     [flatland.useful.map :refer [update-each map-keys]])
-  (:import (java.util UUID Map Set)
-           (java.util.concurrent TimeoutException)
-           (clojure.lang PersistentTreeMap PersistentTreeSet)))
+  (:import [java.util UUID]
+           [java.util.concurrent TimeoutException]))
 
 (def sout (agent nil))
 
@@ -98,7 +96,7 @@
   (let [capped-retry (min 20 retry-count)]
     (min
       max-wait-millis
-      (* 100 (expt 2 capped-retry)))))
+      (long (* 100 (Math/pow 2 capped-retry))))))
 
 (defn or-exception [func]
   (try

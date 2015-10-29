@@ -11,7 +11,6 @@
                  [clj-time "0.6.0"]
                  [com.google.guava/guava "15.0"]
                  [me.raynes/fs "1.4.5"]
-                 [org.clojure/math.numeric-tower "0.0.4"]
                  [org.flatland/useful "0.11.3"]
                  [savagematt/bowen "2.1"]
                  [savagematt/vice "0.13"]
