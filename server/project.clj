@@ -14,7 +14,7 @@
                  [com.cemerick/url "0.1.1"]
                  [com.keminglabs/chosen "0.1.7"]
 
-
+                 [compojure "1.4.0"]
                  [ring/ring-jetty-adapter "1.2.1"]
                  [ring-mock "0.1.5"]
                  [ring/ring-json "0.2.0"]
