@@ -1,7 +1,6 @@
 (ns toshtogo.util.hsql
   (:require [clj-time.coerce :refer [to-timestamp from-sql-date]]
             [clojure.java.jdbc :as sql]
-            [clojure.math.numeric-tower :refer [ceil]]
             [flatland.useful.map :as mp]
             [clojure.pprint :refer [pprint]]
             [clojure.walk :refer [postwalk]]
@@ -57,7 +56,7 @@
                                              (dissoc :order-by))
                                     :params (or count-params params))
                        0)
-        page-count    (ceil (/ record-count page-size))]
+        page-count    (Math/ceil (/ record-count page-size))]
     {:paging {:page page :pages page-count}
       :data   (query cnxn (-> sql-map
                               (hsc/build :offset (* page-size (- page 1))
