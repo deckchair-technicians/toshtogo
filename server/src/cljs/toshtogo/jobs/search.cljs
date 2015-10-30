@@ -54,7 +54,6 @@
             ;                                (om/set-state! owner :job-type-string qs)))}))
             (dom/div #js {:className "input-group col-xs-4"}
               (apply dom/select #js {:className "form-control col-xs-4"
-                                     :style #js {:min-width "90%"}
                                      :name "job-types"
                                      :size 10
                                      :multiple true
