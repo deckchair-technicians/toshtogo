@@ -190,8 +190,8 @@
 
               :job
               (dom/div nil
-                (om/build graph/graph-view (:graph data) {:init-state {:<messages> <messages>}})
-                (om/build job/job-view (:job data) {:init-state {:<messages> <messages>}}))
+                (om/build job/job-view (:job data) {:init-state {:<messages> <messages>}})
+                (om/build graph/graph-view (:graph data) {:init-state {:<messages> <messages>}}))
 
               (dom/div nil "You have found a broken link, congratulations!"))))))))
 

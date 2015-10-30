@@ -4,6 +4,7 @@
             [om.core :as om]
             [cljs.core.async :refer [chan <! put!]]
             [ajax.core :refer [POST GET]]
+            [toshtogo.components.panel :as components.panel]
             [toshtogo.jobs.util :as util]))
 
 (defn d3-graph-view
@@ -97,7 +98,11 @@
 
     om/IRenderState
     (render-state [_this {:keys [<messages>]}]
-      (dom/div #js {:className ""}
-        (when graph
-          (om/build d3-graph-view graph))
-        (dom/div #js {:id "graph-json"})))))
+      (dom/div #js {:className "row"}
+        (dom/div #js {:className "col-md-6"}
+          (om/build components.panel/panel {:heading "Dependency JSON"
+                                            :content (dom/div #js {:id "graph-json"})}))
+        (dom/div #js {:className "col-md-6"}
+          (when graph
+            (om/build components.panel/panel {:heading "Dependency Graph"
+                                              :content (om/build d3-graph-view graph)})))))))
