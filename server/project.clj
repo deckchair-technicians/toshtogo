@@ -41,7 +41,7 @@
                    :plugins      [[lein-midje "3.1.0"]
                                   [lein-ring "0.8.8"]
                                   [lein-cljsbuild "1.0.5"]
-                                  [lein-figwheel "0.2.9"]
+                                  [lein-figwheel "0.4.1"]
                                   [lein-set-version "0.4.1"]
                                   [midje-junit-formatter "0.1.0-SNAPSHOT"]]}}
 
