@@ -14,6 +14,7 @@
                  [com.andrewmcveigh/cljs-time "0.3.5"]
                  [com.cemerick/url "0.1.1"]
                  [com.keminglabs/chosen "0.1.7"]
+                 [org.flatland/useful "0.11.3"]
 
                  [compojure "1.4.0"]
                  [ring/ring-jetty-adapter "1.2.1"]
@@ -23,7 +24,7 @@
                  [com.dbdeploy/dbdeploy-core "3.0M3"]
                  [org.clojure/java.jdbc "0.3.2"]
                  [postgresql/postgresql "8.4-702.jdbc4"]
-                 [honeysql "0.6.1"]
+                 [honeysql "0.6.2"]
 
                  [org.clojure/data.csv "0.1.3"]
 
