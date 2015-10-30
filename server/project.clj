@@ -11,7 +11,7 @@
                  [cljsjs/d3 "3.5.5-3"]
                  [cljs-ajax "0.3.10"]
                  [secretary "1.2.3"]
-                 [com.andrewmcveigh/cljs-time "0.3.5"]
+                 [com.andrewmcveigh/cljs-time "0.3.14"]
                  [com.cemerick/url "0.1.1"]
                  [compojure "1.4.0"]
                  [ring/ring-jetty-adapter "1.2.1"]

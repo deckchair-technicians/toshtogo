@@ -7,6 +7,8 @@
             [secretary.core :as secretary :refer-macros [defroute]]
             toastr
 
+            [toshtogo.util.dates :as dates]
+
             [clojure.string :as s]
 
             [toshtogo.jobs.core :as jobs]
@@ -150,7 +152,12 @@
 
               :jobs-fetched (let [{:keys [response]} body]
                               (om/transact! data #(merge % {:status :done
-                                                            :jobs   (:data response)
+                                                            :jobs   (map (fn [job]
+                                                                           (-> job
+                                                                               (update-in [:job_created] dates/string->date)
+                                                                               (update-in [:contract_claimed] dates/string->date)
+                                                                               (update-in [:contract_finished] dates/string->date)))
+                                                                         (:data response))
                                                             :paging (:paging response)})))
 
               :graph-fetched (let [{:keys [response]} body]

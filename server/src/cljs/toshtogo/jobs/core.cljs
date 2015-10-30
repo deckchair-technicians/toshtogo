@@ -10,16 +10,15 @@
             [toshtogo.jobs.search :as search]
             [toshtogo.jobs.util :as util]))
 
-(defn job-row [{:keys [job_id job_type job_created contract_claimed contract_finished outcome home_graph_id] :as job}]
+(defn job-row
+  [{:keys [job_id job_type job_created contract_claimed contract_finished outcome home_graph_id] :as job}]
   (dom/tr nil
           (dom/td #js {:className (util/row-classname job)} outcome)
-          (dom/td nil (dom/a #js {:href (str "#/graphs/" home_graph_id "/jobs/" job_id)}
-                             job_type))
-          (dom/td nil (dates/date->day-string (dates/string->date job_created)))
-          (dom/td nil (dates/date->time-string (dates/string->date job_created)))
-          (dom/td nil (dates/date->time-string (dates/string->date contract_claimed)))
-          (dom/td nil (dates/date->time-string (dates/string->date contract_finished))))
-  )
+          (dom/td nil (dom/a #js {:href (str "#/graphs/" home_graph_id "/jobs/" job_id)} job_type))
+          (dom/td nil (dates/date->day-string job_created))
+          (dom/td nil (dates/date->time-string job_created))
+          (dom/td nil (dates/date->time-string contract_claimed))
+          (dom/td nil (dates/date->time-string contract_finished))))
 
 (defn job-tbody
   [data owner]
@@ -27,9 +26,7 @@
     om/IRender
     (render [_]
       (apply dom/tbody nil
-             (map (fn [job]
-                    (job-row job))
-                  data)))))
+             (map job-row data)))))
 
 (defn jobs-view [{:keys [jobs search paging query]} _]
   (reify
