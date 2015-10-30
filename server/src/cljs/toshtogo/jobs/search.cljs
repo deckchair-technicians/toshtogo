@@ -72,7 +72,7 @@
                           all-job-types))))))
 
         (dom/div #js {:className "form-group"}
-          (dom/label #js {:for "job-statuses"} "Status:")
+          (dom/label #js {:htmlFor "job-statuses"} "Status:")
           (dom/div #js {:className "input-group"}
                    (apply dom/div nil
                           (map (fn [field]
