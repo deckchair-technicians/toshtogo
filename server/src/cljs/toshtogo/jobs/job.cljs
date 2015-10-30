@@ -3,7 +3,8 @@
             [om.core :as om]
             [cljs.core.async :refer [chan <! put!]]
             [ajax.core :refer [POST]]
-            [toshtogo.jobs.util :as util]))
+            [toshtogo.jobs.util :as util]
+            [toshtogo.components.panel :as components.panel]))
 
 (defn json-view [selector m]
   (.JSONView (js/$ selector) (clj->js m)))
@@ -12,13 +13,6 @@
   (json-view "#job-json" job)
   (json-view "#job-request" request_body)
   (json-view "#job-result" (if error error result_body)))
-
-(defn panel [heading content]
-  (dom/div #js {:className "panel panel-default"}
-    (dom/div #js {:className "panel-heading"}
-      heading)
-    (dom/div #js {:className "panel-body"}
-      content)))
 
 (defn label [job]
   (dom/span #js {:className (str "label label-" (util/row-classname job))}
@@ -85,13 +79,16 @@
 
         (dom/div #js {:className "row"}
           (dom/div #js {:className "col-md-6"}
-            (panel "Request"
-                   (dom/div #js {:id "job-request"})))
+            (om/build components.panel/panel
+                      {:heading "Request"
+                       :content (dom/div #js {:id "job-request"})}))
           (dom/div #js {:className "col-md-6"}
-            (panel "Response"
-                   (dom/div #js {:id "job-result"}))))
+            (om/build components.panel/panel
+                      {:heading "Response"
+                       :content (dom/div #js {:id "job-result"})})))
 
         (dom/div #js {:className "row"}
           (dom/div #js {:className "col-md-12"}
-            (panel "Full state"
-                   (dom/div #js {:id "job-json"}))))))))
+            (om/build components.panel/panel
+                      {:heading "Full state"
+                       :content (dom/div #js {:id "job-json"})})))))))
