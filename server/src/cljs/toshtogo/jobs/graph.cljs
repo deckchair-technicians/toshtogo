@@ -30,7 +30,7 @@
 
             link (atom (.selectAll svg ".link"))
 
-            node (atom (.selectAll svg ".node"))
+            node (.selectAll svg ".node")
 
             force (-> js/d3
                       (.-layout)
@@ -44,9 +44,11 @@
                                         (.attr "y1" (fn [d] (-> d .-source .-y)))
                                         (.attr "x2" (fn [d] (-> d .-target .-x)))
                                         (.attr "y2" (fn [d] (-> d .-target .-y))))
-                                    (-> @node
-                                        (.attr "cx" (fn [d] (-> d .-x)))
-                                        (.attr "cy" (fn [d] (-> d .-y)))))))
+
+                                    (-> (.selectAll svg ".node")
+                                        (.attr "transform" (fn [d] (str "translate(" d.x "," d.y ")"))))
+
+                                    )))
 
             drag (-> force
                      .drag
@@ -67,18 +69,25 @@
                                (.append "line")
                                (.attr "class" "link")))
 
-            _ (reset! node (-> @node
-                               (.data (.-nodes data))
-                               (.enter)
-                               (.append "circle")
-                               (.attr "class" "node")
-                               (.attr "r" 12)
-                               (.on "dblclick" (fn [d]
-                                                 (this-as this
-                                                   (-> js/d3
-                                                       (.select this)
-                                                       (.classed "fixed" (set! (.-fixed d) false))))))
-                               (.call drag)))]))))
+
+            nodes (-> (.selectAll svg ".node")
+                      (.data (.-nodes data))
+                      (.enter)
+                      (.append "g")
+                      (.attr "class" "node")
+                      (.call drag))
+
+            _ (-> (.selectAll svg ".node")
+                  (.append "circle")
+                  (.attr "r" 12))
+
+            _ (-> (.selectAll svg ".node")
+                  (.append "text")
+                  (.attr "dx" 14)
+                  (.attr "dy" ".35em")
+                  (.text (fn [d] (aget d "job_type"))))
+
+            ]))))
 
 (defn json-view [selector m]
   (.JSONView (js/$ selector) (clj->js m)))
