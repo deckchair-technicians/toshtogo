@@ -21,6 +21,16 @@
   [values]
   (/ (apply + values) (count values)))
 
+(defn standard-deviation [values]
+  (let [avg (mean values)
+        squares (for [x values]
+                  (let [x-avg (- x avg)]
+                    (* x-avg x-avg)))
+        total (count values)]
+    (-> (/ (apply + squares)
+           (- total 1))
+        (Math/sqrt))))
+
 (defmacro timer
   [expr]
   `(let [start# (. System (nanoTime))
@@ -75,12 +85,24 @@
   (before :contents (reset-dev-db)))
 
 (fact "Check the mean time of the get-job query with one job with a large number of dependencies"
-  (let [number-of-iterations-to-run 10
-        number-of-dependent-jobs 10
-        benchmark-in-ms 10
-        get-job-profile (generate-profile number-of-iterations-to-run
-                                          get-job-by-id
-                                          [{:number-of-dependent-jobs number-of-dependent-jobs}])
-        mean-job-time (mean (map :time-ms get-job-profile))]
+      (let [number-of-iterations-to-run 10
+            number-of-dependent-jobs 10
+            benchmark-in-ms 10
+            get-job-profile (generate-profile number-of-iterations-to-run
+                                              get-job-by-id
+                                              [{:number-of-dependent-jobs number-of-dependent-jobs}])
+            mean-job-time (mean (map :time-ms get-job-profile))]
 
-    (< mean-job-time benchmark-in-ms) => truthy))
+        (< mean-job-time benchmark-in-ms) => truthy))
+
+(fact "Check the standard deviation of the time of the get-job query with one job with a large number of dependencies"
+      (let [number-of-iterations-to-run 10
+            number-of-dependent-jobs 10
+            benchmark-in-ms 10
+            get-job-profile (generate-profile number-of-iterations-to-run
+                                              get-job-by-id
+                                              [{:number-of-dependent-jobs number-of-dependent-jobs}])
+            stand-dev-job-time (standard-deviation (map :time-ms get-job-profile))]
+
+        (< stand-dev-job-time benchmark-in-ms) => truthy))
+
