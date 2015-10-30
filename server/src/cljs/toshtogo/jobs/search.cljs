@@ -4,6 +4,7 @@
             [om.core :as om]
             [om.dom :as dom]
             [ajax.core :refer [GET]]
+            [clojure.string :as s]
             [toshtogo.util.history :as history]))
 
 (defn get-job-types [<fetched>]
@@ -26,7 +27,8 @@
   (reify
     om/IInitState
     (init-state [this]
-      {:<job-type-list> (chan)})
+      {:<job-type-list> (chan)
+       :job-type-string nil})
 
     om/IWillMount
     (will-mount [this]
@@ -36,13 +38,23 @@
         (get-job-types <job-type-list>)))
 
     om/IRenderState
-    (render-state [this {:keys [all-job-types]}]
+    (render-state [this {:keys [all-job-types job-type-string]}]
       (dom/div nil
         (when all-job-types
           (dom/div #js {:className "form-group"}
-            (dom/label #js {:for "job-types"} "Job types:")
-            (dom/div #js {:className "input-group"}
-              (apply dom/select #js {:className "form-group"
+            (dom/label #js {:htmlFor "job-types"} "Job types:")
+            ; TODO: Implement this in a nice way
+            ;(dom/div #js {:className "input-group col-xs-4"}
+            ;  (dom/input #js {:type "text"
+            ;                  :className "form-control"
+            ;                  :placeholder "Filter job types"
+            ;                  :value job-type-string
+            ;                  :onChange (fn [e]
+            ;                              (let [qs (.. e -target -value)]
+            ;                                (om/set-state! owner :job-type-string qs)))}))
+            (dom/div #js {:className "input-group col-xs-4"}
+              (apply dom/select #js {:className "form-control col-xs-4"
+                                     :style #js {:min-width "90%"}
                                      :name "job-types"
                                      :size 10
                                      :multiple true
@@ -50,7 +62,14 @@
                                                  (om/update! query :job-types
                                                              (let [selections (.. e -target -selectedOptions)]
                                                                (set (map #(aget % "value") (html-coll->seq selections))))))}
-                     (map #(dom/option nil %) all-job-types)))))
+                     (map #(dom/option nil %)
+                          (filter
+                            (if (empty? job-type-string)
+                              identity
+                              (fn [job-type]
+                                (not (neg? (.indexOf (s/lower-case job-type)
+                                                     (s/lower-case job-type-string))))))
+                          all-job-types))))))
 
         (dom/div #js {:className "form-group"}
           (dom/label #js {:for "job-statuses"} "Status:")
