@@ -32,9 +32,12 @@
 
 (defn reset-database!
   [db]
-  (jdbc/db-do-commands db
-                       "drop schema if exists public cascade"
-                       "create schema public")
+  (try
+    (jdbc/db-do-commands db
+                         "drop schema if exists public cascade"
+                         "create schema public")
+    (catch Exception e
+      (.printStackTrace (.getNextException e))))
   (run-migrations! db))
 
 (defn reset-dev-db [] (reset-database! dev-db))
