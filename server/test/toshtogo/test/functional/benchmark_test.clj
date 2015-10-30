@@ -32,14 +32,13 @@
   (-> (job-req {:b (str "child " job)} child-job-type)
       (with-job-id id)))
 
-(defn get-job-by-id [n]
-  (let [number-of-dep-jobs n
-        job-id (uuid)
+(defn get-job-by-id [{:keys [number-of-dependent-jobs]}]
+  (let [job-id (uuid)
         parent-job-type (uuid-str)
         child-job-type (uuid-str)
-        child-job-seq (take number-of-dep-jobs (range))
-        child-job-type-seq (take number-of-dep-jobs (repeat child-job-type))
-        child-id-seq (take number-of-dep-jobs (repeatedly #(uuid)))
+        child-job-seq (take number-of-dependent-jobs (range))
+        child-job-type-seq (take number-of-dependent-jobs (repeat child-job-type))
+        child-id-seq (take number-of-dependent-jobs (repeatedly #(uuid)))
         dep-seq (map generate-dependent-job
                      child-job-seq
                      child-job-type-seq
@@ -58,18 +57,18 @@
                      (Thread/sleep 100)))
            2000 nil)
 
-    (timer (get-job client actual-job-id))))
+    {:number-of-dep-jobs number-of-dependent-jobs
+     :time-ms (timer (get-job client actual-job-id))}))
 
 (defn generate-profile
-  [f number-of-iterations number-of-dep-jobs]
+  [number-of-iterations f args]
   (let [s #{}
         profile (into s (for
                           [iteration (map inc (range number-of-iterations))]
                           (assoc
-                            {:iteration iteration
-                             :number-of-dep-jobs number-of-dep-jobs}
-                            :time-ms
-                            (f number-of-dep-jobs))))]
+                            (apply f args)
+                            :iteration
+                            iteration)))]
     (sort-by :iteration profile)))
 
 (background
@@ -79,9 +78,9 @@
   (let [number-of-iterations-to-run 10
         number-of-dependent-jobs 10
         benchmark-in-ms 10
-        get-job-profile (generate-profile get-job-by-id
-                                          number-of-iterations-to-run
-                                          number-of-dependent-jobs)
+        get-job-profile (generate-profile number-of-iterations-to-run
+                                          get-job-by-id
+                                          [{:number-of-dependent-jobs number-of-dependent-jobs}])
         mean-job-time (mean (map :time-ms get-job-profile))]
 
     (< mean-job-time benchmark-in-ms) => truthy))
