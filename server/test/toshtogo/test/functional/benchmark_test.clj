@@ -104,5 +104,33 @@
                                               [{:number-of-dependent-jobs number-of-dependent-jobs}])
             stand-dev-job-time (standard-deviation (map :time-ms get-job-profile))]
 
+        (println "Standard deviation: " stand-dev-job-time)
+        (println get-job-profile)
+
         (< stand-dev-job-time benchmark-in-ms) => truthy))
 
+(fact "Check the time of the get-job query with one job when there's a large number of competing agents."
+      (let [number-of-agents 10
+            benchmark-in-ms 10
+            job-id (uuid)
+            job-type (uuid-str)
+            service (start-service (job-consumer
+                                     (constantly client)
+                                     {:job_type job-type}
+                                     return-success
+                                     :sleep-on-no-work-ms 1)
+                                   :thread-count number-of-agents)]
+
+        (put-job! client job-id (job-req {:some "request"} job-type))
+
+        (deref (future (while (-> (get-job client job-id)
+                                  :outcome
+                                  (not= :success))
+                         (Thread/sleep 100)))
+               2000 nil)
+
+        (println "Time: " (timer (get-job client job-id)))
+
+        (< (timer (get-job client job-id)) benchmark-in-ms) => truthy
+
+        (stop service)))
