@@ -6,4 +6,4 @@
     :error "danger"
     :running "info"
     :cancelled "warning"
-    (:outcome job)))
+    (name (:outcome job))))
