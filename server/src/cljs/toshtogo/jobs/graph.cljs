@@ -84,6 +84,10 @@
         (.append "text")
         (.attr "dx" 14)
         (.attr "dy" ".35em")
+        (.style "font-family" "monospace")
+        (.style "fill" "#000")
+        ; Makes text actually readable
+        (.style "stroke-width" "0")
         (.text (fn [d] (aget d "job_type"))))))
 
 (defn d3-graph-view
