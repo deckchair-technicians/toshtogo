@@ -91,4 +91,5 @@
           (dom/div #js {:className "col-md-12"}
             (om/build components.panel/panel
                       {:heading "Full state"
-                       :content (dom/div #js {:id "job-json"})})))))))
+                       :content (dom/div #js {:id "job-json"})}
+                      {:init-state {:collapsed? true}})))))))
