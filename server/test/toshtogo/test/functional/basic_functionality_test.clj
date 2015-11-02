@@ -1,7 +1,6 @@
 (ns toshtogo.test.functional.basic-functionality-test
   (:require [midje.sweet :refer :all]
             [clj-time.core :refer [now minutes seconds millis plus minus after? interval within?]]
-            [ring.adapter.jetty :refer [run-jetty]]
             [clojure.java.jdbc :as sql]
 
             [schema.core :as sch]

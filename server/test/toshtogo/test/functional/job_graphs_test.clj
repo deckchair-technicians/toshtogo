@@ -1,7 +1,6 @@
 (ns toshtogo.test.functional.job-graphs-test
   (:require [midje.sweet :refer :all]
             [clj-time.core :refer [now minutes seconds millis plus minus after? interval within?]]
-            [ring.adapter.jetty :refer [run-jetty]]
             [toshtogo.client.protocol :refer :all]
             [toshtogo.util.core :refer [uuid uuid-str debug]]
             [toshtogo.test.functional.test-support :refer [migrated-dev-db client]]

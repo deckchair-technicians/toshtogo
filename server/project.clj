@@ -14,7 +14,6 @@
                  [com.andrewmcveigh/cljs-time "0.3.14"]
                  [com.cemerick/url "0.1.1"]
                  [compojure "1.4.0"]
-                 [ring/ring-jetty-adapter "1.2.1"]
                  [ring-mock "0.1.5"]
                  [ring/ring-json "0.2.0"]
 
