@@ -17,21 +17,17 @@
     om/IDidMount
     (did-mount [_]
       (let [width (.-offsetWidth (om/get-node owner))
-
             height 500
-
             data (clj->js data)
 
+            ; Builds the SVG object
             svg (-> js/d3
                     (.select (om/get-node owner "graph-dom-node"))
                     (.append "svg")
                     (.attr "width" width)
                     (.attr "height" height))
 
-            link (atom (.selectAll svg ".link"))
-
-            node (.selectAll svg ".node")
-
+            ; Creates a force layout
             force (-> js/d3
                       (.-layout)
                       (.force)
@@ -39,55 +35,57 @@
                       (.charge -400)
                       (.linkDistance 40)
                       (.on "tick" (fn []
-                                    (-> @link
+                                    (-> (.selectAll svg ".link")
                                         (.attr "x1" (fn [d] (-> d .-source .-x)))
                                         (.attr "y1" (fn [d] (-> d .-source .-y)))
                                         (.attr "x2" (fn [d] (-> d .-target .-x)))
                                         (.attr "y2" (fn [d] (-> d .-target .-y))))
 
                                     (-> (.selectAll svg ".node")
-                                        (.attr "transform" (fn [d] (str "translate(" d.x "," d.y ")"))))
-
-                                    )))
+                                        (.attr "transform" (fn [d] (str "translate(" d.x "," d.y ")")))))))
 
             drag (-> force
                      .drag
                      (.on "dragstart" (fn [d]
+                                        ; Clears selection
+                                        (-> (.selectAll svg ".node")
+                                            (.classed "fixed" (set! (.-fixed d)) false))
+                                        ; Creates new selection
                                         (this-as this
-                                          (-> js/d3
-                                              (.select this)
-                                              (.classed "fixed" (set! (.-fixed d) true)))))))
+                                                 (-> js/d3
+                                                     (.select this)
+                                                     (.classed "fixed" (set! (.-fixed d) true)))))))]
 
-            _ (-> force
-                  (.nodes (.-nodes data))
-                  (.links (.-links data))
-                  .start)
+        (-> force
+            (.nodes (.-nodes data))
+            (.links (.-links data))
+            .start)
 
-            _ (reset! link (-> @link
-                               (.data (.-links data))
-                               (.enter)
-                               (.append "line")
-                               (.attr "class" "link")))
+        (-> (.selectAll svg ".link")
+            (.data (.-links data))
+            (.enter)
+            (.append "line")
+            (.attr "class" "link"))
 
+        ; Creates node groups
+        (-> (.selectAll svg ".node")
+            (.data (.-nodes data))
+            (.enter)
+            (.append "g")
+            (.attr "class" "node")
+            (.call drag))
 
-            nodes (-> (.selectAll svg ".node")
-                      (.data (.-nodes data))
-                      (.enter)
-                      (.append "g")
-                      (.attr "class" "node")
-                      (.call drag))
+        ; Adds circles to nodes
+        (-> (.selectAll svg ".node")
+            (.append "circle")
+            (.attr "r" 12))
 
-            _ (-> (.selectAll svg ".node")
-                  (.append "circle")
-                  (.attr "r" 12))
-
-            _ (-> (.selectAll svg ".node")
-                  (.append "text")
-                  (.attr "dx" 14)
-                  (.attr "dy" ".35em")
-                  (.text (fn [d] (aget d "job_type"))))
-
-            ]))))
+        ; Adds job type text to nodes
+        (-> (.selectAll svg ".node")
+            (.append "text")
+            (.attr "dx" 14)
+            (.attr "dy" ".35em")
+            (.text (fn [d] (aget d "job_type"))))))))
 
 (defn json-view [selector m]
   (.JSONView (js/$ selector) (clj->js m)))
