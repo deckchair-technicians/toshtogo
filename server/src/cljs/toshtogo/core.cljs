@@ -165,10 +165,11 @@
                                                              :graph  (-> response
                                                                          clj->d3)})))
 
-              :job-modified (let [{:keys [job-id]} body]
+              :job-modified (let [{:keys [job-id graph-id]} body]
                               (when (and (= job-id (get-in @data [:job :job_id]))
                                          (= :job (get-in @data [:view])))
-                                (fetch-job <messages> job-id)))
+                                (fetch-job <messages> job-id)
+                                (fetch-graph <messages> graph-id)))
 
 
               :failure (do

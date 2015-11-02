@@ -29,7 +29,7 @@
             " "
             (label job))))
 
-(defn act! [action job-id <messages>]
+(defn act! [action {:keys [job-id graph-id]} <messages>]
   (POST (str "/api/jobs/" job-id "?action=" action)
         {:params {:agent {:hostname       "?"
                           :system_name    "toshtogo-ui"
@@ -37,27 +37,28 @@
          :format :json
          :handler         (fn [response]
                             (put! <messages> [:job-modified {:response response
-                                                             :job-id job-id}]))
+                                                             :job-id job-id
+                                                             :graph-id graph-id}]))
 
          :error-handler   (fn [response]
                             (put! <messages> [:failure {:response response}]))}))
 
-(defn actions [{:keys [job_id outcome]} <messages>]
-  (println "ouytcome" outcome)
-  (case outcome
-    :running (dom/button #js {:className "btn btn-danger"
-                              :onClick   (fn [_] (act! "pause" job_id <messages>))}
-               "Pause")
-    :waiting (dom/button #js {:className "btn btn-danger"
-                              :onClick   (fn [_] (act! "pause" job_id <messages>))}
-               "Pause")
-    :cancelled (dom/button #js {:className "btn btn-success"
-                                :onClick   (fn [_] (act! "retry" job_id <messages>))}
-                 "Retry")
-    :error (dom/button #js {:className "btn btn-success"
-                                :onClick   (fn [_] (act! "retry" job_id <messages>))}
-                 "Retry")
-    nil))
+(defn actions [{:keys [job_id outcome home_graph_id]} <messages>]
+  (let [job {:job-id job_id :graph-id home_graph_id}]
+    (case outcome
+      :running (dom/button #js {:className "btn btn-danger"
+                                :onClick   (fn [_] (act! "pause" job <messages>))}
+                           "Pause")
+      :waiting (dom/button #js {:className "btn btn-danger"
+                                :onClick   (fn [_] (act! "pause" job <messages>))}
+                           "Pause")
+      :cancelled (dom/button #js {:className "btn btn-success"
+                                  :onClick   (fn [_] (act! "retry" job <messages>))}
+                             "Retry")
+      :error (dom/button #js {:className "btn btn-success"
+                              :onClick   (fn [_] (act! "retry" job <messages>))}
+                         "Retry")
+      nil)))
 
 (defn job-view [job]
   (reify
