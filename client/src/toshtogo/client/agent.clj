@@ -124,3 +124,15 @@
                                                     (handler (assoc job :shutdown-promise shutdown-promise)))))]
             (when-not outcome
               (Thread/sleep sleep-on-no-work-ms))))))
+
+(defn ->dispatch-handler
+  "Returns a handler that takes a job, uses the job type to look up a handler function in handlers-map
+  and dispatches to that handler"
+  [handlers-map]
+  (fn [job]
+    (let [job-type (keyword (:job_type job))
+          handler (handlers-map job-type)]
+      (when-not handler
+        (throw (ex-info (str "No handler for job type '" job-type "'") (dissoc job :shutdown-promise))))
+
+      (handler job))))
