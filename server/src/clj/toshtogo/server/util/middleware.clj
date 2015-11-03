@@ -121,6 +121,15 @@
 
     (handler req)))
 
+(defn wrap-instrumentation
+  [instrumentation-atom handler]
+  (fn [req]
+    (let [start-time (System/currentTimeMillis)
+          response (handler req)
+          time-taken (- (System/currentTimeMillis) start-time)]
+      (swap! instrumentation-atom conj {:request req :response response :time-taken time-taken})
+      response)))
+
 (defn json-response [resp]
   (ring.util.response/content-type resp "application/json; charset=utf-8"))
 

@@ -12,11 +12,12 @@
              :user        "postgres"
              :password    "postgres"})
 
-(defn dev-app [& {:keys [debug logger-factory db]
+(defn dev-app [& {:keys [debug logger-factory db instrumentation-atom]
                   :or   {debug false
                          db    dev-db}}]
   (app db
        :debug debug
+       :instrumentation-atom instrumentation-atom
        :logger-factory (or logger-factory
                            (if debug (constantly (SysLogger.))
                                      (constantly nil)))))

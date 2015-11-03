@@ -205,7 +205,7 @@
   ([toshtogo-client interval-seconds max-ttl]
    (start-monitoring! toshtogo-client interval-seconds max-ttl)))
 
-(defn app [db & {:keys [debug logger-factory]
+(defn app [db & {:keys [debug logger-factory instrumentation-atom]
                  :or {debug false
                       logger-factory (constantly nil)}}]
   (routes
@@ -226,4 +226,5 @@
         (wrap-logging-transaction logger-factory) ; Log the exception before wrap-json-exception throws it away
         (wrap-json-exception)
         (wrap-logging-transaction logger-factory) ; Log exceptions from wrap-json-exception
+        (wrap-if instrumentation-atom (partial wrap-instrumentation instrumentation-atom))
         )))
