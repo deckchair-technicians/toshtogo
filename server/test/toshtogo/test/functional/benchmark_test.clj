@@ -6,7 +6,8 @@
             [toshtogo.util.core :refer [uuid uuid-str debug]]
             [toshtogo.test.functional.test-support :refer :all]
             [toshtogo.client.agent :refer :all]
-            [toshtogo.client.protocol :refer :all]))
+            [toshtogo.client.protocol :refer :all]
+            [toshtogo.server.core :refer [dev-app]]))
 
 (def persistent-client (test-client :timeout 100000))
 
@@ -37,20 +38,21 @@
          ret# ~expr]
      (/ (double (- (. System (nanoTime)) start#)) 1000000.0)))
 
-(defn generate-dependent-job
-  [job child-job-type id]
-  (-> (job-req {:b (str "child " job)} child-job-type)
+(defn generate-job
+  [job job-type id]
+  (-> (job-req {:b (str "child " job)} job-type)
       (with-job-id id)))
 
 (defn get-job-by-id [{:keys [number-of-dependent-jobs]}]
   (let [job-id (uuid)
         parent-job-type (uuid-str)
         child-job-type (uuid-str)
-        child-job-seq (take number-of-dependent-jobs (range))
+        child-job-name-seq (map (fn [x] (str "child " x))
+                           (take number-of-dependent-jobs (range)))
         child-job-type-seq (take number-of-dependent-jobs (repeat child-job-type))
         child-id-seq (take number-of-dependent-jobs (repeatedly #(uuid)))
-        dep-seq (map generate-dependent-job
-                     child-job-seq
+        dep-seq (map generate-job
+                     child-job-name-seq
                      child-job-type-seq
                      child-id-seq)
         actual-job-id (uuid)]
@@ -68,7 +70,7 @@
            2000 nil)
 
     {:number-of-dep-jobs number-of-dependent-jobs
-     :time-ms (timer (get-job client actual-job-id))}))
+     :time-ms            (timer (get-job client actual-job-id))}))
 
 (defn generate-profile
   [number-of-iterations f args]
@@ -104,14 +106,11 @@
                                               [{:number-of-dependent-jobs number-of-dependent-jobs}])
             stand-dev-job-time (standard-deviation (map :time-ms get-job-profile))]
 
-        (println "Standard deviation: " stand-dev-job-time)
-        (println get-job-profile)
-
         (< stand-dev-job-time benchmark-in-ms) => truthy))
 
 (fact "Check the time of the get-job query with one job when there's a large number of competing agents."
       (let [number-of-agents 10
-            benchmark-in-ms 10
+            benchmark-in-ms 100
             job-id (uuid)
             job-type (uuid-str)
             service (start-service (job-consumer
@@ -129,8 +128,47 @@
                          (Thread/sleep 100)))
                2000 nil)
 
-        (println "Time: " (timer (get-job client job-id)))
-
         (< (timer (get-job client job-id)) benchmark-in-ms) => truthy
 
         (stop service)))
+
+(def instrumentation-atom (atom []))
+
+(fact "Check we can pass some data to the instrumentation atom in our middleware"
+  (let [instrumented-client (test-client :client-config {:type :app
+                                                         :app  (dev-app :debug false
+                                                                        :instrumentation-atom instrumentation-atom)
+                                                         :timeout 10000})
+        number-of-agents 100
+        number-of-jobs 10
+        job-type (uuid-str)
+        service (start-service (job-consumer
+                                 (constantly instrumented-client)
+                                 {:job_type job-type}
+                                 return-success
+                                 :sleep-on-no-work-ms 10)
+                               :thread-count number-of-agents)
+        job-seq (take number-of-jobs (range))
+        job-type-seq (take number-of-agents (repeat job-type))
+        job-id-seq (take number-of-jobs (repeatedly #(uuid)))
+        job-seq (map generate-job
+                     job-seq
+                     job-type-seq
+                     job-id-seq)]
+
+    (try
+
+      (doseq [job job-seq]
+        (put-job! instrumented-client (:job_id job) job))
+
+      (deref (future
+               (doseq [job-id job-id-seq]
+                 (while (->> (get-job client job-id)
+                             :outcome
+                             (not= :success))
+                   (Thread/sleep 100))))
+             20000 nil)
+
+      (finally
+
+        (stop service)))))
