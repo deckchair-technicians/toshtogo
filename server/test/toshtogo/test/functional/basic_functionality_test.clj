@@ -75,7 +75,7 @@
 
           (put-job! client job-id (job-req {:a-field "field value"} job-type))
 
-          (let [{:keys [contract result]} @(do-work! client job-type (return-success-with-result {:response-field "all good"}))]
+          (let [{:keys [contract result]} (do-work! client job-type (return-success-with-result {:response-field "all good"}))]
             contract
             => (matches {:job_id job-id :request_body {:a-field "field value"}})
             result
@@ -90,7 +90,7 @@
 
           (put-job! client job-id (job-req {:a-field "field value"} job-type))
 
-          (let [{:keys [contract result]} @(do-work! client job-type
+          (let [{:keys [contract result]} (do-work! client job-type
                                                      (constantly (error {:message "something went wrong"})))]
             contract
             => (matches {:job_id job-id :request_body {:a-field "field value"}})
@@ -115,7 +115,7 @@
              (request-work! client job-type) => nil
              (provided (now) => before-due-time)
 
-             @(do-work! client job-type return-success) => truthy
+             (do-work! client job-type return-success) => truthy
              (provided (now) => due-time))))
 
   (facts "Agent can request that a job is re-attempted later"
@@ -128,12 +128,12 @@
              (put-job! client job-id (job-req {} job-type))
 
              (let [delay (fn [job] (try-later due-time "some error happened"))]
-               @(do-work! client job-type delay) => truthy)
+               (do-work! client job-type delay) => truthy)
 
              (request-work! client job-type) => nil
              (provided (now) => before-due-time)
 
-             @(do-work! client job-type return-success) => truthy
+             (do-work! client job-type return-success) => truthy
              (provided (now) => due-time))))
 
   (facts "Contracts should be prioritised by job creation date, not contract creation date"
@@ -149,7 +149,7 @@
              (put-job! client job-id-2 (job-req {} job-type))
 
              (let [delay (fn [job] (try-later due-time "some error happened"))]
-               @(do-work! client job-type delay) => truthy)
+               (do-work! client job-type delay) => truthy)
 
              (:job_id (request-work! client job-type)) => job-id-1
              (provided (now) => due-time))))
@@ -161,7 +161,7 @@
           (put-job! client job-id (job-req {:a-field "field value"} job-type))
 
           (let [func (fn [job] (throw (Exception. "WTF")))
-                {:keys [contract result]} @(do-work! client job-type func)]
+                {:keys [contract result]} (do-work! client job-type func)]
 
             contract
             => (matches {:job_id job-id :request_body {:a-field "field value"}})
@@ -182,7 +182,7 @@
 
            (put-job! client job-id (job-req {} job-type))
 
-           @(do-work! client job-type (fn [job] (Thread/sleep 1) (success {:oh "yeah"})))
+           (do-work! client job-type (fn [job] (Thread/sleep 1) (success {:oh "yeah"})))
 
            (let [{:keys [last_heartbeat]} (get-job client job-id)]
              (after? last_heartbeat start-time-ish) => truthy)))

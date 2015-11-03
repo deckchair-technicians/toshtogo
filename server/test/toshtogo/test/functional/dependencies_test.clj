@@ -31,14 +31,14 @@
                  (get-job client child-one-id) => (contains {:home_graph_id parent-job-graph-id})
                  (get-job client child-two-id) => (contains {:home_graph_id parent-job-graph-id})))
 
-         (:contract @(do-work! client {:job_id child-one-id} (return-success-with-result {:child-one "result"})))
+         (:contract (do-work! client {:job_id child-one-id} (return-success-with-result {:child-one "result"})))
          => (contains {:request_body {:b "child one"}})
 
          (fact "Parent job is not ready until all dependencies complete"
                (request-work! client parent-job-type) => nil
                (get-job client job-id) => (contains {:outcome :waiting}))
 
-         @(do-work! client child-job-type (return-success-with-result {:child-two "result"}))
+         (do-work! client child-job-type (return-success-with-result {:child-two "result"}))
 
          (fact (str "Parent job is released when dependencies are complete, "
                     "with dependency responses merged into its request")
@@ -68,7 +68,7 @@
                                 (with-job-id child-two-id))))
                complete-child (fn [job] (success (job :request_body)))]
 
-           @(do-work! client parent-job-type add-deps) => truthy
+           (do-work! client parent-job-type add-deps) => truthy
 
            (fact "Parent job is not ready until new dependencies complete"
                  (request-work! client parent-job-type) => nil)
@@ -78,8 +78,8 @@
                    (get-job client child-one-id) => (contains {:home_graph_id parent-job-graph-id})
                    (get-job client child-two-id) => (contains {:home_graph_id parent-job-graph-id})))
 
-           @(do-work! client child-job-type complete-child) => truthy
-           @(do-work! client child-job-type complete-child) => truthy
+           (do-work! client child-job-type complete-child) => truthy
+           (do-work! client child-job-type complete-child) => truthy
 
            (fact (str "Parent job is released when dependencies are complete, "
                       "with dependency responses included in the job")
@@ -107,7 +107,7 @@
                (request-work! client parent-job-type)
                => nil)
 
-         @(do-work! client other-job-type return-success)
+         (do-work! client other-job-type return-success)
          => truthy
 
          (fact (str "Parent job is released when dependencies are complete, "
@@ -141,7 +141,7 @@
          (put-job! client other-job-id (job-req {:some-other-job "other job"} other-job-type))
          (put-job! client parent-job-id (job-req {:parent-job "parent job"} parent-job-type))
 
-         @(do-work! client parent-job-type (fn [job] (add-dependencies other-job-id)))
+         (do-work! client parent-job-type (fn [job] (add-dependencies other-job-id)))
          => truthy
 
          (fact "Other job is now included in the parent job's home graph"
@@ -152,7 +152,7 @@
          (fact "Parent job is not ready until new dependencies complete"
                (request-work! client parent-job-type) => nil)
 
-         @(do-work! client other-job-type return-success) => truthy
+         (do-work! client other-job-type return-success) => truthy
 
          (fact (str "Parent job is released when dependencies are complete, "
                     "with dependency responses included in the job")

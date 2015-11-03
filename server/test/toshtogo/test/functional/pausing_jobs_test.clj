@@ -14,10 +14,10 @@
 
          (put-job! client job-id (job-req {} job-type))
 
-         (let [commitment (do-work! client job-type (fn [job]
-                                                      (deliver commitment-id (job :commitment_id))
-                                                      (Thread/sleep 10000)
-                                                      (error {:message "Should never return"})))]
+         (let [commitment (future (do-work! client job-type (fn [job]
+                                                              (deliver commitment-id (job :commitment_id))
+                                                              (Thread/sleep 10000)
+                                                              (error {:message "Should never return"}))))]
            (future-done? commitment) => falsey
 
            (heartbeat! client @commitment-id)
@@ -55,7 +55,7 @@
         (get-job client job-id)
         => (contains {:outcome :waiting})
 
-        @(do-work! client job-type return-success)
+        (do-work! client job-type return-success)
         => truthy
 
         (get-job client job-id)
@@ -90,7 +90,7 @@
     (get-job client child-one-id)
     => (contains {:outcome :waiting})
 
-    @(do-work! client child-job-type
+    (do-work! client child-job-type
                (constantly (error {:message "something went wrong"})))
 
     (pause-job! client job-id)

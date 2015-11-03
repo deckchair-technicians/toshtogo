@@ -80,7 +80,7 @@
       (put-job! client-no-logging job-id (job-req {:a-field "field value"} job-type))
 
       (let [func (fn [job] (throw (ex-info "Error from handler" {:ex "data"})))
-            {:keys [contract result]} @(do-work! client-no-logging job-type func)]
+            {:keys [contract result]} (do-work! client-no-logging job-type func)]
 
         contract
         => (matches {:job_id job-id :request_body {:a-field "field value"}})
@@ -106,7 +106,7 @@
 
           (put-job! client-no-logging job-id (job-req {:a-field "field value"} job-type))
 
-          @(do-work! client-no-logging job-type func)
+          (do-work! client-no-logging job-type func)
 
           (:error (get-job client-no-logging job-id))
           => (matches {:message #"Problem sending result. Result cannot be json encoded."
@@ -119,7 +119,7 @@
 
           (put-job! client-no-logging job-id (job-req {:a-field "field value"} job-type))
 
-          @(do-work! client-no-logging job-type func)
+          (do-work! client-no-logging job-type func)
 
           (:error (get-job client-no-logging job-id))
           => (matches {:message #"Catastrophic problems sending result."})))))

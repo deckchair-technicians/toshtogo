@@ -78,7 +78,7 @@
              job-type (uuid-str)]
 
          (put-job! client job-id-1 (job-req {:job "success"} job-type))
-         @(do-work! client job-type return-success) => truthy
+         (do-work! client job-type return-success) => truthy
 
          (put-job! client job-id-2 (job-req {:job "running"} job-type))
          (request-work! client job-type) => truthy
@@ -105,7 +105,7 @@
              job-type (uuid-str)]
 
          (put-job! client job-id-1 (job-req {:job "success"} job-type))
-         @(do-work! client job-type return-success) => truthy
+         (do-work! client job-type return-success) => truthy
 
          (put-job! client job-id-2 (job-req {:job "running"} job-type))
          (request-work! client job-type) => truthy

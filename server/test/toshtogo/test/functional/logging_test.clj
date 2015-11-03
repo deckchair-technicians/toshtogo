@@ -58,7 +58,7 @@
                                         :event_data {:stacktrace #"Previous put for create-job"}}])))
 
     (fact "Job completes successfully"
-          @(do-work! log-client {:job_id job-id} return-success)
+          (do-work! log-client {:job_id job-id} return-success)
           => truthy)
 
     (fact "Commitment start and end is logged"
@@ -72,7 +72,7 @@
 
   (let [job-id (uuid)]
     (put-job! log-client job-id (job-req {} (uuid-str))) => truthy
-    @(do-work! log-client {:job_id job-id} (constantly (error "something went wrong")))
+    (do-work! log-client {:job_id job-id} (constantly (error "something went wrong")))
     => truthy
 
     (fact "Job errors are logged"
@@ -86,7 +86,7 @@
     (put-job! log-client job-id (job-req {} (uuid-str))) => truthy
     (consume-logs logs-atom)
 
-    @(do-work! log-client {:job_id job-id} (fn [_] {:not_valid_response "response"}))
+    (do-work! log-client {:job_id job-id} (fn [_] {:not_valid_response "response"}))
     => truthy
 
     (fact "If client sends badly formed result, we get a server error and a commitment result"

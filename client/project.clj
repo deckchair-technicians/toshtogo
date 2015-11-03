@@ -12,7 +12,9 @@
                  [org.flatland/useful "0.11.3"]
                  [savagematt/bowen "2.1"]
                  [savagematt/vice "0.13"]
-                 [trptcolin/versioneer "0.1.0"]]
+                 [trptcolin/versioneer "0.1.0"]
+
+                 [ring-mock "0.1.5"]]
 
   :profiles {:dev {:dependencies [[javax.servlet/servlet-api "2.5"]
                                   [midje "1.7.0"]

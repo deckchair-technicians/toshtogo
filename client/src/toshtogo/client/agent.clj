@@ -120,7 +120,7 @@
         (fn [shutdown-promise]
           (let [client (per-thread-client-factory)
                 outcome (when-not (empty? (:data (get-jobs client query)))
-                          @(do-work! client query (fn [job]
+                          (do-work! client query (fn [job]
                                                     (handler (assoc job :shutdown-promise shutdown-promise)))))]
             (when-not outcome
               (Thread/sleep sleep-on-no-work-ms))))))
