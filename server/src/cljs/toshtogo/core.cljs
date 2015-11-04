@@ -148,7 +148,8 @@
             (case event
               :job-fetched (let [{:keys [response]} body]
                              (om/transact! data #(merge % {:status :done
-                                                           :job    (update response :outcome keyword)})))
+                                                           :job    (-> response
+                                                                       (update :outcome keyword))})))
 
               :jobs-fetched (let [{:keys [response]} body]
                               (om/transact! data #(merge % {:status :done

@@ -4,7 +4,10 @@
             [cljs.core.async :refer [chan <! put!]]
             [ajax.core :refer [POST]]
             [toshtogo.jobs.util :as util]
-            [toshtogo.components.panel :as components.panel]))
+            [toshtogo.components.panel :as components.panel]
+            [clojure.string :as s]
+            [cljs-time.core :as t]
+            [cljs-time.format :as tf]))
 
 (defn json-view [selector m]
   (.JSONView (js/$ selector) (clj->js m)))
@@ -61,6 +64,15 @@
                          "Retry")
       nil)))
 
+(def formatter
+  (tf/formatter "yyyy-MM-dd HH:mm:ss"))
+
+(defn format-date-string
+  [s]
+  (when s
+    (tf/unparse formatter
+                (tf/parse s))))
+
 (defn job-view [job]
   (reify
     om/IDidMount
@@ -73,25 +85,51 @@
 
     om/IRenderState
     (render-state [_this {:keys [<messages>]}]
-      (dom/div #js {:className ""}
+      (when job
+        (dom/div #js {:className ""}
 
-        (title job)
+                 (title job)
 
-        (actions job <messages>)
+                 (actions job <messages>)
 
-        (dom/div #js {:className "row"}
-          (dom/div #js {:className "col-md-6"}
-            (om/build components.panel/panel
-                      {:heading "Request"
-                       :content (dom/div #js {:id "job-request"})}))
-          (dom/div #js {:className "col-md-6"}
-            (om/build components.panel/panel
-                      {:heading "Response"
-                       :content (dom/div #js {:id "job-result"})})))
+                 (dom/div #js {:className "row"}
+                          (dom/div #js {:className "col-md-12"}
+                                   (let [contracts (select-keys job [:contract_created :contract_claimed :contract_finished])
+                                         latest-contract (first (sort-by second > contracts))]
+                                     (om/build components.panel/panel
+                                               {:heading "Information"
+                                                :content (dom/div nil
+                                                                  (dom/div #js {:className "row"}
+                                                                           (dom/label #js {:className "col-md-2"
+                                                                                           :htmlFor "job-created"}
+                                                                                      "Job created")
+                                                                           (dom/div #js {:className "col-md-8"}
+                                                                                    (format-date-string (:job_created job))))
 
-        (dom/div #js {:className "row"}
-          (dom/div #js {:className "col-md-12"}
-            (om/build components.panel/panel
-                      {:heading "Full state"
-                       :content (dom/div #js {:id "job-json"})}
-                      {:init-state {:collapsed? true}})))))))
+                                                                  (dom/div #js {:className "row"}
+                                                                           (dom/label #js {:className "col-md-2"}
+                                                                                      (s/capitalize (s/replace (name (first latest-contract)) #"_" " ")))
+                                                                           (dom/div #js {:className "col-sm-8"}
+                                                                                    (format-date-string (second latest-contract))))
+
+                                                                  (dom/div #js {:className "row"}
+                                                                           (dom/label #js {:className "col-md-2"
+                                                                                           :htmlFor "job-created"}
+                                                                                      "Contract due")
+                                                                           (dom/div #js {:className "col-sm-8"}
+                                                                                    (format-date-string (:contract_due job)))))})))
+                          (dom/div #js {:className "col-md-6"}
+                                   (om/build components.panel/panel
+                                             {:heading "Request"
+                                              :content (dom/div #js {:id "job-request"})}))
+                          (dom/div #js {:className "col-md-6"}
+                                   (om/build components.panel/panel
+                                             {:heading "Response"
+                                              :content (dom/div #js {:id "job-result"})})))
+
+                 (dom/div #js {:className "row"}
+                          (dom/div #js {:className "col-md-12"}
+                                   (om/build components.panel/panel
+                                             {:heading "Full state"
+                                              :content (dom/div #js {:id "job-json"})}
+                                             {:init-state {:collapsed? true}}))))))))
