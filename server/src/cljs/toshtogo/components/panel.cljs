@@ -15,7 +15,7 @@
                       :onClick   (fn []
                                    (om/update-state! owner [:collapsed?] (partial not)))}
           (dom/i #js {:className (str "fa " (if collapsed? "fa-expand" "fa-compress"))
-                      :style     #js {:text-align "right"
+                      :style     #js {:textAlign "right"
                                       :cursor "pointer"}})
           (gstring/unescapeEntities "&nbsp;&nbsp;")
           heading)
