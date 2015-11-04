@@ -1,6 +1,6 @@
 (ns ^:figwheel-always toshtogo.core
-  (:require-macros [cljs.core.async.macros :refer [go-loop]])
-  (:require [cljs.core.async :refer [chan <! put!]]
+  (:require-macros [cljs.core.async.macros :refer [go-loop go]])
+  (:require [cljs.core.async :refer [chan <! put! ]]
             [om.core :as om :include-macros true]
             [om.dom :as dom :include-macros true]
             [ajax.core :refer [GET]]
@@ -16,7 +16,9 @@
             [toshtogo.jobs.graph :as graph]
 
             [toshtogo.util.history :as history]
-            [cemerick.url :as url]))
+            [cemerick.url :as url]
+
+            [chord.client :refer [ws-ch]]))
 
 (enable-console-print!)
 
@@ -131,7 +133,7 @@
                (:links graph-map))}))
 
 (defn app-view
-  [{:keys [view] :as data} owner]
+  [{:keys [view count] :as data} owner]
   (reify
     om/IInitState
     (init-state [_]
@@ -143,6 +145,16 @@
       (let [<messages> (om/get-state owner :<messages>)]
         (build-routes data <messages>)
         (history/enable-history!)
+        (go
+          (let [{:keys [ws-channel]} (<! (ws-ch "ws://localhost:3001/ws/hello" {:format :json-kw}))]
+            (when ws-channel
+              (go-loop []
+                (let [{:keys [message]} (<! ws-channel)]
+                  (if message
+                    (do (om/transact! data #(assoc % :count (:i message )))
+                        (recur))
+                    (om/transact! data #(assoc % :count "DISCONNECTED"))))))))
+
         (go-loop []
           (when-let [[event body] (<! <messages>)]
             (case event
@@ -187,7 +199,8 @@
             (dom/div #js {:className "navbar-header"}
               (dom/a #js {:className "navbar-brand"
                           :href "/"}
-                "Toshtogo"))))
+                "Toshtogo "
+                (str count)))))
         (dom/div #js {:className "row"}
           (dom/div #js {:className "col-xs-1"})
           (dom/div #js {:className "col-xs-10"}

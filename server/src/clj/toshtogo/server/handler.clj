@@ -6,6 +6,9 @@
 
             [clojure.string :as s]
 
+            [clojure.core.async :as a]
+            [chord.http-kit :refer [wrap-websocket-handler]]
+
             [ring.util
              [codec :as codec]
              [response :as resp]]
@@ -80,7 +83,31 @@
           (sequential? jobs) ((fn [jobs] {:data jobs}))
           (:paging jobs)     (paginate query)))
 
+(defn ws-handler [{:keys [ws-channel] :as req} <count>]
+  (println "WEBSOCKETTTTS")
+  (let [tapped-ch (a/chan)]
+    (a/tap <count> tapped-ch)
+    (a/go-loop []
+      (a/alt!
+        tapped-ch ([message]
+                    (println "MESS" message)
+                    (if message
+                      (do
+                        (a/>! ws-channel message)
+                        (recur))
+
+                      (a/close! ws-channel)))
+
+        ws-channel ([ws-message] (when-not ws-message
+                                   (do
+                                     (a/untap <count> tapped-ch))))))))
+
 (defroutes api-routes
+  (context "/ws" []
+    (GET "/hello" {:keys [<count>]}
+      (-> #(ws-handler % <count>)
+          (wrap-websocket-handler {:format :json-kw}))))
+
   (context "/api" {:keys [persistence api body check-idempotent!]}
     (context "/graphs" []
       (GET "/:graph-id" [graph-id]
@@ -208,22 +235,29 @@
 (defn app [db & {:keys [debug logger-factory]
                  :or {debug false
                       logger-factory (constantly nil)}}]
-  (routes
-    (handler/site site-routes)
-    (-> (handler/api api-routes)
-        wrap-dependencies
-        (wrap-if debug wrap-print-request)
-        (wrap-db-transaction db)
-        (wrap-clear-logs-before-handling) ; Only log events from the final retry
-        (wrap-retry-on-exceptions 3 UniqueConstraintException)
-        (wrap-logging-transaction logger-factory) ; Log events on DB commit. On exception, log exception event, including log event that didn't commit
-        log-request
-        wrap-json-body
-        wrap-body-hash
-        wrap-json-response
-        (wrap-if debug wrap-print-response)
-        wrap-cors
-        (wrap-logging-transaction logger-factory) ; Log the exception before wrap-json-exception throws it away
-        (wrap-json-exception)
-        (wrap-logging-transaction logger-factory) ; Log exceptions from wrap-json-exception
-        )))
+  (let [<count> (a/chan)]
+
+    (a/go-loop [i 1]
+      (a/<! (a/timeout 2000))
+      (a/>! <count> {:i i})
+      (recur (inc i)))
+
+    (routes
+      (handler/site site-routes)
+      (-> (handler/api api-routes)
+          (wrap-dependencies (a/mult <count>))
+          (wrap-if debug wrap-print-request)
+          (wrap-db-transaction db)
+          (wrap-clear-logs-before-handling)                 ; Only log events from the final retry
+          (wrap-retry-on-exceptions 3 UniqueConstraintException)
+          (wrap-logging-transaction logger-factory)         ; Log events on DB commit. On exception, log exception event, including log event that didn't commit
+          log-request
+          wrap-json-body
+          wrap-body-hash
+          wrap-json-response
+          (wrap-if debug wrap-print-response)
+          wrap-cors
+          (wrap-logging-transaction logger-factory)         ; Log the exception before wrap-json-exception throws it away
+          (wrap-json-exception)
+          (wrap-logging-transaction logger-factory)         ; Log exceptions from wrap-json-exception
+          ))))

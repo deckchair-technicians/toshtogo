@@ -32,7 +32,7 @@
 
             [toshtogo
              [schemas :refer [Agent]]]
-            )
+            [clojure.core.async :as a])
   (:import [java.io ByteArrayInputStream]
            [toshtogo.server.logging ValidatingLogger DeferredLogger]))
 
@@ -68,12 +68,13 @@
 
 (defn wrap-dependencies
   "Adds protocol implementations for services"
-  [handler]
+  [handler <count>]
   (fn [req]
-    (let [cnxn (req :cnxn)
-          body-hash (req :body-hash)
+    (let [cnxn              (req :cnxn)
+          body-hash         (req :body-hash)
           check-idempotent* (partial check-idempotent! cnxn body-hash)]
       (handler (-> req
+                   (assoc :<count> <count>)
                    (assoc :check-idempotent! check-idempotent*)
                    (merge (sql-deps cnxn (:logger req) (get-in req [:body :agent])))
                    (mp/update :body #(dissoc % :agent)))))))
