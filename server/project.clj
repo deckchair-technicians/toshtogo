@@ -5,7 +5,7 @@
   :dependencies [[org.clojure/clojure "1.7.0"]
                  [savagematt.toshtogo/client "0.7.1-SNAPSHOT"]
 
-                 [org.clojure/clojurescript "1.7.145"]
+                 [org.clojure/clojurescript "1.7.48"]
                  [org.clojure/core.async "0.1.346.0-17112a-alpha"]
                  [org.omcljs/om "0.9.0"]
                  [cljsjs/d3 "3.5.5-3"]
