@@ -9,8 +9,9 @@
 (defn json-view [selector m]
   (.JSONView (js/$ selector) (clj->js m)))
 
-(defn update-json [{:keys [request_body result_body error] :as job}]
-  (json-view "#job-json" job)
+(defn update-json
+  [{:keys [request_body result_body error] :as job}]
+  (json-view "#job-json" (dissoc job :request_body :result_body :error))
   (json-view "#job-request" request_body)
   (json-view "#job-result" (if error error result_body)))
 
