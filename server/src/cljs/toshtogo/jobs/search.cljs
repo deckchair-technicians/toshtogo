@@ -61,7 +61,8 @@
                                                  (om/update! query :job-types
                                                              (let [selections (.. e -target -selectedOptions)]
                                                                (set (map #(aget % "value") (html-coll->seq selections))))))}
-                     (map #(dom/option nil %)
+                     (map (fn [job-type]
+                            (dom/option #js {:selected ((:job-types query) job-type)} job-type))
                           (filter
                             (if (empty? job-type-string)
                               identity
