@@ -1,6 +1,7 @@
 .#*
 client/target
 server/target
+examples/target
 client/checkouts
 server/checkouts
 /lib
