@@ -4,4 +4,4 @@
 
   :plugins [[lein-sub "0.3.0"]]
 
-  :sub ["toshtogo/server" "toshtogo/client"])
+  :sub ["server" "client"])
