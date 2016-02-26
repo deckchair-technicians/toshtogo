@@ -4,4 +4,4 @@
 
   :plugins [[lein-sub "0.3.0"]]
 
-  :sub ["server" "client"])
+  :sub ["client" "server"])
