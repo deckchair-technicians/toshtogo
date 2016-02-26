@@ -1,2 +1,3 @@
 language: clojure
-script: ./build.sh
+install: lein sub deps
+script: lein sub uberjar
