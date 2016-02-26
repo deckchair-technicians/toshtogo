@@ -1,3 +1,11 @@
 language: clojure
+
+addons:
+  postgresql: "9.4.1"
+
+services:
+  - postgresql
+
 install: lein sub deps
+
 script: lein sub uberjar
