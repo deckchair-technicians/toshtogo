@@ -10,7 +10,7 @@
              :subprotocol "postgresql"
              :subname     "//localhost:5432/toshtogo"
              :user        "postgres"
-             :password    "postgres"})
+             :password    ""})
 
 (defn dev-app [& {:keys [debug logger-factory db]
                   :or   {debug false
