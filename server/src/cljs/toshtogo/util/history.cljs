@@ -43,3 +43,7 @@
   (let [hash (aget js/window "location" "hash")
         base (s/join (rest (first (s/split hash "?"))))]
     (str "#" base "?" (params->query-string query))))
+
+(defn set-hash!
+  ([v] (set-hash! (.-location js/window) v))
+  ([loc v] (aset loc "hash" v)))

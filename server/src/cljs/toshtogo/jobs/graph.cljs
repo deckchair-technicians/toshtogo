@@ -4,8 +4,10 @@
             [om.core :as om]
             [cljs.core.async :refer [chan <! put!]]
             [ajax.core :refer [POST GET]]
+            [clojure.string :as s]
             [toshtogo.components.panel :as components.panel]
-            [toshtogo.jobs.util :as util]))
+            [toshtogo.jobs.util :as util]
+            [toshtogo.util.history :as history]))
 
 (defn render-force-graph
   [data dom-node width height]
@@ -23,8 +25,8 @@
                   (.-layout)
                   (.force)
                   (.size (clj->js [width height]))
-                  (.charge -2400)
-                  (.linkDistance 40)
+                  (.charge -400)
+                  (.linkDistance 120)
                   (.on "tick" (fn []
                                 (-> (.selectAll svg ".link")
                                     (.attr "x1" (fn [d] (-> d .-source .-x)))
@@ -66,6 +68,19 @@
         (.attr "class" "node")
         (.call drag))
 
+    (-> (.selectAll svg ".node")
+        (.on "dblclick" (fn [d]
+                          (let [job-id (aget d "job_id")
+                                ; FIXME: Not ideal obviously
+                                hash (s/join (rest (aget (aget js/window "location") "hash")))
+                                parts (s/split hash #"/")]
+                            (println hash)
+                            (history/set-hash! (s/join "/"
+                                                       (concat (butlast parts)
+                                                               [job-id])))
+                            (aget (aget js/window "location") "hash")
+                            ))))
+
     ; Adds circles to nodes
     (-> (.selectAll svg ".node")
         (.append "circle")
@@ -79,7 +94,6 @@
                            "success" "#339900"
                            "no-contract" "#ff00ff"))))
 
-    ; Adds job type text to nodes
     (-> (.selectAll svg ".node")
         (.append "text")
         (.attr "dx" 14)
@@ -88,7 +102,10 @@
         (.style "fill" "#000")
         ; Makes text actually readable
         (.style "stroke-width" "0")
-        (.text (fn [d] (aget d "job_type"))))))
+        (.text (fn [d]
+                 (if-let [job-name (aget d "job_name")]
+                   (str (aget d "job_type") " [" (aget d "job_name") "]")
+                   (aget d "job_type")))))))
 
 (defn d3-graph-view
   [data owner]
