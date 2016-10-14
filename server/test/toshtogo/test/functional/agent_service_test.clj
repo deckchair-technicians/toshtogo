@@ -21,7 +21,7 @@
     (then-expect (job-state (id! :job-id))
                  (contains {:outcome :success}))))
 
-(fact "Can make more complicated queries for work"
+(fact "Can make more complicated queries for work (e.g. two different types of job)"
   (scenario
     (given (agent-is-running
              {:job_type [(id! :type-one) (id! :type-two)]}
