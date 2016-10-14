@@ -42,7 +42,9 @@
        (raise-exception)))
 
 (defmacro scenario [& steps]
-  `(with-redefs [test-ids/ids (test-ids/->ids)]
+  `(with-redefs [test-ids/ids (test-ids/->ids)
+                 toshtogo.client.protocol/heartbeat-time 10]
+     @ts/migrated-dev-db
      (run-steps ~@steps)))
 
 ; Syntactic sugar
