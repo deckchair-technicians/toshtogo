@@ -1,8 +1,9 @@
 (ns toshtogo.test.functional.framework.test-ids
-  (:require [toshtogo.util.core :refer [uuid uuid-str]]))
+  (:require [toshtogo.util.core :refer [uuid uuid-str]]
+            [clojure.pprint :as pp]))
 
-(defn ensure-id [k ids]
-  (if (ids k)
+(defn ensure-id [ids k]
+  (if (get-in ids [:key->id k])
     ids
     (let [id (uuid-str)]
       (-> ids
@@ -27,7 +28,7 @@
                  :id->key {}})]
     (reify Ids
       (*id! [_this k]
-        (swap! a (partial ensure-id k))
+        (swap! a ensure-id k)
         (get-in @a [:key->id k]))
 
       (*id-desc [_this id]

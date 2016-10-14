@@ -20,9 +20,9 @@
                                return-success))
       (when-we (put-a-job (id! :job-id)
                           (job-req {:some "request"} (id! :job-type))))
-      (and-we (wait-for-job-state :success (id! :job-id)))
+      (and-we (wait-for-job-status :success (id! :job-id)))
       (then-expect (job-state (id! :job-id))
-                   (contains {:outcome :this-should-fail}))))
+                   (contains {:outcome :success}))))
 
   (fact "Can make more complicated queries for work"
     (scenario
@@ -31,7 +31,7 @@
                return-success))
       (when-we (put-a-job (id! :job-one)
                           (job-req {:some "request"} (id! :type-one))))
-      (and-we (wait-for-job-state :success (id! :job-one)))
+      (and-we (wait-for-job-status :success (id! :job-one)))
 
       (then-expect (job-state (id! :job-one))
                    (contains {:outcome :success}))
@@ -39,7 +39,7 @@
       (when-we (put-a-job (id! :job-two)
                           (job-req {:some "request"} (id! :type-two))))
 
-      (and-we (wait-for-job-state :success (id! :job-two)))
+      (and-we (wait-for-job-status :success (id! :job-two)))
 
       (then-expect (job-state (id! :job-two))
                    (contains {:outcome :success}))))
@@ -65,9 +65,9 @@
       (when-we (put-a-job (id! :job-one)
                           (job-req {} (id! :type-one))))
 
-      (and-we (wait-for-job-state :running (id! :job-one)))
+      (and-we (wait-for-job-status :running (id! :job-one)))
 
-      (then-expect (job-state (id! :job-one)) #(= % :running))
+      (then-expect (job-state (id! :job-one)) (contains {:outcome :running}))
 
       (when-we (stop-service))
 

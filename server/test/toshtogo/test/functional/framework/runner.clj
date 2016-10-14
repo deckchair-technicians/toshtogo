@@ -2,7 +2,8 @@
   (:require [midje.sweet :refer :all]
             [toshtogo.test.functional.framework.test-ids :as test-ids]
             [toshtogo.test.functional.test-support :as ts]
-            [flatland.useful.seq :refer [take-until]]))
+            [flatland.useful.seq :refer [take-until]]
+            [clojure.pprint :as pp]))
 
 (defn cleanup [container]
   (reduce (fn [container step]
@@ -47,9 +48,16 @@
 ; Syntactic sugar
 (def given identity)
 (def when-we identity)
-(defn then-expect [value assertion]
-  (fn [container]
-    (value container) => assertion
-    container))
+
+(defn readable [s-expression]
+  (str s-expression))
+
+(defmacro then-expect
+  [value assertion]
+  (let [description (str (readable value) " => " (readable assertion))]
+    `(fn [container#]
+       (fact {:midje/description ~description}
+         (~value container#) => ~assertion)
+       container#)))
 
 (def and-we identity)
