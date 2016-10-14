@@ -2,7 +2,7 @@
 
   :description "An asynchronous job manager"
 
-  :dependencies [[org.clojure/clojure "1.7.0"]
+  :dependencies [[org.clojure/clojure "1.8.0"]
 
                  [cheshire "5.3.0"]
                  [http-kit "2.1.16"]

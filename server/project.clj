@@ -2,7 +2,7 @@
 
   :description "An asynchronous job manager"
 
-  :dependencies [[org.clojure/clojure "1.7.0"]
+  :dependencies [[org.clojure/clojure "1.8.0"]
                  [savagematt.toshtogo/client "0.7.1-SNAPSHOT"]
 
                  [org.clojure/clojurescript "1.7.48"]
