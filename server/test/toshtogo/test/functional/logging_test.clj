@@ -7,7 +7,8 @@
             [vice
              [midje :refer [matches]]
              [schemas :refer [in-any-order in-order]]]
-            [toshtogo.test.functional.test-support :refer :all])
+            [toshtogo.test.functional.test-support :refer :all]
+            [toshtogo.test.functional.framework.test-handlers :refer [return-success]])
   (:import [clojure.lang ExceptionInfo]
            [toshtogo.server.logging DeferredLogger]))
 

@@ -1,6 +1,11 @@
 (ns toshtogo.test.functional.agent-service-test
   (:require [midje.sweet :refer :all]
-            [clj-time.core :as t]
+            [toshtogo.test.functional.framework
+             [test-ids :refer [id!]]
+             [runner :refer :all]
+             [steps :refer :all]
+             [test-handlers :refer [return-success wait-for-shutdown-promise]]]
+
             [toshtogo.util.core :refer [uuid uuid-str debug]]
             [toshtogo.test.functional.test-support :refer :all]
             [toshtogo.client.agent :refer :all]
@@ -9,124 +14,78 @@
 (background (before :contents @migrated-dev-db))
 
 (with-redefs [toshtogo.client.protocol/heartbeat-time 10]
-
   (fact "Started service listens for jobs"
-    (let [job-id (uuid)
-          job-type (uuid-str)
-          service (start-service (job-consumer
-                                  (constantly client)
-                                  job-type
-                                  return-success
-                                  :sleep-on-no-work-ms 1))]
-
-      (put-job! client job-id (job-req {:some "request"} job-type))
-
-      (deref (future (while (-> (get-job client job-id)
-                                :outcome
-                                (not= :success))
-                       (Thread/sleep 100)))
-             2000 nil)
-
-      (get-job client job-id)
-      => (contains {:outcome :success})
-
-      (stop service)
-      ))
+    (scenario
+      (given (agent-is-running (id! :job-type)
+                               return-success))
+      (when-we (put-a-job (id! :job-id)
+                          (job-req {:some "request"} (id! :job-type))))
+      (and-we (wait-for-job-state :success (id! :job-id)))
+      (then-expect (job-state (id! :job-id))
+                   (contains {:outcome :this-should-fail}))))
 
   (fact "Can make more complicated queries for work"
-    (let [job-id-1   (uuid)
-          job-id-2   (uuid)
-          job-type-1 (uuid-str)
-          job-type-2 (uuid-str)
-          service    (start-service (job-consumer
-                                     (constantly client)
-                                     {:job_type [job-type-1 job-type-2]}
-                                     return-success
-                                     :sleep-on-no-work-ms 1))]
+    (scenario
+      (given (agent-is-running
+               {:job_type [(id! :type-one) (id! :type-two)]}
+               return-success))
+      (when-we (put-a-job (id! :job-one)
+                          (job-req {:some "request"} (id! :type-one))))
+      (and-we (wait-for-job-state :success (id! :job-one)))
 
-      (put-job! client job-id-1 (job-req {:some "request"} job-type-2))
+      (then-expect (job-state (id! :job-one))
+                   (contains {:outcome :success}))
 
-      (deref (future (while (-> (get-job client job-id-1)
-                                :outcome
-                                (not= :success))
-                       (Thread/sleep 100)))
-             2000 nil)
+      (when-we (put-a-job (id! :job-two)
+                          (job-req {:some "request"} (id! :type-two))))
 
-      (get-job client job-id-1)
-      => (contains {:outcome :success})
+      (and-we (wait-for-job-state :success (id! :job-two)))
 
-      (put-job! client job-id-2 (job-req {:some "request"} job-type-1))
-
-      (deref (future (while (-> (get-job client job-id-2)
-                                :outcome
-                                (not= :success))
-                       (Thread/sleep 100)))
-             2000 nil)
-
-      (get-job client job-id-2)
-      => (contains {:outcome :success})
-
-      (stop service)
-      ))
+      (then-expect (job-state (id! :job-two))
+                   (contains {:outcome :success}))))
 
   (fact "Stopping the service does indeed stop listening for jobs"
-    (let [job-id (uuid)
-          job-type (uuid-str)
-          service (start-service (job-consumer
-                                  (constantly client)
-                                  job-type
-                                  return-success
-                                  :sleep-on-no-work-ms 1))]
-
-      (deref (future (stop service)) 100 "didn't stop")
-      => #(not= "didn't stop" %)
-
-      (put-job! client job-id (job-req {:some "request"} job-type))
-
-      (Thread/sleep 100)
-
-      (get-job client job-id)
-      => (contains {:outcome :waiting})
-      ))
+    (scenario
+      (given (agent-is-running
+               {:job_type (id! :type-one)}
+               return-success))
+      (when-we (stop-service))
+      (and-we (put-a-job (id! :job-one)
+                         (job-req {} (id! :type-one))))
+      (and-we (wait-millis 100))
+      (then-expect (job-state (id! :job-one))
+                   (contains {:outcome :waiting}))))
 
   (fact "job-consumer passes through shutdown-promise"
-    (let [job-id (uuid)
-          job-type (uuid-str)
-          wait-for-shutdown-promise (fn [job]
-                                      (while (not (realized? (:shutdown-promise job)))
-                                        ; keep spinning
-                                        )
-                                      (error {:message "shutdown-promise triggered"}))
-          service (start-service (job-consumer
-                                  (constantly client)
-                                  job-type
-                                  wait-for-shutdown-promise
-                                  :sleep-on-no-work-ms 1))]
+    (scenario
+      (given (agent-is-running
+               (id! :type-one)
+               wait-for-shutdown-promise))
 
-      (put-job! client job-id (job-req {:some "request"} job-type))
+      (when-we (put-a-job (id! :job-one)
+                          (job-req {} (id! :type-one))))
 
-      (deref (future (while (-> (get-job client job-id)
-                                :outcome
-                                (= :waiting))
-                       (Thread/sleep 50)))
-             2000 "job wasn't picked up")
-      => #(not= "job wasn't picked up" %)
+      (and-we (wait-for-job-state :running (id! :job-one)))
 
-      (stop service)
+      (then-expect (job-state (id! :job-one)) #(= % :running))
 
-      (get-job client job-id)
-      => (contains {:outcome :error
-                    :error   {:message "shutdown-promise triggered"}})))
+      (when-we (stop-service))
+
+      (and-we (wait-millis 100))
+
+      (then-expect
+        (job-state (id! :job-one))
+        (contains {:outcome :error
+                   :error   {:message "shutdown-promise triggered"}}))))
 
   (fact "Stopping the service twice does not throw an exception"
-    (let [service (start-service (job-consumer
-                                  (constantly client)
-                                  (uuid-str)
-                                  return-success
-                                  :sleep-on-no-work-ms 1))]
+    (scenario
+      (given (agent-is-running
+               (uuid-str)
+               return-success))
 
-      (stop service)
-      (stop service)))
+      (stop-service)
+      (stop-service)))
 
   (fact "Started service handles exceptions"
     (let [got-past-exceptions (promise)
@@ -141,4 +100,4 @@
       => #(not= "service stopped at exception" %)
 
       (stop service)))
-)
+  )

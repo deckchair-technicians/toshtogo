@@ -54,14 +54,6 @@
 
 (def no-retry-client (test-client :should-retry false))
 
-(defn return-success [job] (success {:result 1}))
-
-(defn return-success-with-result [result]
-  (fn [job] (success result)))
-
-(defn echo-request [job] (success (:request_body job)))
-
-(defn return-error [job] (error "something went wrong"))
 
 (defn get-and-select [client query & keys]
   (->> (get-jobs client query)

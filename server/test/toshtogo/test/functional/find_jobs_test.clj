@@ -3,7 +3,8 @@
             [toshtogo.test.functional.test-support :refer :all]
             [toshtogo.client.protocol :refer :all]
             [toshtogo.util.core :refer [uuid uuid-str]]
-            [toshtogo.server.core :refer [dev-db]]))
+            [toshtogo.server.core :refer [dev-db]]
+            [toshtogo.test.functional.framework.test-handlers :refer [return-success-with-result return-success]]))
 
 (background (before :contents @migrated-dev-db))
 

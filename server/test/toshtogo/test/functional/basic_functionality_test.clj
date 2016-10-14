@@ -10,7 +10,8 @@
             [vice
              [midje :refer [matches]]
              [schemas :refer [when-sorted in-any-order]]]
-            [toshtogo.test.functional.test-support :refer :all])
+            [toshtogo.test.functional.test-support :refer :all]
+            [toshtogo.test.functional.framework.test-handlers :refer [return-success-with-result return-success]])
   (:import [clojure.lang ExceptionInfo]))
 
 (background (before :contents @migrated-dev-db))
