@@ -30,13 +30,13 @@
 
 (defn put-a-job [job-id job-req]
   (fn [{:keys [client] :as container}]
-    (println "Putting job" (ids/id-desc job-id)  "(" job-id ")")
+    (println "Putting job" (ids/id-desc job-id)  (str "(" job-id ")"))
     (client/put-job! client job-id job-req)
     container))
 
 (defn wait-for-job-status-matching [pred job-id]
   (fn [{:keys [client] :as container}]
-    (println "Waiting for" (ids/id-desc job-id)  "(" job-id ")")
+    (println "Waiting for" (ids/id-desc job-id) (str "(" job-id ")"))
     (deref (future (while (-> (client/get-job client job-id)
                               :outcome
                               ((comp not pred)))
@@ -50,7 +50,7 @@
 
 (defn job-state [job-id]
   (fn [{:keys [client]}]
-    (println "Getting job" (ids/id-desc job-id) "(" job-id ")")
+    (println "Getting job" (ids/id-desc job-id) (str "(" job-id ")"))
     (client/get-job client job-id)))
 
 

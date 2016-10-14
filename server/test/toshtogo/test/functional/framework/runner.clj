@@ -56,6 +56,7 @@
   [value assertion]
   (let [description (str (readable value) " => " (readable assertion))]
     `(fn [container#]
+       (println ~description)
        (fact {:midje/description ~description}
          (~value container#) => ~assertion)
        container#)))
